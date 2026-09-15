@@ -1,0 +1,46 @@
+{
+  "purpose": "Smoke test only; not a real evacuation model.",
+  "geometry_m": {
+    "length": 10.0,
+    "width": 2.0
+  },
+  "seed": 2026,
+  "people_created": 10,
+  "iterations": 80,
+  "simulation_time_s": 4.0,
+  "example_positions": [
+    {
+      "agent_id": 1,
+      "start_m": [
+        0.5,
+        0.2271471930978378
+      ],
+      "end_m": [
+        2.827634628204299,
+        0.3701036977931672
+      ]
+    },
+    {
+      "agent_id": 2,
+      "start_m": [
+        0.95,
+        0.25015094531387505
+      ],
+      "end_m": [
+        4.305269768997773,
+        0.17995190985801268
+      ]
+    },
+    {
+      "agent_id": 3,
+      "start_m": [
+        0.5,
+        0.6107093627663842
+      ],
+      "end_m": [
+        4.099731949725093,
+        0.6744244771641197
+      ]
+    }
+  ]
+}

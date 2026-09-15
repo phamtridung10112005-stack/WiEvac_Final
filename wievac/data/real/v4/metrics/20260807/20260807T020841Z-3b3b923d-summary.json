@@ -1,0 +1,169 @@
+{
+  "analysis_metric_count": 554,
+  "corridor_id": "corridor-01",
+  "generated_utc": "2026-08-07T02:09:04.369665+00:00",
+  "label": "unlabeled",
+  "links": {
+    "1": {
+      "analysis_metric_count": 446,
+      "baseline_eligible_ratio": 0.25112107623318386,
+      "invalid_csi": 1,
+      "label": "unlabeled",
+      "link_id": 1,
+      "metric_statistics": {
+        "coherent_motion": {},
+        "dynamic_analysis_accepted_rate_hz": {
+          "iqr": 13.702485956731227,
+          "mad": 1.2352247752216279,
+          "median": 20.10291203345639,
+          "p05": 18.450468237366714,
+          "p95": 333.52789126990746
+        },
+        "dynamic_received_rate_hz": {
+          "iqr": 14.352804042813176,
+          "mad": 1.0646724216957892,
+          "median": 22.390705313710686,
+          "p05": 20.806891242379475,
+          "p95": 463.46209687525936
+        },
+        "dynamic_valid_transport_rate_hz": {
+          "iqr": 14.352804042813176,
+          "mad": 1.0646724216957892,
+          "median": 22.390705313710686,
+          "p05": 20.806891242379475,
+          "p95": 463.46209687525936
+        },
+        "feature_accepted_rate_hz": {
+          "iqr": 1.0099725252730072,
+          "mad": 0.02266284392059581,
+          "median": 1.0015943168000017,
+          "p05": 0.0,
+          "p95": 1.0242571607205975
+        },
+        "feature_rate_hz": {
+          "iqr": 0.06093505179491321,
+          "mad": 0.03888358897019284,
+          "median": 1.002205697895877,
+          "p05": 0.4829572483824116,
+          "p95": 2.2844042725455256
+        },
+        "feature_received_rate_hz": {
+          "iqr": 0.06093505179491321,
+          "mad": 0.03888358897019284,
+          "median": 1.002205697895877,
+          "p05": 0.4829572483824116,
+          "p95": 2.2844042725455256
+        },
+        "motion_median": {},
+        "motion_p95": {},
+        "motion_rms": {},
+        "packet_loss_ratio": {
+          "iqr": 0.006653809624876439,
+          "mad": 0.0033481415108776863,
+          "median": 0.07400787401574803,
+          "p05": 0.06695823108164871,
+          "p95": 0.08167401682424028
+        },
+        "quality_score": {
+          "iqr": 1.0,
+          "mad": 0.0,
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 1.0
+        },
+        "shape_distance": {},
+        "shape_distance_p95": {},
+        "spectral_bandwidth": {},
+        "spectral_centroid": {},
+        "spectral_entropy": {},
+        "temporal_spectral_energy": {}
+      },
+      "packet_loss": 111,
+      "sequence_gap": 40,
+      "session_id": "20260807T020841Z-3b3b923d",
+      "state_counts": {
+        "SIGNAL_INVALID": 330,
+        "WARMING_UP": 116
+      }
+    },
+    "2": {
+      "analysis_metric_count": 108,
+      "baseline_eligible_ratio": 0.0,
+      "invalid_csi": 1,
+      "label": "unlabeled",
+      "link_id": 2,
+      "metric_statistics": {
+        "coherent_motion": {},
+        "dynamic_analysis_accepted_rate_hz": {},
+        "dynamic_received_rate_hz": {
+          "iqr": 104.79467883301628,
+          "mad": 17.02286240382884,
+          "median": 104.49583944590454,
+          "p05": 2.1335907564776684,
+          "p95": 130.52541832417631
+        },
+        "dynamic_valid_transport_rate_hz": {
+          "iqr": 104.79467883301628,
+          "mad": 17.02286240382884,
+          "median": 104.49583944590454,
+          "p05": 2.1335907564776684,
+          "p95": 130.52541832417631
+        },
+        "feature_accepted_rate_hz": {
+          "iqr": 0.0,
+          "mad": 0.0,
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0
+        },
+        "feature_rate_hz": {
+          "iqr": 0.5900805992068827,
+          "mad": 0.46243913524660457,
+          "median": 0.46243913524660457,
+          "p05": 0.0,
+          "p95": 1.1548839458855105
+        },
+        "feature_received_rate_hz": {
+          "iqr": 0.5900805992068827,
+          "mad": 0.46243913524660457,
+          "median": 0.46243913524660457,
+          "p05": 0.0,
+          "p95": 1.1548839458855105
+        },
+        "motion_median": {},
+        "motion_p95": {},
+        "motion_rms": {},
+        "packet_loss_ratio": {
+          "iqr": 0.023312283657280886,
+          "mad": 0.002557380769171974,
+          "median": 0.1422845646312532,
+          "p05": 0.13799863278644792,
+          "p95": 0.23784729831562837
+        },
+        "quality_score": {
+          "iqr": 0.0,
+          "mad": 0.0,
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0
+        },
+        "shape_distance": {},
+        "shape_distance_p95": {},
+        "spectral_bandwidth": {},
+        "spectral_centroid": {},
+        "spectral_entropy": {},
+        "temporal_spectral_energy": {}
+      },
+      "packet_loss": 379,
+      "sequence_gap": 42,
+      "session_id": "20260807T020841Z-3b3b923d",
+      "state_counts": {
+        "INTERFERENCE": 5,
+        "SIGNAL_INVALID": 103
+      }
+    }
+  },
+  "record_type": "analysis_metric_summary",
+  "schema_version": 1,
+  "session_id": "20260807T020841Z-3b3b923d"
+}

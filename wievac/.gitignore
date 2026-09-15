@@ -1,0 +1,6 @@
+# Local deployment values and generated build outputs.
+config/local/*.sdkconfig
+!.example
+.edge-result-v6-build/
+firmware/*/build/
+__pycache__/

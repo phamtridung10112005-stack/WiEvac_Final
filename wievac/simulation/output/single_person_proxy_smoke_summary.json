@@ -1,0 +1,89 @@
+{
+  "data_origin": "synthetic_smoke_test",
+  "csi_type": "ideal_frequency_response",
+  "center_frequency_hz": 2462000000.0,
+  "bandwidth_hz": 20000000.0,
+  "tone_count": 64,
+  "backend": "llvm_ad_mono_polarized",
+  "corridor_geometry_m": {
+    "length": 10.0,
+    "width": 2.0,
+    "height": 3.0
+  },
+  "tx_position_m": [
+    0.6,
+    0.0,
+    1.5
+  ],
+  "rx_position_m": [
+    9.4,
+    0.0,
+    1.5
+  ],
+  "person_positions_xy": [
+    [
+      1.5049931013955127,
+      0.9652446609426869
+    ],
+    [
+      5.012463043190242,
+      0.9797655908874475
+    ],
+    [
+      8.51993298498498,
+      0.9942865208322074
+    ]
+  ],
+  "person_proxy": {
+    "proxy_geometry": "triangulated_rectangular_prism",
+    "width_m": 0.44,
+    "depth_m": 0.32,
+    "height_m": 1.7,
+    "material": "person_proxy_radio_material",
+    "material_is_uncalibrated": true,
+    "calibration": "Geometric proxy not calibrated to a real human body or real ESP32 hardware."
+  },
+  "scenarios": [
+    {
+      "name": "empty_baseline",
+      "valid_path_count": 21,
+      "mean_abs_h": 0.000711355940438807,
+      "std_abs_h": 0.00033731700386852026,
+      "mean_amplitude_change_vs_baseline": 0.0,
+      "mean_relative_phase_rad_vs_baseline": 0.0,
+      "warning_no_measurable_change": false
+    },
+    {
+      "name": "person_near_tx",
+      "valid_path_count": 21,
+      "mean_abs_h": 0.0007113557076081634,
+      "std_abs_h": 0.00033731709118001163,
+      "mean_amplitude_change_vs_baseline": -2.014530764427036e-10,
+      "mean_relative_phase_rad_vs_baseline": 0.0,
+      "warning_no_measurable_change": true
+    },
+    {
+      "name": "person_middle",
+      "valid_path_count": 21,
+      "mean_abs_h": 0.0008192411623895168,
+      "std_abs_h": 0.00035946755087934434,
+      "mean_amplitude_change_vs_baseline": 0.00010788525105454028,
+      "mean_relative_phase_rad_vs_baseline": -1.561121081294914e-07,
+      "warning_no_measurable_change": false
+    },
+    {
+      "name": "person_near_rx",
+      "valid_path_count": 21,
+      "mean_abs_h": 0.0007113556494005024,
+      "std_abs_h": 0.0003373171202838421,
+      "mean_amplitude_change_vs_baseline": -2.0375523490656633e-10,
+      "mean_relative_phase_rad_vs_baseline": 0.0,
+      "warning_no_measurable_change": true
+    }
+  ],
+  "limitations": [
+    "Ideal geometric proxy only; it is not human CSI and does not prove proxy realism.",
+    "This is not raw ESP32 CSI and is not training data.",
+    "ESP phase synchronization, AGC, CFO, SFO, and hardware phase effects are not modeled."
+  ]
+}

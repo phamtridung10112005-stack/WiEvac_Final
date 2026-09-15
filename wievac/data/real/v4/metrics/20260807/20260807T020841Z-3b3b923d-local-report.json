@@ -1,0 +1,209 @@
+{
+  "schema_version": 1,
+  "sessions": {
+    "20260807T020841Z-3b3b923d": {
+      "1": {
+        "link_id": 1,
+        "session_id": "20260807T020841Z-3b3b923d",
+        "record_count": 446,
+        "state_counts": {
+          "SIGNAL_INVALID": 330,
+          "WARMING_UP": 116
+        },
+        "dynamic_received_rate_hz": {
+          "count": 443,
+          "median": 22.390705313710686,
+          "p95": 463.46209687525936,
+          "p05": 20.806891242379475
+        },
+        "dynamic_valid_transport_rate_hz": {
+          "count": 443,
+          "median": 22.390705313710686,
+          "p95": 463.46209687525936,
+          "p05": 20.806891242379475
+        },
+        "dynamic_analysis_accepted_rate_hz": {
+          "count": 318,
+          "median": 20.10291203345639,
+          "p95": 333.52789126990746,
+          "p05": 18.450468237366714
+        },
+        "feature_received_rate_hz": {
+          "count": 446,
+          "median": 1.002205697895877,
+          "p95": 2.2844042725455256,
+          "p05": 0.4829572483824116
+        },
+        "feature_rate_hz": {
+          "count": 446,
+          "median": 1.002205697895877,
+          "p95": 2.2844042725455256,
+          "p05": 0.4829572483824116
+        },
+        "feature_accepted_rate_hz": {
+          "count": 446,
+          "median": 1.0015943168000017,
+          "p95": 1.0242571607205975,
+          "p05": 0.0
+        },
+        "motion_median": {
+          "count": 0,
+          "median": null,
+          "p95": null
+        },
+        "motion_p95": {
+          "count": 0,
+          "median": null,
+          "p95": null
+        },
+        "motion_rms": {
+          "count": 0,
+          "median": null,
+          "p95": null
+        },
+        "temporal_spectral_energy": {
+          "count": 0,
+          "median": null,
+          "p95": null
+        },
+        "spectral_entropy": {
+          "count": 0,
+          "median": null,
+          "p95": null
+        },
+        "spectral_bandwidth": {
+          "count": 0,
+          "median": null,
+          "p95": null
+        },
+        "coherent_motion": {
+          "count": 0,
+          "median": null,
+          "p95": null,
+          "p05": null
+        },
+        "shape_distance": {
+          "count": 0,
+          "median": null,
+          "p95": null
+        },
+        "quality_score": {
+          "count": 446,
+          "median": 0.0,
+          "p95": 1.0,
+          "p05": 0.0
+        },
+        "packet_loss_ratio": {
+          "count": 446,
+          "median": 0.07400787401574803,
+          "p95": 0.08167401682424028
+        },
+        "baseline_eligible_ratio": 0.25112107623318386,
+        "packet_loss": 48164,
+        "sequence_gap": 266,
+        "invalid_csi": 69
+      },
+      "2": {
+        "link_id": 2,
+        "session_id": "20260807T020841Z-3b3b923d",
+        "record_count": 108,
+        "state_counts": {
+          "SIGNAL_INVALID": 103,
+          "INTERFERENCE": 5
+        },
+        "dynamic_received_rate_hz": {
+          "count": 89,
+          "median": 104.49583944590454,
+          "p95": 130.52541832417631,
+          "p05": 2.1335907564776684
+        },
+        "dynamic_valid_transport_rate_hz": {
+          "count": 89,
+          "median": 104.49583944590454,
+          "p95": 130.52541832417631,
+          "p05": 2.1335907564776684
+        },
+        "dynamic_analysis_accepted_rate_hz": {
+          "count": 0,
+          "median": null,
+          "p95": null,
+          "p05": null
+        },
+        "feature_received_rate_hz": {
+          "count": 108,
+          "median": 0.46243913524660457,
+          "p95": 1.1548839458855105,
+          "p05": 0.0
+        },
+        "feature_rate_hz": {
+          "count": 108,
+          "median": 0.46243913524660457,
+          "p95": 1.1548839458855105,
+          "p05": 0.0
+        },
+        "feature_accepted_rate_hz": {
+          "count": 103,
+          "median": 0.0,
+          "p95": 0.0,
+          "p05": 0.0
+        },
+        "motion_median": {
+          "count": 0,
+          "median": null,
+          "p95": null
+        },
+        "motion_p95": {
+          "count": 0,
+          "median": null,
+          "p95": null
+        },
+        "motion_rms": {
+          "count": 0,
+          "median": null,
+          "p95": null
+        },
+        "temporal_spectral_energy": {
+          "count": 0,
+          "median": null,
+          "p95": null
+        },
+        "spectral_entropy": {
+          "count": 0,
+          "median": null,
+          "p95": null
+        },
+        "spectral_bandwidth": {
+          "count": 0,
+          "median": null,
+          "p95": null
+        },
+        "coherent_motion": {
+          "count": 0,
+          "median": null,
+          "p95": null,
+          "p05": null
+        },
+        "shape_distance": {
+          "count": 0,
+          "median": null,
+          "p95": null
+        },
+        "quality_score": {
+          "count": 108,
+          "median": 0.0,
+          "p95": 0.0,
+          "p05": 0.0
+        },
+        "packet_loss_ratio": {
+          "count": 108,
+          "median": 0.1422845646312532,
+          "p95": 0.23784729831562837
+        },
+        "baseline_eligible_ratio": 0.0,
+        "packet_loss": 22191,
+        "sequence_gap": 68,
+        "invalid_csi": 10
+      }
+    }
+  }
+}

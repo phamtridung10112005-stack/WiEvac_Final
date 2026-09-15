@@ -1,0 +1,1036 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>WiEvac | Giám sát hành lang</title>
+  <style>
+    :root {
+      --ink: #142431;
+      --muted: #4d5f69;
+      --paper: #edf3f2;
+      --card: #fff;
+      --line: #d6e2df;
+      --cyan: #087ea4;
+      --orange: #d65b36;
+      --ok: #16805a;
+      --warn: #b56a16;
+      --bad: #bd3b3b;
+      --shadow: 0 14px 35px #163b4514;
+      --sidebar: 240px;
+      --page: 28px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at 90% 0, #d8f0ec, transparent 35%), linear-gradient(135deg, #f7faf8, #e9f1ef);
+      color: var(--ink);
+      font: 18px/1.45 Manrope, "DM Sans", Inter, system-ui, sans-serif;
+    }
+    .app { min-height: 100vh; }
+    .school-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      background: #071018;
+      padding: 8px var(--page);
+      border-bottom: 2px solid #c9a227;
+    }
+    .school-brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .school-mark {
+      height: 42px;
+      flex: 0 0 auto;
+      background: transparent;
+    }
+    .school-mark img {
+      height: 42px;
+      width: auto;
+      display: block;
+    }
+    .school-names { min-width: 0; }
+    .school-names strong {
+      display: block;
+      color: #d8f3dc;
+      font-size: 0.82rem;
+      letter-spacing: .04em;
+      line-height: 1.2;
+      font-weight: 800;
+    }
+    .school-names span {
+      display: block;
+      color: #7f9a86;
+      font-size: 0.68rem;
+      font-weight: 600;
+      margin-top: 2px;
+      letter-spacing: .06em;
+    }
+    .team-brand { text-align: right; flex-shrink: 0; color: #d8f3dc; }
+    .team-brand span { display: block; font-size: 0.72rem; font-weight: 700; color: #7f9a86; }
+    .team-brand b { display: block; font-size: 1.35rem; letter-spacing: -.03em; line-height: 1.1; }
+    .masthead {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding: 14px var(--page) 10px;
+    }
+    h1 { margin: 0; font-size: 1.85rem; line-height: 1; letter-spacing: -.05em; }
+    .system-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+      font-size: 0.92rem;
+      font-weight: 800;
+      color: var(--muted);
+    }
+    .system-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
+    .system-dot.bad { background: var(--bad); }
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 0;
+    }
+    .stat {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 8px 12px;
+      min-width: 108px;
+    }
+    .stat span { display: block; color: var(--muted); font-size: 0.75rem; font-weight: 700; letter-spacing: .02em; }
+    .stat b { display: block; margin-top: 2px; font-size: 1.05rem; letter-spacing: -.02em; }
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 4px var(--page) 8px;
+    }
+    .segment { display: flex; background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+    .segment button, .btn, .chip {
+      border: 0;
+      background: transparent;
+      color: var(--ink);
+      font: inherit;
+      cursor: pointer;
+    }
+    .segment button { padding: 8px 16px; border-radius: 999px; font-weight: 800; color: var(--muted); font-size: 0.92rem; }
+    .segment button.active { background: #142431; color: #fff; }
+    .filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .filters input, .filters select, .modal input, .modal select, .capture-card input, .capture-card select {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font: inherit;
+      font-size: 0.95rem;
+      background: #fff;
+      color: var(--ink);
+      min-height: 40px;
+      min-width: 0;
+    }
+    .filters input, .filters select { min-width: 180px; }
+    .attention { display: flex; gap: 8px; flex-wrap: wrap; padding: 0 var(--page) 8px; }
+    .chip {
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: #fff;
+      border: 1px solid var(--line);
+      font-size: 0.88rem;
+      font-weight: 800;
+    }
+    .chip.active { border-color: var(--ink); }
+    .chip.bad { color: var(--bad); background: #fde7e7; }
+    .chip.warn { color: var(--warn); background: #fff1dc; }
+    .workspace { display: flex; min-height: calc(100vh - 290px); }
+    .sidebar {
+      display: none;
+      width: var(--sidebar);
+      padding: 8px var(--page) 40px  var(--page);
+    }
+    body.mode-manage .sidebar { display: block; }
+    .sidebar button {
+      width: 100%;
+      text-align: left;
+      padding: 14px 16px;
+      border-radius: 14px;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 1.08rem;
+    }
+    .sidebar button.active, .sidebar button:hover { background: #fff; color: var(--ink); }
+    .content { flex: 1; padding: 0 var(--page) 48px; min-width: 0; }
+    .links {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr));
+      gap: 22px;
+    }
+    body.mode-manage .links { display: none; }
+    body.mode-wall .manage-table { display: none; }
+    .link-card {
+      --accent: var(--cyan);
+      background:
+        radial-gradient(120% 80% at 0% 0%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 55%),
+        var(--card);
+      border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--line));
+      border-left: 8px solid var(--accent);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      padding: 24px 26px 20px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .link-card.disabled { opacity: .55; }
+    .hero { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 22px; align-items: center; }
+    .gauge { position: relative; width: 150px; height: 150px; }
+    .gauge svg { width: 150px; height: 150px; transform: rotate(-90deg); display: block; }
+    .gauge-track { fill: none; stroke: #dce7e4; stroke-width: 11; }
+    .gauge-value { fill: none; stroke: var(--accent); stroke-width: 11; stroke-linecap: round; }
+    .gauge .score {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      font-size: 2.35rem;
+      line-height: 1;
+      margin: 0;
+      font-weight: 800;
+      letter-spacing: -.05em;
+    }
+    .score small { font-size: 1.05rem; color: var(--muted); letter-spacing: 0; }
+    .hero-copy { min-width: 0; }
+    .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .card-title { font-size: 1.75rem; font-weight: 800; margin: 0; letter-spacing: -.03em; }
+    .card-sub { color: var(--muted); font-size: 1.05rem; margin-top: 6px; font-weight: 600; }
+    .state {
+      font-size: 0.92rem;
+      font-weight: 800;
+      padding: 8px 13px;
+      border-radius: 99px;
+      background: #edf0f1;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .state.ok { background: #e5f4ee; color: var(--ok); }
+    .state.warn { background: #fff1dc; color: var(--warn); }
+    .state.bad { background: #fde7e7; color: var(--bad); }
+    .card-hint { margin: 14px 0 0; color: var(--muted); font-size: 1.05rem; font-weight: 600; }
+    b.state-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
+    .primary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 22px 0 0; }
+    .metric {
+      padding: 13px 14px 12px;
+      background: color-mix(in srgb, var(--accent) 7%, #fff);
+      border: 1px solid color-mix(in srgb, var(--accent) 16%, var(--line));
+      border-radius: 14px;
+      min-width: 0;
+    }
+    .metric label { display: block; color: var(--muted); font-size: 1rem; font-weight: 700; }
+    .metric b { display: block; font-size: 1.3rem; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-meta { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; color: var(--muted); font-size: 1.02rem; font-weight: 600; margin-top: 14px; }
+    .fresh { color: var(--muted); }
+    .chart-wrap { height: 96px; margin-top: 16px; background: color-mix(in srgb, var(--accent) 8%, #f5f8f7); border-radius: 14px; padding: 8px; }
+    .chart-wrap.empty { display: none; }
+    .chart { width: 100%; height: 100%; display: block; }
+    .chart-empty {
+      margin-top: 16px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: color-mix(in srgb, var(--accent) 8%, #f5f8f7);
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 1.02rem;
+    }
+    .chart-empty.hidden, .fw-warn.hidden { display: none; }
+    .link-card.is-ok .gauge-value { stroke: var(--ok); }
+    .link-card.is-warn .gauge-value { stroke: var(--warn); }
+    .link-card.is-bad .gauge-value { stroke: var(--bad); }
+    .fw-warn { color: var(--warn); font-size: 1rem; font-weight: 700; margin-top: 12px; }
+    .label-bar { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+    .label-bar button {
+      flex: 1;
+      min-width: 0;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 12px;
+      padding: 10px 8px;
+      font: inherit;
+      font-weight: 800;
+      font-size: 0.98rem;
+      cursor: pointer;
+    }
+    .label-bar button.active-empty { background: #e5f4ee; color: var(--ok); border-color: var(--ok); }
+    .label-bar button.active-human { background: #fff1dc; color: var(--warn); border-color: var(--warn); }
+    .label-bar button.active-unknown { background: #edf0f1; color: var(--muted); }
+    .label-current { margin: 8px 0 0; color: var(--muted); font-size: 0.95rem; font-weight: 700; }
+    .recording-line { margin: 0 0 8px; color: var(--ok); font-weight: 800; font-size: 0.95rem; }
+    .recording-line.idle { color: var(--muted); font-weight: 700; }
+    .capture-card {
+      margin: 0 var(--page) 16px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 14px 16px 12px;
+    }
+    .capture-card h2 {
+      margin: 0 0 4px;
+      font-size: 1rem;
+      letter-spacing: -.02em;
+    }
+    .capture-help { margin: 0 0 12px; color: var(--muted); font-size: 0.88rem; font-weight: 600; }
+    .capture-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(140px, 1fr)) auto auto;
+      gap: 10px;
+      align-items: end;
+    }
+    .capture-grid label { display: grid; gap: 4px; color: var(--muted); font-size: 0.78rem; font-weight: 800; }
+    .schedule-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+    .schedule-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: #f5f8f7;
+      font-size: 0.88rem;
+      font-weight: 700;
+    }
+    .schedule-row button { padding: 6px 10px; font-size: 0.8rem; }
+    .manage-table { overflow: auto; background: #fff; border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); min-height: 480px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 16px 18px; border-bottom: 1px solid var(--line); font-size: 1.08rem; }
+    th { color: var(--muted); font-size: 0.98rem; font-weight: 700; letter-spacing: .01em; }
+    tr { cursor: pointer; }
+    tr:hover { background: #f5f8f7; }
+    .row-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    .btn {
+      padding: 10px 16px;
+      border-radius: 10px;
+      background: #eef4f3;
+      font-size: 1rem;
+      font-weight: 800;
+    }
+    .btn.primary { background: #142431; color: #fff; }
+    .btn.danger { background: #fde7e7; color: var(--bad); }
+    .connection { min-height: 1.2em; color: var(--bad); font-size: 0.95rem; margin: 0 var(--page) 8px; }
+    .drawer, .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: #14243155;
+      display: none;
+      z-index: 20;
+    }
+    .drawer.open, .modal-backdrop.open { display: block; }
+    .drawer-panel, .modal {
+      position: absolute;
+      right: 0;
+      top: 0;
+      height: 100%;
+      width: min(480px, 100%);
+      background: #fff;
+      box-shadow: var(--shadow);
+      padding: 28px;
+      overflow: auto;
+    }
+    .modal {
+      left: 50%;
+      top: 50%;
+      right: auto;
+      height: auto;
+      max-height: 90vh;
+      transform: translate(-50%, -50%);
+      width: min(520px, calc(100% - 24px));
+      border-radius: 18px;
+    }
+    .drawer-panel h2, .modal h2 { margin: 0 0 12px; font-size: 1.5rem; }
+    .details pre, .reason { white-space: pre-wrap; word-break: break-word; color: var(--muted); font-size: 0.95rem; max-height: 280px; overflow: auto; }
+    .form-grid { display: grid; gap: 14px; }
+    .form-grid label { color: var(--muted); font-size: 1.02rem; display: grid; gap: 6px; font-weight: 700; }
+    .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
+    .hidden { display: none !important; }
+    @media (max-width: 1100px) {
+      .capture-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .hero { grid-template-columns: 1fr; justify-items: start; }
+      .gauge { margin: 0 auto; }
+      .primary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 900px) {
+      :root { --page: 16px; }
+      body.mode-manage .sidebar { display: none; }
+      .school-bar { flex-wrap: wrap; }
+      .team-brand { text-align: left; }
+      .stats { width: 100%; }
+    }
+  </style>
+</head>
+<body class="mode-wall">
+  <div class="app">
+    <header>
+      <div class="school-bar">
+        <div class="school-brand">
+          <div class="school-mark">
+            <img src="/static/utehy-logo.png" alt="Logo Trường Đại học Sư phạm Kỹ thuật Hưng Yên">
+          </div>
+          <div class="school-names">
+            <strong>TRƯỜNG ĐẠI HỌC SƯ PHẠM KỸ THUẬT HƯNG YÊN</strong>
+            <span>HUNG YEN UNIVERSITY OF TECHNOLOGY AND EDUCATION</span>
+          </div>
+        </div>
+        <div class="team-brand">
+          <span>Đội thực hiện</span>
+          <b>WiEvac</b>
+        </div>
+      </div>
+      <div class="masthead">
+        <div class="brand">
+          <h1>WiEvac</h1>
+          <div class="system-line"><i id="dot" class="system-dot"></i><b id="system">ĐANG KHỞI ĐỘNG</b></div>
+        </div>
+        <section class="stats" aria-label="Chỉ số hệ thống">
+          <div class="stat"><span>Cần chú ý</span><b id="attention-count">0</b></div>
+          <div class="stat"><span>Cập nhật gần nhất</span><b id="updated">--</b></div>
+          <div class="stat"><span>Mất UDP</span><b id="udp-loss">CHƯA ĐO</b></div>
+          <div class="stat"><span>CSI gap trung bình</span><b id="loss">--</b></div>
+          <div class="stat"><span>Pi UDP</span><b id="pi-ingest">--</b></div>
+        </section>
+      </div>
+    </header>
+    <div class="toolbar">
+      <div class="segment" role="tablist">
+        <button id="mode-wall" class="active" type="button">Tường</button>
+        <button id="mode-manage" type="button">Quản lý</button>
+      </div>
+      <div class="filters">
+        <input id="search" type="search" placeholder="Tìm node, RX, hành lang">
+        <select id="state-filter">
+          <option value="all">Mọi trạng thái</option>
+          <option value="blocked">Khó đi qua</option>
+          <option value="stale">Mất kết nối</option>
+          <option value="missing">Chưa nhận packet</option>
+          <option value="unstable">Không ổn định</option>
+        </select>
+      </div>
+    </div>
+    <div id="attention" class="attention"></div>
+    <p id="connection" class="connection" role="status"></p>
+    <section class="capture-card" aria-label="Thu dữ liệu theo lịch">
+      <h2>Thu theo lịch</h2>
+      <p class="capture-help">Đặt ngày giờ bắt đầu/kết thúc. Trong khoảng đó Pi tự ghi và ép nhãn hành lang trống cho mọi node.</p>
+      <p id="recording" class="recording-line idle">Chưa ghi</p>
+      <div class="capture-grid">
+        <label>Bắt đầu <input id="capture-start" type="datetime-local"></label>
+        <label>Kết thúc <input id="capture-end" type="datetime-local"></label>
+        <label>Nhãn
+          <select id="capture-occupancy">
+            <option value="EMPTY" selected>Hành lang trống</option>
+            <option value="HUMAN_PRESENT">Có người</option>
+            <option value="UNKNOWN">Không rõ</option>
+          </select>
+        </label>
+        <label>Ghi ngay (giờ) <input id="record-hours" type="number" min="0" max="72" step="0.5" value="8"></label>
+        <button id="capture-schedule" class="btn primary" type="button">Đặt lịch thu</button>
+        <button id="record-toggle" class="btn" type="button">Bắt đầu ghi</button>
+      </div>
+      <div id="schedule-list" class="schedule-list"></div>
+    </section>
+    <div class="workspace">
+      <nav class="sidebar">
+        <button id="nav-list" class="active" type="button">Danh sách</button>
+        <button id="nav-add" type="button">Thêm node</button>
+      </nav>
+      <div class="content">
+        <section id="grid" class="links" aria-label="Giám sát hành lang"></section>
+        <div class="manage-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Tên</th>
+                <th>RX / link</th>
+                <th>Hành lang</th>
+                <th>Trạng thái</th>
+                <th>Điểm</th>
+                <th>Lần thấy</th>
+                <th>Bật</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <template id="card-template">
+    <article class="link-card">
+      <div class="hero">
+        <div class="gauge">
+          <svg viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="gauge-track" cx="60" cy="60" r="52"></circle>
+            <circle class="gauge-value" data-gauge cx="60" cy="60" r="52"></circle>
+          </svg>
+          <div class="score" data-score>--<small>%</small></div>
+        </div>
+        <div class="hero-copy">
+          <div class="card-head">
+            <div>
+              <h2 class="card-title" data-title></h2>
+              <div class="card-sub" data-sub></div>
+            </div>
+            <span class="state" data-state>CHƯA NHẬN PACKET</span>
+          </div>
+          <p class="card-hint" data-hint>Đang chờ tín hiệu từ RX</p>
+        </div>
+      </div>
+      <b class="state-text" data-state-text>CHƯA NHẬN PACKET</b>
+      <div class="primary">
+        <div class="metric"><label>Độ ổn định</label><b data-stability>--</b></div>
+        <div class="metric"><label>Mất UDP</label><b data-udp-loss>CHƯA ĐO</b></div>
+        <div class="metric"><label>CSI gap</label><b data-gap>--</b></div>
+        <div class="metric"><label>Queue drop</label><b data-queue-drop>--</b></div>
+      </div>
+      <div class="card-meta">
+        <span>Invalid CSI <b data-invalid>--</b></span>
+        <span class="fresh" data-fresh></span>
+      </div>
+      <div class="chart-wrap empty"><canvas class="chart" data-chart aria-label="Biểu đồ passability"></canvas></div>
+      <div class="chart-empty">Chưa có lịch sử điểm — sparkline sẽ hiện khi RX bắt đầu gửi</div>
+      <div class="label-bar" data-labels>
+        <button type="button" data-occupancy="EMPTY">Trống</button>
+        <button type="button" data-occupancy="HUMAN_PRESENT">Có người</button>
+        <button type="button" data-occupancy="UNKNOWN">Không rõ</button>
+      </div>
+      <p class="label-current" data-label-current>Nhãn: Chưa gắn nhãn</p>
+      <div class="fw-warn hidden" data-fw>Firmware hiện chỉ hỗ trợ RX 1–2. Node đã đăng ký nhưng chưa nhận packet cho đến khi firmware được nới.</div>
+    </article>
+  </template>
+
+  <div id="drawer" class="drawer">
+    <div class="drawer-panel">
+      <button class="btn" id="drawer-close" type="button">Đóng</button>
+      <h2 id="drawer-title">Chi tiết kỹ thuật</h2>
+      <p id="drawer-meta" class="fresh"></p>
+      <pre id="drawer-details" data-details>--</pre>
+    </div>
+  </div>
+
+  <div id="modal" class="modal-backdrop">
+    <form class="modal" id="node-form">
+      <h2 id="form-title">Thêm node</h2>
+      <div class="form-grid">
+        <label>Tên hiển thị <input name="display_name" required></label>
+        <label>Link ID <input name="link_id" required placeholder="link-3"></label>
+        <label>RX ID <input name="rx_id" required placeholder="rx-3"></label>
+        <label>Node ID <input name="node_id" placeholder="mặc định = RX ID"></label>
+        <label>Corridor <input name="corridor_id" placeholder="corridor-01"></label>
+        <label class="fw-warn hidden" id="form-fw">Firmware hiện chỉ hỗ trợ RX 1–2. Node sẽ hiện trên dashboard nhưng chưa nhận packet cho đến khi firmware được nới.</label>
+      </div>
+      <div class="form-actions">
+        <button class="btn" id="form-cancel" type="button">Hủy</button>
+        <button class="btn primary" type="submit">Lưu</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    const history = {};
+    const displayState = { system: { stable: null, pending: null, count: 0 } };
+    const PALETTE = ["#087ea4", "#d65b36", "#16805a", "#6b5b95", "#c49a3c", "#2c6e8a"];
+    const finite = v => v !== null && v !== undefined && Number.isFinite(Number(v));
+    const round = (v, d = 1) => finite(v) ? Number(v).toFixed(d) : "--";
+    const grid = document.querySelector("#grid");
+    const tableBody = document.querySelector("#table-body");
+    const searchEl = document.querySelector("#search");
+    const filterEl = document.querySelector("#state-filter");
+    let catalog = {};
+    let latestLinks = {};
+    let activeLabels = {};
+    let recordingActive = false;
+    let selectedId = null;
+    let editingId = null;
+    let viewMode = localStorage.getItem("wievac-view") === "manage" ? "manage" : "wall";
+
+    function packetPresent(v) {
+      return !!(v && v.arrival_timestamp_us!==null && v.arrival_timestamp_us!==undefined);
+    }
+    function unstableWindow(v) {
+      return v.display_unstable !== undefined ? v.display_unstable : (Number(v?.sequence_gap || 0) > 0 || Number(v?.queue_drop_count || 0) > 0 || Number(v?.invalid_count || 0) > 0);
+    }
+    function commitDisplayState(id, candidate) {
+      if (!displayState[id]) displayState[id] = { stable: null, pending: null, count: 0, score: null };
+      const s = displayState[id];
+      if (!s.stable) { s.stable = candidate; return candidate; }
+      if (candidate === s.stable) { s.pending = null; s.count = 0; return s.stable; }
+      if (s.pending !== candidate) { s.pending = candidate; s.count = 1; }
+      else { s.count++; }
+      if (s.count>=3) { s.stable = candidate; s.pending = null; s.count = 0; }
+      return s.stable;
+    }
+    function passabilityFromScore(score) {
+      if (score < 20) return "BLOCKED";
+      if (score < 70) return "DEGRADED";
+      return "PASSABLE";
+    }
+    function labelFor(v) {
+      if (!packetPresent(v)) return "CHƯA NHẬN PACKET";
+      const state = String(v.state || "UNKNOWN").toUpperCase();
+      if (v.stale === true || state === "STALE") return "MẤT KẾT NỐI";
+      if (unstableWindow(v)) return "DỮ LIỆU KHÔNG ỔN ĐỊNH";
+      if (state === "UNKNOWN") return "ĐANG HỌC DỮ LIỆU";
+      if (state === "PASSABLE") return "TRỐNG/PASSABLE";
+      if (state === "DEGRADED") return "DEGRADED/CROWDED";
+      if (state === "BLOCKED") return "KHÓ ĐI QUA";
+      return "ĐANG HỌC DỮ LIỆU";
+    }
+    function toneFor(viewState, stale) {
+      return viewState === "PASSABLE" ? "ok" : (viewState === "DEGRADED" ? "warn" : (viewState === "BLOCKED" || stale || viewState === "UNSTABLE" ? "bad" : ""));
+    }
+    function attentionKind(v, viewState) {
+      if (!packetPresent(v)) return "missing";
+      if (viewState === "STALE" || v?.stale === true) return "stale";
+      if (viewState === "UNSTABLE") return "unstable";
+      if (viewState === "BLOCKED") return "blocked";
+      return "ok";
+    }
+    function matchesFilter(id, meta, v, viewState) {
+      const q = (searchEl.value || "").trim().toLowerCase();
+      const hay = [meta.display_name, meta.link_id, meta.rx_id, meta.corridor_id, meta.node_id].join(" ").toLowerCase();
+      if (q && !hay.includes(q)) return false;
+      const filter = filterEl.value;
+      const kind = attentionKind(v, viewState);
+      if (filter === "all") return true;
+      return kind === filter;
+    }
+    function colorFor(index) { return PALETTE[index % PALETTE.length]; }
+    function ensureState(id) {
+      if (!history[id]) history[id] = [];
+      if (!displayState[id]) displayState[id] = { stable: null, pending: null, count: 0, score: null };
+    }
+    function catalogList() {
+      return Object.values(catalog).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || String(a.link_id).localeCompare(String(b.link_id)));
+    }
+    function viewValues(id, v, record) {
+      ensureState(id);
+      const firmwareState = String(v?.state || "UNKNOWN").toUpperCase();
+      const stale = firmwareState === "STALE" || v?.stale === true;
+      const unstable = unstableWindow(v || {});
+      const hasPacket = packetPresent(v);
+      const raw = v?.score ?? v?.local_passability_score;
+      const candidateScore = hasPacket && !stale && finite(raw) ? Number(raw) : null;
+      let rawCandidate;
+      if (stale) rawCandidate = "STALE";
+      else if (unstable) rawCandidate = "UNSTABLE";
+      else if (finite(candidateScore)) rawCandidate = passabilityFromScore(candidateScore);
+      else rawCandidate = "UNKNOWN";
+      const viewState = record ? commitDisplayState(id, rawCandidate) : (displayState[id].stable || rawCandidate);
+      const label = labelFor({ ...v, state: viewState, display_unstable: viewState === "UNSTABLE" });
+      if (finite(candidateScore) && viewState !== "UNSTABLE" && viewState !== "UNKNOWN" && viewState !== "STALE") displayState[id].score = candidateScore;
+      const heldScore = finite(displayState[id].score) ? displayState[id].score : (history[id].length ? history[id][history[id].length - 1].v : null);
+      const score = finite(candidateScore) && viewState !== "UNSTABLE" && viewState !== "UNKNOWN" && viewState !== "STALE" ? candidateScore : heldScore;
+      if (record && finite(score) && viewState !== "UNSTABLE" && viewState !== "UNKNOWN" && viewState !== "STALE") {
+        history[id].push({ v: score, t: Date.now() });
+        if (history[id].length > 120) history[id].shift();
+      }
+      return { state: firmwareState, stale, viewState, label, score, hasPacket };
+    }
+    function draw(c, p, color) {
+      if (!c) return;
+      const r = c.getBoundingClientRect(), d = devicePixelRatio || 1, w = Math.max(1, r.width), h = Math.max(1, r.height);
+      c.width = w * d; c.height = h * d;
+      const x = c.getContext("2d");
+      x.scale(d, d);
+      x.clearRect(0, 0, w, h);
+      x.strokeStyle = "#dce7e4";
+      [0, .5, 1].forEach(t => { x.beginPath(); x.moveTo(0, h * t); x.lineTo(w, h * t); x.stroke(); });
+      const a = p.filter(q => finite(q.v));
+      if (!a.length) return;
+      x.strokeStyle = color;
+      x.lineWidth = 2.5;
+      x.beginPath();
+      a.forEach((q, i) => {
+        const xx = a.length === 1 ? w / 2 : i * (w - 8) / Math.max(1, a.length - 1) + 4;
+        const yy = h - Number(q.v) / 100 * h;
+        i ? x.lineTo(xx, yy) : x.moveTo(xx, yy);
+      });
+      x.stroke();
+    }
+    const GAUGE_C = 2 * Math.PI * 52;
+    function fillMetrics(root, v, view) {
+      root.querySelector("[data-state]").textContent = view.label;
+      root.querySelector("[data-state]").className = "state " + toneFor(view.viewState, view.stale);
+      const stateText = root.querySelector("[data-state-text]");
+      if (stateText) stateText.textContent = view.label;
+      root.querySelector("[data-score]").innerHTML = finite(view.score) ? round(view.score) + "<small>%</small>" : "--<small>%</small>";
+      root.querySelector("[data-stability]").textContent = finite(v?.quality) ? round(v.quality) : "--";
+      root.querySelector("[data-udp-loss]").textContent = finite(v?.udp_loss_ratio) ? round(Number(v.udp_loss_ratio) * 100) + "%" : (v?.udp_loss_status ? "CHƯA ĐO" : "--");
+      root.querySelector("[data-gap]").textContent = finite(v?.csi_gap_ratio) ? round(Number(v.csi_gap_ratio) * 100) + "%" : "--";
+      root.querySelector("[data-queue-drop]").textContent = finite(v?.queue_drop_ratio) ? round(Number(v.queue_drop_ratio) * 100) + "%" : "--";
+      root.querySelector("[data-invalid]").textContent = finite(v?.invalid_csi_ratio) ? round(Number(v.invalid_csi_ratio) * 100) + "%" : "--";
+      const age = finite(v?.age_ms) ? Number(v.age_ms) / 1000 : null;
+      const fresh = root.querySelector("[data-fresh]");
+      if (fresh) fresh.textContent = view.stale ? (age !== null ? "Dữ liệu đã cũ " + round(age) + " giây" : "MẤT KẾT NỐI") : (age !== null ? "Dữ liệu mới " + round(age) + " giây trước" : "");
+      const hint = root.querySelector("[data-hint]");
+      if (hint) hint.textContent = view.hasPacket ? (view.stale ? "Tín hiệu đã cũ — kiểm tra RX" : "Chỉ số passability tại node") : "Đang chờ tín hiệu từ RX";
+      const gauge = root.querySelector("[data-gauge]");
+      if (gauge) {
+        gauge.style.strokeDasharray = String(GAUGE_C);
+        gauge.style.strokeDashoffset = finite(view.score) ? String(GAUGE_C * (1 - Number(view.score) / 100)) : String(GAUGE_C);
+      }
+      const hasHistory = (history[root.dataset.linkId] || []).some(q => finite(q.v));
+      const chartWrap = root.querySelector(".chart-wrap");
+      const chartEmpty = root.querySelector(".chart-empty");
+      if (chartWrap) chartWrap.classList.toggle("empty", !hasHistory);
+      if (chartEmpty) chartEmpty.classList.toggle("hidden", hasHistory);
+      root.classList.remove("is-ok", "is-warn", "is-bad", "is-wait");
+      if (!view.hasPacket) root.classList.add("is-wait");
+      else if (view.viewState === "PASSABLE") root.classList.add("is-ok");
+      else if (view.viewState === "DEGRADED") root.classList.add("is-warn");
+      else if (view.viewState === "BLOCKED" || view.stale || view.viewState === "UNSTABLE") root.classList.add("is-bad");
+      paintLabelBar(root, root.dataset.linkId);
+    }
+    function occupancyCaption(code) {
+      return code === "EMPTY" ? "Trống" : code === "HUMAN_PRESENT" ? "Có người" : code === "UNKNOWN" ? "Không rõ" : "Chưa gắn nhãn";
+    }
+    function paintLabelBar(card, id) {
+      if (!card) return;
+      const current = (activeLabels[id] || {}).occupancy || "";
+      card.querySelectorAll("[data-occupancy]").forEach(btn => {
+        btn.classList.toggle("active-empty", current === "EMPTY" && btn.dataset.occupancy === "EMPTY");
+        btn.classList.toggle("active-human", current === "HUMAN_PRESENT" && btn.dataset.occupancy === "HUMAN_PRESENT");
+        btn.classList.toggle("active-unknown", current === "UNKNOWN" && btn.dataset.occupancy === "UNKNOWN");
+      });
+      const caption = card.querySelector("[data-label-current]");
+      if (caption) caption.textContent = "Nhãn: " + occupancyCaption(current);
+    }
+    function ensureCards(list) {
+      const keep = new Set(list.map(item => item.link_id));
+      [...grid.querySelectorAll(".link-card")].forEach(card => {
+        if (!keep.has(card.dataset.linkId)) card.remove();
+      });
+      list.forEach((item, index) => {
+        const id = item.link_id;
+        ensureState(id);
+        let card = grid.querySelector('[data-link-id="' + CSS.escape(id) + '"]');
+        if (!card) {
+          card = document.querySelector("#card-template").content.firstElementChild.cloneNode(true);
+          card.dataset.linkId = id;
+          card.addEventListener("click", () => openDrawer(id));
+          const labels = card.querySelector("[data-labels]");
+          if (labels) {
+            labels.addEventListener("click", event => {
+              event.stopPropagation();
+              const btn = event.target.closest("[data-occupancy]");
+              const occupancy = btn && btn.dataset.occupancy;
+              if (!occupancy) return;
+              mutate("POST", "/api/v5/labels", { link_id: id, occupancy }).then(data => {
+                activeLabels = data.active_labels || activeLabels;
+                paintLabelBar(card, id);
+              }).catch(err => alert("Không gắn nhãn được: " + err.message));
+            });
+          }
+          grid.appendChild(card);
+        }
+        card.style.setProperty("--accent", colorFor(index));
+        card.querySelector("[data-title]").textContent = item.display_name || id;
+        card.querySelector("[data-sub]").textContent = (item.rx_id || "") + " · " + id;
+        card.querySelector("[data-fw]").classList.toggle("hidden", item.firmware_supported !== false);
+        card.classList.toggle("disabled", item.enabled === false);
+      });
+    }
+    function setMode(mode) {
+      viewMode = mode;
+      localStorage.setItem("wievac-view", mode);
+      document.body.classList.toggle("mode-wall", mode === "wall");
+      document.body.classList.toggle("mode-manage", mode === "manage");
+      document.querySelector("#mode-wall").classList.toggle("active", mode === "wall");
+      document.querySelector("#mode-manage").classList.toggle("active", mode === "manage");
+    }
+    function openDrawer(id) {
+      selectedId = id;
+      const meta = catalog[id] || { display_name: id, link_id: id };
+      document.querySelector("#drawer-title").textContent = (meta.display_name || id) + " — Chi tiết kỹ thuật";
+      document.querySelector("#drawer-meta").textContent = (meta.rx_id || "") + " · " + id + " · " + (meta.corridor_id || "");
+      document.querySelector("#drawer-details").textContent = JSON.stringify(latestLinks[id] || {}, null, 2);
+      document.querySelector("#drawer").classList.add("open");
+    }
+    function closeDrawer() {
+      document.querySelector("#drawer").classList.remove("open");
+    }
+    function openForm(item) {
+      editingId = item ? item.link_id : null;
+      document.querySelector("#form-title").textContent = item ? "Sửa node" : "Thêm node";
+      const form = document.querySelector("#node-form");
+      form.display_name.value = item?.display_name || "";
+      form.link_id.value = item?.link_id || "";
+      form.rx_id.value = item?.rx_id || "";
+      form.node_id.value = item?.node_id || "";
+      form.corridor_id.value = item?.corridor_id || "";
+      form.link_id.disabled = !!item;
+      form.rx_id.disabled = !!item;
+      form.node_id.disabled = !!item;
+      document.querySelector("#form-fw").classList.add("hidden");
+      document.querySelector("#modal").classList.add("open");
+    }
+    function closeForm() {
+      document.querySelector("#modal").classList.remove("open");
+      editingId = null;
+    }
+    function rxNumeric(rx) {
+      const m = String(rx || "").match(/(\d+)$/);
+      return m ? Number(m[1]) : null;
+    }
+    async function mutate(method, path, body) {
+      const options = { method, headers: { "Content-Type": "application/json" } };
+      if (body) options.body = JSON.stringify(body);
+      const response = await fetch(path, options);
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw Error(data.error || "request_failed");
+      return data;
+    }
+    function renderTable(list) {
+      tableBody.innerHTML = "";
+      list.forEach(item => {
+        const v = latestLinks[item.link_id] || {};
+        const view = views[item.link_id] || viewValues(item.link_id, v);
+        if (!matchesFilter(item.link_id, item, v, view.viewState)) return;
+        const tr = document.createElement("tr");
+        const age = finite(v.age_ms) ? round(Number(v.age_ms) / 1000) + "s" : "--";
+        tr.innerHTML = "<td>" + (item.display_name || item.link_id) + "</td>" +
+          "<td>" + (item.rx_id || "") + " / " + item.link_id + "</td>" +
+          "<td>" + (item.corridor_id || "") + "</td>" +
+          "<td><span class='state " + toneFor(view.viewState, view.stale) + "'>" + view.label + "</span></td>" +
+          "<td>" + (finite(view.score) ? round(view.score) + "%" : "--") + "</td>" +
+          "<td>" + age + "</td>" +
+          "<td>" + (item.enabled === false ? "Tắt" : "Bật") + "</td>" +
+          "<td class='row-actions'><button class='btn' data-act='edit' type='button'>Sửa</button>" +
+          "<button class='btn' data-act='toggle' type='button'>" + (item.enabled === false ? "Bật" : "Tắt") + "</button>" +
+          "<button class='btn danger' data-act='delete' type='button'>Xóa</button></td>";
+        tr.addEventListener("click", event => {
+          const act = event.target.dataset.act;
+          if (act === "edit") { openForm(item); return; }
+          if (act === "toggle") {
+            mutate("PATCH", "/api/v5/nodes/" + encodeURIComponent(item.link_id), { enabled: item.enabled === false }).then(refresh).catch(() => {});
+            return;
+          }
+          if (act === "delete") {
+            if (!confirm("Xóa node " + (item.display_name || item.link_id) + "?")) return;
+            mutate("DELETE", "/api/v5/nodes/" + encodeURIComponent(item.link_id)).then(refresh).catch(() => {});
+            return;
+          }
+          openDrawer(item.link_id);
+        });
+        tableBody.appendChild(tr);
+      });
+    }
+    function renderAttention(list) {
+      const counts = { blocked: 0, stale: 0, missing: 0, unstable: 0 };
+      list.forEach(item => {
+        if (item.enabled === false) return;
+        const v = latestLinks[item.link_id] || {};
+        const view = views[item.link_id] || viewValues(item.link_id, v);
+        const kind = attentionKind(v, view.viewState);
+        if (kind in counts) counts[kind] += 1;
+      });
+      const total = counts.blocked + counts.stale + counts.missing + counts.unstable;
+      document.querySelector("#attention-count").textContent = String(total);
+      const host = document.querySelector("#attention");
+      host.innerHTML = "";
+      [["blocked", "Khó đi qua", "bad"], ["stale", "Mất kết nối", "bad"], ["missing", "Chưa nhận packet", "warn"], ["unstable", "Không ổn định", "warn"]].forEach(([key, label, tone]) => {
+        const chip = document.createElement("button");
+        chip.className = "chip " + tone + (filterEl.value === key ? " active" : "");
+        chip.type = "button";
+        chip.textContent = label + ": " + counts[key];
+        chip.addEventListener("click", () => { filterEl.value = filterEl.value === key ? "all" : key; refresh(); });
+        host.appendChild(chip);
+      });
+    }
+    let views = {};
+    function snapshotViews(list, record) {
+      views = {};
+      list.forEach(item => {
+        views[item.link_id] = viewValues(item.link_id, latestLinks[item.link_id] || {}, record);
+      });
+    }
+    function applyView(record) {
+      const list = catalogList();
+      snapshotViews(list, record);
+      ensureCards(list);
+      list.forEach((item, index) => {
+        const card = grid.querySelector('[data-link-id="' + CSS.escape(item.link_id) + '"]');
+        if (!card) return;
+        const v = latestLinks[item.link_id] || {};
+        const view = views[item.link_id];
+        const visible = item.enabled !== false && matchesFilter(item.link_id, item, v, view.viewState);
+        card.classList.toggle("hidden", !visible);
+        fillMetrics(card, v, view);
+        draw(card.querySelector("[data-chart]"), history[item.link_id], colorFor(index));
+      });
+      renderTable(list);
+      renderAttention(list);
+      if (selectedId && latestLinks[selectedId]) {
+        document.querySelector("#drawer-details").textContent = JSON.stringify(latestLinks[selectedId], null, 2);
+      }
+    }
+    async function refresh() {
+      try {
+        const r = await fetch('/api/v5/overview', {cache: "no-store"});
+        if (!r.ok) throw Error();
+        const d = await r.json();
+        latestLinks = d.links || {};
+        catalog = d.catalog || {};
+        activeLabels = d.active_labels || {};
+        if (!Object.keys(catalog).length) {
+          catalog = Object.fromEntries(Object.keys(latestLinks).map(id => [id, { link_id: id, display_name: id, enabled: true, firmware_supported: true }]));
+        }
+        applyView(true);
+        const q = d.quality || {};
+        document.querySelector("#system").textContent = (() => {
+          const live = catalogList()
+            .filter(item => item.enabled !== false)
+            .map(item => views[item.link_id])
+            .filter(Boolean);
+          const anyLive = live.some(view => view.hasPacket && !view.stale);
+          const anyHard = live.some(view => view.viewState === "BLOCKED" && !view.stale);
+          const candidate = anyLive ? (anyHard ? "BLOCKED" : "READY") : "LEARNING";
+          const shown = commitDisplayState("system", candidate);
+          return shown === "READY" ? "ĐANG CHẠY" : shown === "BLOCKED" ? "KHÓ ĐI QUA" : "ĐANG HỌC DỮ LIỆU";
+        })();
+        document.querySelector("#udp-loss").textContent = finite(q.udp_loss_mean) ? round(Number(q.udp_loss_mean) * 100) + "%" : (q.udp_loss_status ? "CHƯA ĐO" : "--");
+        document.querySelector("#loss").textContent = finite(q.csi_gap_mean) ? round(Number(q.csi_gap_mean) * 100) + "%" : "--";
+        const pi = d.pi_ingest || q.pi_ingest || {};
+        document.querySelector("#pi-ingest").textContent = [pi.received, pi.accepted, pi.rejected].every(finite) ? [pi.received, pi.accepted, pi.rejected].join("/") : "--";
+        document.querySelector("#updated").textContent = new Date().toLocaleTimeString("vi-VN");
+        document.querySelector("#connection").textContent = "";
+        document.querySelector("#dot").className = "system-dot";
+        const rec = d.recording || {};
+        recordingActive = rec.state === "RECORDING";
+        const recEl = document.querySelector("#recording");
+        const recBtn = document.querySelector("#record-toggle");
+        if (recEl) {
+          if (rec.state === "RECORDING") {
+            recEl.className = "recording-line";
+            const files = rec.files ? Object.keys(rec.files).join(", ") : "";
+            const remain = finite(rec.remaining_s)
+              ? (Math.floor(Number(rec.remaining_s) / 3600) + " giờ " + Math.floor((Number(rec.remaining_s) % 3600) / 60) + " phút")
+              : "đến khi bấm dừng";
+            const sched = rec.schedule_id ? " · theo lịch" : "";
+            recEl.textContent = "Đang ghi " + (finite(rec.count) ? rec.count : 0) + " bản" + sched + " · còn " + remain + (files ? " · " + files : "");
+          } else {
+            recEl.className = "recording-line idle";
+            recEl.textContent = "Chưa ghi — đặt lịch hoặc bấm Bắt đầu ghi";
+          }
+        }
+        if (recBtn) recBtn.textContent = rec.state === "RECORDING" ? "Dừng ghi" : "Bắt đầu ghi";
+        renderSchedules(rec.schedules || []);
+      } catch (e) {
+        document.querySelector("#connection").textContent = "MẤT KẾT NỐI";
+        document.querySelector("#system").textContent = "MẤT KẾT NỐI";
+        document.querySelector("#dot").className = "system-dot bad";
+      }
+    }
+    function pad2(n) { return String(n).padStart(2, "0"); }
+    function toLocalInput(date) {
+      return date.getFullYear() + "-" + pad2(date.getMonth() + 1) + "-" + pad2(date.getDate()) + "T" + pad2(date.getHours()) + ":" + pad2(date.getMinutes());
+    }
+    function defaultCaptureWindow() {
+      const start = new Date();
+      start.setDate(start.getDate() + 1);
+      start.setHours(1, 0, 0, 0);
+      const end = new Date(start);
+      end.setHours(5, 0, 0, 0);
+      return { start, end };
+    }
+    function occupancyCaption(code) {
+      return code === "EMPTY" ? "Trống" : code === "HUMAN_PRESENT" ? "Có người" : code === "UNKNOWN" ? "Không rõ" : "Chưa gắn nhãn";
+    }
+    function renderSchedules(items) {
+      const host = document.querySelector("#schedule-list");
+      if (!host) return;
+      host.innerHTML = "";
+      (items || []).filter(item => item.phase !== "done").forEach(item => {
+        const row = document.createElement("div");
+        row.className = "schedule-row";
+        const start = new Date(item.start_at);
+        const end = new Date(item.end_at);
+        const phase = item.phase === "active" ? "Đang thu" : "Chờ tới giờ";
+        row.innerHTML = "<span>" + phase + " · " + occupancyCaption(item.occupancy) + " · " +
+          start.toLocaleString("vi-VN") + " → " + end.toLocaleString("vi-VN") + "</span>";
+        const del = document.createElement("button");
+        del.className = "btn";
+        del.type = "button";
+        del.textContent = "Xóa lịch";
+        del.addEventListener("click", () => {
+          mutate("POST", "/api/v5/recorder", { action: "unschedule", id: item.id }).then(refresh).catch(err => alert("Không xóa được lịch: " + err.message));
+        });
+        row.appendChild(del);
+        host.appendChild(row);
+      });
+    }
+    document.querySelector("#record-toggle").addEventListener("click", () => {
+      const hours = Number(document.querySelector("#record-hours").value);
+      const occupancy = document.querySelector("#capture-occupancy").value || "EMPTY";
+      const req = recordingActive
+        ? mutate("POST", "/api/v5/recorder", { action: "stop" })
+        : mutate("POST", "/api/v5/recorder", { action: "start", duration_hours: Number.isFinite(hours) ? hours : 8, occupancy });
+      req.then(refresh).catch(err => alert("Không đổi trạng thái ghi: " + err.message));
+    });
+    document.querySelector("#capture-schedule").addEventListener("click", () => {
+      const start = document.querySelector("#capture-start").value;
+      const end = document.querySelector("#capture-end").value;
+      if (!start || !end) { alert("Chọn ngày giờ bắt đầu và kết thúc"); return; }
+      mutate("POST", "/api/v5/recorder", {
+        action: "schedule",
+        start_at: new Date(start).toISOString(),
+        end_at: new Date(end).toISOString(),
+        occupancy: document.querySelector("#capture-occupancy").value || "EMPTY"
+      }).then(refresh).catch(err => alert("Không đặt được lịch: " + err.message));
+    });
+    document.querySelector("#mode-wall").addEventListener("click", () => { setMode("wall"); applyView(); });
+    document.querySelector("#mode-manage").addEventListener("click", () => { setMode("manage"); applyView(); });
+    document.querySelector("#nav-list").addEventListener("click", () => { setMode("manage"); applyView(); });
+    document.querySelector("#nav-add").addEventListener("click", () => openForm(null));
+    document.querySelector("#drawer-close").addEventListener("click", closeDrawer);
+    document.querySelector("#drawer").addEventListener("click", event => { if (event.target.id === "drawer") closeDrawer(); });
+    document.querySelector("#form-cancel").addEventListener("click", closeForm);
+    document.querySelector("#modal").addEventListener("click", event => { if (event.target.id === "modal") closeForm(); });
+    searchEl.addEventListener("input", applyView);
+    filterEl.addEventListener("change", applyView);
+    document.querySelector("[name=rx_id]").addEventListener("input", event => {
+      const n = rxNumeric(event.target.value);
+      document.querySelector("#form-fw").classList.toggle("hidden", !(n && n > 2));
+    });
+    document.querySelector("#node-form").addEventListener("submit", event => {
+      event.preventDefault();
+      const form = event.target;
+      const payload = {
+        display_name: form.display_name.value.trim(),
+        link_id: form.link_id.value.trim(),
+        rx_id: form.rx_id.value.trim(),
+        node_id: form.node_id.value.trim() || undefined,
+        corridor_id: form.corridor_id.value.trim() || undefined
+      };
+      const req = editingId
+        ? mutate("PATCH", "/api/v5/nodes/" + encodeURIComponent(editingId), { display_name: payload.display_name, corridor_id: payload.corridor_id })
+        : mutate("POST", "/api/v5/nodes", payload);
+      req.then(() => { closeForm(); refresh(); }).catch(err => alert("Không lưu được node: " + err.message));
+    });
+    setMode(viewMode);
+    const captureWindow = defaultCaptureWindow();
+    const startEl = document.querySelector("#capture-start");
+    const endEl = document.querySelector("#capture-end");
+    if (startEl && !startEl.value) startEl.value = toLocalInput(captureWindow.start);
+    if (endEl && !endEl.value) endEl.value = toLocalInput(captureWindow.end);
+    refresh();
+    setInterval(refresh,1000);
+    window.addEventListener("resize", () => applyView());
+  </script>
+</body>
+</html>

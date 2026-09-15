@@ -1,0 +1,45 @@
+{
+  "corridor_id": "corridor-01",
+  "protocol_version": 5,
+  "feature_schema_version": "7",
+  "transport_mode": "unicast_round_robin",
+  "edge_result": {
+    "message_type": "EDGE_RESULT",
+    "magic": "WIV5",
+    "window_duration_ms": 1000,
+    "stale_after_ms": 3000,
+    "run_payload": "edge_result_only",
+    "unknown_score": null
+  },
+  "formula": {
+    "version": "formula-flex-v5.3-rx-median-mad",
+    "warmup_samples": 8,
+    "baseline_policy": "per_link_robust_median_mad",
+    "contamination_policy": "freeze_on_change_point",
+    "score_semantics": "local_passability_index_uncalibrated"
+  },
+  "tiny_ai": {
+    "target": "rx-tiny-ai",
+    "model_state": "NOT_READY",
+    "model_version": "NOT_READY",
+    "model_hash": "",
+    "feature_schema_version": "7",
+    "max_correction": 10.0
+  },
+  "links": [
+    {"link_id": "link-1", "device_id": "device-1", "node_id": "rx-1", "tx_id": "tx-1", "rx_id": "rx-1", "corridor_id": "corridor-01", "display_name": "Hành lang 1", "enabled": true, "sort_order": 1},
+    {"link_id": "link-2", "device_id": "device-1", "node_id": "rx-2", "tx_id": "tx-1", "rx_id": "rx-2", "corridor_id": "corridor-01", "display_name": "Hành lang 2", "enabled": true, "sort_order": 2}
+  ],
+  "compatibility": {
+    "v5_feature_schema_version": "5",
+    "v5_formula_version": "formula-flex-v5.3-rx-median-mad",
+    "active_path": "schema-7-compact-edge-result",
+    "v5_status": "COMPATIBILITY_ONLY"
+  },
+  "routing": {
+    "direction_algorithm": "DIJKSTRA",
+    "unknown_policy": "EXCLUDE",
+    "no_route_state": "NO_ROUTE",
+    "data_routing_separate": true
+  }
+}

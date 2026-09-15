@@ -1,0 +1,155 @@
+I (1120728) wievac_tx_v4: paired_mask=0x03 requested=221657 ok=220588 fail=3999 tx_sequence=111885
+I (1120729) wievac_tx_v4: rx-1 requested=110477 ok=109881 fail=2004 delivery_rate=99.5%
+I (1120734) wievac_tx_v4: rx-2 requested=110061 ok=109590 fail=1995 delivery_rate=99.6%
+I (1120924) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1120925) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1120932) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1120932) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+I (1121927) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1121928) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1121932) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1121934) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+I (1122927) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1122930) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1122932) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1122935) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+I (1123926) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1123927) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1123932) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1123933) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+I (1124926) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1124927) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1124932) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1124934) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+I (1125925) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1125925) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1125932) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1125932) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+I (1126926) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1126929) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1126932) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1126933) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+I (1127924) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1127925) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1127932) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1127932) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+I (1128924) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1128925) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1128932) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1128932) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+I (1129925) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1129926) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1129932) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1129933) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+I (1130732) wievac_tx_v4: paired_mask=0x03 requested=223667 ok=222598 fail=3999 tx_sequence=112885
+I (1130733) wievac_tx_v4: rx-1 requested=111477 ok=110880 fail=2004 delivery_rate=99.5%
+I (1130738) wievac_tx_v4: rx-2 requested=111061 ok=110590 fail=1995 delivery_rate=99.6%
+I (1130932) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1130933) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1130935) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1130939) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+I (1131935) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1131938) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1131945) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1131945) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+I (1132927) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1132928) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1132935) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1132935) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+I (1133929) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1133930) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1133935) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1133937) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+I (1134930) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1134930) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1134935) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1134937) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+W (1134965) wievac_tx_v4: send type=16 rx=2 skipped=backpressure
+I (1135928) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1135932) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1135935) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1135935) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+I (1136931) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1136932) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1136935) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1136939) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+I (1137929) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1137930) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1137935) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1137937) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+I (1138928) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1138929) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1138935) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1138936) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+W (1139035) wievac_tx_v4: send type=16 rx=1 skipped=backpressure
+W (1139035) wievac_tx_v4: send type=16 rx=2 skipped=backpressure
+I (1139931) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1139932) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1139935) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1139939) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+I (1140735) wievac_tx_v4: paired_mask=0x03 requested=225674 ok=224605 fail=4002 tx_sequence=113885
+I (1140736) wievac_tx_v4: rx-1 requested=112476 ok=111879 fail=2005 delivery_rate=99.5%
+I (1140741) wievac_tx_v4: rx-2 requested=112059 ok=111587 fail=1997 delivery_rate=99.6%
+I (1140933) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1140936) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1140938) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1140941) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+I (1141930) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1141931) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1141938) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1141938) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+I (1142930) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1142931) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1142938) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1142938) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+I (1143931) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1143932) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1143938) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1143939) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+I (1144931) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1144932) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1144938) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1144939) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+I (1145931) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1145932) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1145938) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1145939) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+I (1146935) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1146938) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1147931) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1147931) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1147938) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1147938) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+I (1148933) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1148934) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1148938) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1148940) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+I (1149931) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1149931) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1149938) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1149938) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+I (1150738) wievac_tx_v4: paired_mask=0x03 requested=227684 ok=226615 fail=4002 tx_sequence=114885
+I (1150739) wievac_tx_v4: rx-1 requested=113476 ok=112880 fail=2005 delivery_rate=99.5%
+I (1150744) wievac_tx_v4: rx-2 requested=113059 ok=112587 fail=1997 delivery_rate=99.6%
+I (1150936) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1150938) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1150942) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1150944) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+I (1151934) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1151935) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1151942) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1151942) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+W (1152632) wievac_tx_v4: send type=16 rx=2 skipped=backpressure
+I (1152939) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1152940) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1152942) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1152946) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+W (1153222) wievac_tx_v4: send type=16 rx=1 skipped=backpressure
+I (1153934) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1153935) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1153942) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1153942) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30
+I (1154936) wievac_tx_v4: pair_reply_rx rx_id=2 source=28:84:85:48:ed:30
+I (1154937) wievac_tx_v4: pair_reply_rx rx_id=1 source=94:a9:90:ea:ea:10
+I (1154942) wievac_tx_v4: paired to RX-1 94:a9:90:ea:ea:10
+I (1154943) wievac_tx_v4: paired to RX-2 28:84:85:48:ed:30

@@ -1,0 +1,38 @@
+menu "WiEvac receiver"
+
+config WIEVAC_RX_ID
+    int "Receiver ID"
+    range 1 64
+    default 1
+    help
+        Logical receiver identity for this firmware image. One binary is
+        flashed per RX board; IDs 1-64 are valid. Pairing and airtime for
+        more than two receivers remain a transmitter schedule concern.
+
+config WIEVAC_WIFI_SSID
+    string "Wi-Fi SSID"
+    default ""
+    help
+        Deployment SSID. Leave empty until a local deployment config is supplied.
+
+config WIEVAC_WIFI_PASSWORD
+    string "Wi-Fi password"
+    default ""
+
+config WIEVAC_PI_IP
+    string "Raspberry Pi IPv4 address"
+    default ""
+
+config WIEVAC_PI_UDP_PORT
+    int "Raspberry Pi UDP port"
+    range 1 65535
+    default 8888
+
+config WIEVAC_EXPECTED_TX_MAC
+    string "Expected transmitter Wi-Fi MAC (optional closed-lab fallback)"
+    default ""
+    help
+        When set, only HELLO/measurement frames from this transmitter MAC are
+        accepted. Leave empty only for trusted closed-lab pairing.
+
+endmenu

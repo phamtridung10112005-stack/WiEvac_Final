@@ -1,0 +1,45 @@
+{
+  "scene_type": "ideal_empty_corridor_smoke_test",
+  "purpose": "Ideal radio smoke test; not corridor/ESP calibrated CSI and not training data.",
+  "corridor_m": {
+    "length": 10.0,
+    "width": 2.0,
+    "height": 3.0
+  },
+  "carrier_frequency_hz": 2462000000.0,
+  "max_depth": 3,
+  "backend": "llvm_ad_mono_polarized",
+  "tx_position_m": [
+    0.6,
+    0.0,
+    1.5
+  ],
+  "rx_position_m": [
+    9.4,
+    0.0,
+    1.5
+  ],
+  "valid_path_count": 21,
+  "coefficients_shape": [
+    2,
+    1,
+    1,
+    1,
+    1,
+    21,
+    1
+  ],
+  "delays_shape": [
+    1,
+    1,
+    21
+  ],
+  "delay_ns": {
+    "min": 0.0,
+    "max": 12.633057266953074
+  },
+  "path_gain_linear": {
+    "min": 1.8449063687885937e-15,
+    "max": 1.2124955901526846e-06
+  }
+}

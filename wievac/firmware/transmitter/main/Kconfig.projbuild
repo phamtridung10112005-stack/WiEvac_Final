@@ -1,0 +1,17 @@
+menu "WiEvac transmitter"
+
+config WIEVAC_RX1_MAC
+    string "Expected RX-1 Wi-Fi MAC (optional closed-lab fallback)"
+    default ""
+    help
+        When set, only pair replies from this MAC are accepted for RX-1.
+        Leave empty only for trusted closed-lab pairing.
+
+config WIEVAC_RX2_MAC
+    string "Expected RX-2 Wi-Fi MAC (optional closed-lab fallback)"
+    default ""
+    help
+        When set, only pair replies from this MAC are accepted for RX-2.
+        Leave empty only for trusted closed-lab pairing.
+
+endmenu

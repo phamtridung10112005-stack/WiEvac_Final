@@ -1,0 +1,71 @@
+I (157) esp_image: segment 4: paddr=000c7590 vaddr=40374880 sizeI (21623) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (21623) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (22623) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (22623) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (23623) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (23623) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (24623) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (24623) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (25623) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (25623) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (26623) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (26623) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (27623) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (27623) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (28623) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (28623) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (29623) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (29623) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (30473) wievac_rx_v4: status wifi_connected=1 network_ready=1 paired=1 gain_state=1 gain_epoch=3 udp_queue=0 udp_drops=51 rf_level_changes=171 dynamic_drops=0 csi_queue_drops=0 invalid_csi=11 stale_record_drops=1 csi_reject_shape=0 csi_reject_mac=3606 csi_reject_header=0 csi_reject_context=11 csi_foreign_drops=3606 first_csi_len=128 first_csi_payload_len=91 first_csi_src=28:84:85:85:53:94 first_csi_dst=94:a9:90:ea:ea:10 first_csi_b0=7f18fe34 measurement_duplicates=0 measurement_reorders=11
+I (30623) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (30623) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (31623) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (31623) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (32633) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (32633) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (33623) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (33623) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (34623) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (34623) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (35623) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (35623) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (36623) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (36623) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (37623) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (37633) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (38623) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (38623) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (39623) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (39623) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (40473) wievac_rx_v4: status wifi_connected=1 network_ready=1 paired=1 gain_state=1 gain_epoch=3 udp_queue=0 udp_drops=51 rf_level_changes=218 dynamic_drops=0 csi_queue_drops=0 invalid_csi=15 stale_record_drops=1 csi_reject_shape=0 csi_reject_mac=4842 csi_reject_header=0 csi_reject_context=15 csi_foreign_drops=4842 first_csi_len=128 first_csi_payload_len=91 first_csi_src=28:84:85:85:53:94 first_csi_dst=94:a9:90:ea:ea:10 first_csi_b0=7f18fe34 measurement_duplicates=0 measurement_reorders=15
+I (40623) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (40633) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (41633) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (41633) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (42623) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (42623) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (43623) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (43623) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (44623) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (44633) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (45623) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (45633) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (46623) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (46633) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (48623) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (48623) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (49633) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (49633) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (50483) wievac_rx_v4: status wifi_connected=1 network_ready=1 paired=1 gain_state=1 gain_epoch=3 udp_queue=0 udp_drops=51 rf_level_changes=291 dynamic_drops=0 csi_queue_drops=0 invalid_csi=17 stale_record_drops=1 csi_reject_shape=0 csi_reject_mac=6166 csi_reject_header=0 csi_reject_context=17 csi_foreign_drops=6166 first_csi_len=128 first_csi_payload_len=91 first_csi_src=28:84:85:85:53:94 first_csi_dst=94:a9:90:ea:ea:10 first_csi_b0=7f18fe34 measurement_duplicates=0 measurement_reorders=17
+I (50623) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (50633) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (51633) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (51633) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (52633) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (52633) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (53633) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (53633) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (54633) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (54633) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
+I (55633) wievac_rx_v4: hello_rx tx_boot=3790636797 source=28:84:85:85:53:94
+I (55633) wievac_rx_v4: pair_reply_send rx_id=2 dest=28:84:85:85:53:94 result=ESP_OK
