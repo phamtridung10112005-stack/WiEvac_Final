@@ -20,6 +20,15 @@ typedef struct {
     uint16_t sample_pairs;
 } noise_filter_output_t;
 
+/* HT20 data tones used for sensing: skip DC, pilots and OFDM guards.
+ * Same 12-index idea as ESPectre ML (even spacing, not all 64 bins). */
+#define NOISE_FILTER_SELECTED_COUNT 12U
+#define NOISE_FILTER_SELECTED_MIN 4U
+#define NOISE_FILTER_HAMPEL_WINDOW 7U
+#define NOISE_FILTER_HAMPEL_THRESHOLD 5.0f
+#define NOISE_FILTER_HAMPEL_MAD_SCALE 1.4826f
+#define NOISE_FILTER_HAMPEL_MAD_FLOOR 1.0e-3f
+
 /* Shadow Doppler from a 1 s amplitude series. Not occupancy probability.
  * Forward DFT only. Pipeline may scale published score and occupancy by r
  * when this result is valid; FFT-invalid must not pretend the hall is empty.
@@ -42,6 +51,7 @@ typedef struct {
 bool noise_filter_validate(const noise_filter_input_t *input);
 bool noise_filter_process(const noise_filter_input_t *input,
                           noise_filter_output_t *output);
+void noise_filter_reset(void);
 bool noise_filter_doppler_ratio(const float *amplitudes,
                                 const uint64_t *timestamps_us,
                                 uint16_t count,

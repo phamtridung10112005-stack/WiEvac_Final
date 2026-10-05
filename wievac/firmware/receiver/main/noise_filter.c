@@ -32,6 +32,55 @@ static float median_values(const float *values, uint16_t count)
     return 0.5f * (copy[count / 2U - 1U] + copy[count / 2U]);
 }
 
+/* Packet-rate Hampel on the scalar amplitude. One RX owns one link. */
+static float s_hampel_buffer[NOISE_FILTER_HAMPEL_WINDOW];
+static uint8_t s_hampel_count;
+static uint8_t s_hampel_index;
+
+static float noise_filter_hampel_update(float value)
+{
+    float window[NOISE_FILTER_HAMPEL_WINDOW];
+    float absdev[NOISE_FILTER_HAMPEL_WINDOW];
+    uint16_t n;
+
+    if (!isfinite((double)value)) {
+        return value;
+    }
+    /* Store the raw sample. Replacing the buffer with the filtered value
+     * freezes occupancy/rebase steps: a new level never enters the window. */
+    s_hampel_buffer[s_hampel_index] = value;
+    s_hampel_index = (uint8_t)((s_hampel_index + 1U) % NOISE_FILTER_HAMPEL_WINDOW);
+    if (s_hampel_count < NOISE_FILTER_HAMPEL_WINDOW) {
+        ++s_hampel_count;
+    }
+    n = s_hampel_count;
+    if (n < 3U) {
+        return value;
+    }
+    memcpy(window, s_hampel_buffer, (size_t)n * sizeof(window[0]));
+    const float median = median_values(window, n);
+    for (uint16_t i = 0U; i < n; ++i) {
+        absdev[i] = fabsf(s_hampel_buffer[i] - median);
+    }
+    const float mad = median_values(absdev, n);
+    const float scaled = NOISE_FILTER_HAMPEL_MAD_SCALE * mad;
+    /* Near-zero MAD is a quiet hall, not a license to reject every change. */
+    if (scaled <= NOISE_FILTER_HAMPEL_MAD_FLOOR) {
+        return value;
+    }
+    if (fabsf(value - median) > NOISE_FILTER_HAMPEL_THRESHOLD * scaled) {
+        return median;
+    }
+    return value;
+}
+
+void noise_filter_reset(void)
+{
+    memset(s_hampel_buffer, 0, sizeof(s_hampel_buffer));
+    s_hampel_count = 0U;
+    s_hampel_index = 0U;
+}
+
 bool noise_filter_validate(const noise_filter_input_t *input)
 {
     return input != NULL && input->csi != NULL &&
@@ -69,15 +118,44 @@ bool noise_filter_process(const noise_filter_input_t *input,
         return false;
     }
 
-    const float center = median_values(magnitudes, pairs);
+    /* Fixed spaced HT20 bins: avoid DC (0/32), pilots (21/43), guards. */
+    static const uint8_t k_selected[NOISE_FILTER_SELECTED_COUNT] = {
+        12U, 14U, 16U, 18U, 20U, 24U, 28U, 36U, 40U, 44U, 48U, 50U
+    };
+    float selected[NOISE_FILTER_SELECTED_COUNT];
+    uint16_t selected_count = 0U;
+    for (uint16_t i = 0U; i < NOISE_FILTER_SELECTED_COUNT; ++i) {
+        const uint16_t bin = k_selected[i];
+        if (bin >= pairs) {
+            continue;
+        }
+        selected[selected_count++] = magnitudes[bin];
+    }
+    if (selected_count < NOISE_FILTER_SELECTED_MIN) {
+        selected_count = 0U;
+        for (uint16_t index = 0U; index < pairs; ++index) {
+            if (index < 11U || index > 52U || index == 32U ||
+                index == 21U || index == 43U) {
+                continue;
+            }
+            if (selected_count >= NOISE_FILTER_SELECTED_COUNT) {
+                break;
+            }
+            selected[selected_count++] = magnitudes[index];
+        }
+    }
+    const float *amp_src = selected_count >= NOISE_FILTER_SELECTED_MIN ? selected : magnitudes;
+    const uint16_t amp_count = selected_count >= NOISE_FILTER_SELECTED_MIN ? selected_count : pairs;
+    const float center = median_values(amp_src, amp_count);
     /* Use the robust center as the filtered amplitude so one impulse cannot
      * poison the feature that feeds baseline learning and scoring. */
-    output->amplitude = center;
-    for (uint16_t index = 0U; index < pairs; ++index) {
-        magnitudes[index] = fabsf(magnitudes[index] - center);
+    float deviations[NOISE_FILTER_MAX_CSI_BYTES / 2U];
+    for (uint16_t index = 0U; index < amp_count; ++index) {
+        deviations[index] = fabsf(amp_src[index] - center);
     }
-    output->robust_spread = median_values(magnitudes, pairs);
-    output->sample_pairs = pairs;
+    output->robust_spread = median_values(deviations, amp_count);
+    output->amplitude = noise_filter_hampel_update(center);
+    output->sample_pairs = amp_count;
     return isfinite((double)output->amplitude) &&
            isfinite((double)output->robust_spread);
 }

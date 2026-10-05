@@ -80,10 +80,12 @@ float formula_flex_default_formula(const edge_result_features_t *features,
      * link's temporal envelope.  The same rule moves with the kit.  Do not
      * penalize intra-packet subcarrier MAD; that is frequency-selective
      * fading of an empty hall, not occupancy, and is not a z-score of the
-     * same quantity.  Quiet residual deviation is absorbed by rebase, not
-     * by hiding it from the score. */
+     * same quantity.  Occupancy freeze is Doppler+temporal in the pipeline.
+     * Uncapped level z used to collapse a quiet AGC shift to ~14; cap the
+     * published mix so level and motion stay on a comparable scale. */
     const float excess_motion = fmaxf(0.0f, features->temporal_motion - 1.0f);
-    const float combined_stress = fmaxf(0.0f, deviation) + 0.50f * excess_motion;
+    const float level_term = fminf(fmaxf(0.0f, deviation), 2.0f);
+    const float combined_stress = level_term + 0.50f * excess_motion;
     /* A bounded ratio preserves the local 0..100 index without introducing
      * node-independent penalty gains or raw thresholds. */
     return clampf_local(100.0f / (1.0f + combined_stress), 0.0f, 100.0f);

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.WiEvac" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/passable</item>
+        <item name="colorOnPrimary">@color/on_passable</item>
+        <item name="colorSecondary">@color/alarm</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@color/bg</item>
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
+    <style name="Theme.WiEvac.Alarm" parent="Theme.WiEvac">
+        <item name="android:windowBackground">@color/alarm_bg</item>
+        <item name="android:navigationBarColor">@color/alarm_bg</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
+</resources>

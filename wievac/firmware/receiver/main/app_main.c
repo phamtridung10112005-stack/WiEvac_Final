@@ -28,6 +28,7 @@
 #include "lwip/sockets.h"
 #include "nvs_flash.h"
 #include "edge_result_v5_pipeline.h"
+#include "noise_filter.h"
 
 #if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(5, 0, 0) || \
     ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 5, 0)
@@ -303,6 +304,8 @@ static csi_record_t g_drain_record;
 static edge_result_pipeline_t g_v6_pipeline;
 static bool g_v6_pipeline_ready;
 static uint32_t g_v6_tx_boot_id;
+static bool s_v6_gain_forced;
+static uint32_t s_v6_gain_records;
 #endif
 
 static void drain_csi_queue(void);
@@ -357,11 +360,64 @@ static void v6_pipeline_start_for_pair(const pair_state_t *pair)
              WIEVAC_LINK_ID, WIEVAC_RX_ID);
 }
 
+static bool v6_measurement_gain_ready(const csi_record_t *record)
+{
+    uint8_t agc_gain = 0U;
+    int8_t fft_gain = 0;
+    uint8_t baseline_agc = 0U;
+    int8_t baseline_fft = 0;
+
+    if (record == NULL) {
+        return false;
+    }
+    if (s_v6_gain_forced) {
+        return true;
+    }
+    /* Collect AGC/FFT, then lock PHY so Formula does not treat gain jumps
+     * as occupancy. Failure must retry, not permanently unlock. */
+    esp_csi_gain_ctrl_get_rx_gain(&record->rx_ctrl, &agc_gain, &fft_gain);
+    if (s_v6_gain_records < WIEVAC_GAIN_TRAINING_SAMPLES) {
+        (void)esp_csi_gain_ctrl_record_rx_gain(agc_gain, fft_gain);
+        if (s_v6_gain_records < UINT32_MAX) {
+            ++s_v6_gain_records;
+        }
+        if (s_v6_gain_records < WIEVAC_GAIN_TRAINING_SAMPLES) {
+            return false;
+        }
+    }
+    if (esp_csi_gain_ctrl_get_rx_gain_baseline(&baseline_agc, &baseline_fft) != ESP_OK) {
+        (void)esp_csi_gain_ctrl_record_rx_gain(agc_gain, fft_gain);
+        if (s_v6_gain_records < UINT32_MAX) {
+            ++s_v6_gain_records;
+        }
+        if ((s_v6_gain_records % 100U) == 0U) {
+            ESP_LOGW(TAG, "gain_lock baseline missing after %u packets, retry",
+                     (unsigned)s_v6_gain_records);
+        }
+        return false;
+    }
+    if (esp_csi_gain_ctrl_set_rx_force_gain(baseline_agc, baseline_fft) != ESP_OK) {
+        if ((s_v6_gain_records % 100U) == 0U) {
+            ESP_LOGW(TAG, "gain_lock force failed agc=%u fft=%d after %u packets, retry",
+                     (unsigned)baseline_agc, (int)baseline_fft,
+                     (unsigned)s_v6_gain_records);
+        }
+        return false;
+    }
+    s_v6_gain_forced = true;
+    ESP_LOGI(TAG, "gain_lock forced agc=%u fft=%d packets=%u",
+             (unsigned)baseline_agc, (int)baseline_fft, (unsigned)s_v6_gain_records);
+    return true;
+}
+
 static void v6_submit_and_emit(const csi_record_t *record)
 {
     if (!g_v6_pipeline_ready || record == NULL) return;
     if (!csi_layout_valid(record)) {
         __atomic_add_fetch(&g_invalid_csi, 1U, __ATOMIC_RELAXED);
+        return;
+    }
+    if (!v6_measurement_gain_ready(record)) {
         return;
     }
     edge_result_csi_record_t input = {0};
@@ -392,12 +448,13 @@ static void v6_submit_and_emit(const csi_record_t *record)
     edge_result_v5_t result;
     while (edge_result_pipeline_process_one(&g_v6_pipeline, &result)) {
         ESP_LOGI(TAG,
-                 "doppler valid=%d fs=%.1f r=%.3f n=%u score=%.1f raw=%.1f occ=%.1f",
+                 "doppler valid=%d fs=%.1f r=%.3f n=%u score=%.1f raw=%.1f occ=%.1f gain_lock=%d",
                  result.doppler_valid ? 1 : 0, (double)result.doppler_fs_hz,
                  (double)result.doppler_ratio, (unsigned)result.doppler_samples,
                  result.score_valid ? (double)result.formula_score : -1.0,
                  result.raw_evidence_valid ? (double)result.raw_evidence_score : -1.0,
-                 result.occupancy_evidence_valid ? (double)result.occupancy_evidence : 0.0);
+                 result.occupancy_evidence_valid ? (double)result.occupancy_evidence : 0.0,
+                 s_v6_gain_forced ? 1 : 0);
         uint8_t packet[EDGE_RESULT_V5_MAX_PACKET];
         size_t length = 0U;
         const int encode_rc = edge_result_v5_encode(&result, packet, sizeof(packet), &length);
@@ -1120,6 +1177,11 @@ static void dsp_reset(dsp_state_t *state, uint64_t now_us)
     }
     state->gain_state = GAIN_NOT_READY;
     esp_csi_gain_ctrl_reset_rx_gain_baseline();
+#if CONFIG_WIEVAC_EDGE_RESULT_V6_ACTIVE
+    s_v6_gain_forced = false;
+    s_v6_gain_records = 0U;
+#endif
+    noise_filter_reset();
     __atomic_add_fetch(&g_gain_epoch_changes, 1U, __ATOMIC_RELAXED);
     ++state->pending_gain_epoch_changes;
     drain_csi_queue();
