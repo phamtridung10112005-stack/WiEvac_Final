@@ -102,7 +102,8 @@ void formula_flex_update_baseline(edge_result_link_state_t *link,
         /* Drift updates are only valid after a stable baseline. Callers add
          * window-level quality/evidence gates; this local guard prevents an
          * accidental future caller from absorbing a transition. */
-        if (link->baseline_state != EDGE_RESULT_BASELINE_STABLE) {
+        if (link->dynamic_baseline_frozen ||
+            link->baseline_state != EDGE_RESULT_BASELINE_STABLE) {
             return;
         }
         const float deviation = formula_flex_baseline_deviation(link, amplitude);
@@ -221,4 +222,27 @@ void formula_flex_promote_rebase_candidate(edge_result_link_state_t *link)
     link->occupied_windows = 0U;
     link->occupied_start_us = 0U;
     link->recovery_windows = 0U;
+}
+
+bool formula_flex_rebase_absorbs_attenuation(const edge_result_link_state_t *link)
+{
+    if (link == NULL || link->rebase_candidate_count < 3U) {
+        return false;
+    }
+    const bool have_ref = link->absolute_ref_valid &&
+                          isfinite((double)link->absolute_ref_center) &&
+                          link->absolute_ref_center > 0.0f;
+    const float ref = have_ref ? link->absolute_ref_center : link->baseline_center;
+    if (!isfinite((double)ref) || ref <= 0.0f) {
+        return false;
+    }
+    const float center = median_values(link->rebase_candidate_samples,
+                                       link->rebase_candidate_count);
+    if (!isfinite((double)center) || center <= 0.0f) {
+        return false;
+    }
+    /* ponytail: 6 dB matches NOISE_FILTER_NULL_DROP_DB. A quieter new hall
+     * stays blocked until on-site calibration replaces absolute_ref. */
+    const float keep = powf(10.0f, -EDGE_RESULT_V5_ATTEN_DB / 20.0f);
+    return center < ref * keep;
 }

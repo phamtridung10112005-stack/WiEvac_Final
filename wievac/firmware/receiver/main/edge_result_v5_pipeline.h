@@ -37,6 +37,14 @@ extern "C" {
 #define EDGE_RESULT_V5_MAX_LINKS 8U
 #define EDGE_RESULT_V5_MAX_BASELINE_SAMPLES 32U
 #define EDGE_RESULT_V5_DOPPLER_CAPACITY 64U
+#define EDGE_RESULT_V5_REF_BINS 12U
+#define EDGE_RESULT_V5_CAL_WINDOWS 8U
+#define EDGE_RESULT_V5_CAL_MAGIC UINT32_C(0x314C4143)
+/* Sustained drop vs the empty-corridor reference, in dB. */
+#define EDGE_RESULT_V5_ATTEN_DB 6.0f
+#define EDGE_RESULT_V5_HF_MOTION 0.35f
+#define EDGE_RESULT_V5_CORR_STATIC 0.80f
+#define EDGE_RESULT_V5_NULL_BLOCK 0.50f
 #define EDGE_RESULT_V5_SCORE_HISTORY_CAPACITY 5U
 #define EDGE_RESULT_V5_MAX_TEXT 32U
 #define EDGE_RESULT_V5_MAX_MODEL_HASH 64U
@@ -299,7 +307,31 @@ typedef struct edge_result_link_state {
     float doppler_amp[EDGE_RESULT_V5_DOPPLER_CAPACITY];
     uint64_t doppler_t[EDGE_RESULT_V5_DOPPLER_CAPACITY];
     uint16_t doppler_count;
+    /* Empty-corridor reference. Not on the WIV5 wire. */
+    float absolute_ref_center;
+    float absolute_ref_std;
+    float absolute_ref_bins[EDGE_RESULT_V5_REF_BINS];
+    bool absolute_ref_valid;
+    bool dynamic_baseline_frozen;
+    bool last_clean_attenuated;
+    uint16_t static_block_windows;
+    float window_bin_sum[EDGE_RESULT_V5_REF_BINS];
+    uint16_t window_bin_count[EDGE_RESULT_V5_REF_BINS];
+    bool cal_active;
+    bool cal_commit_pending;
+    bool cal_aborted;
+    uint8_t cal_count;
+    uint8_t cal_dirty;
+    float cal_amp[EDGE_RESULT_V5_CAL_WINDOWS];
+    float cal_bins[EDGE_RESULT_V5_CAL_WINDOWS][EDGE_RESULT_V5_REF_BINS];
 } edge_result_link_state_t;
+
+typedef struct {
+    uint32_t magic;
+    float center;
+    float stddev;
+    float bins[EDGE_RESULT_V5_REF_BINS];
+} edge_result_abs_ref_t;
 
 typedef struct {
     edge_result_csi_record_t records[EDGE_RESULT_V5_MAX_QUEUE];
@@ -388,6 +420,18 @@ bool edge_result_pipeline_reset_link_boot(edge_result_pipeline_t *pipeline,
 /* Manual confirmation is optional; automatic bootstrap remains fail-closed
  * until its clean-history and quality gates are satisfied. */
 bool edge_result_pipeline_confirm_empty(edge_result_pipeline_t *pipeline, uint32_t link_id);
+
+/* Empty-corridor capture. 5–10 one-second windows, quiet gate, one NVS
+ * write by the caller when poll returns 1. Does not change the wire struct. */
+bool edge_result_pipeline_begin_calibration(edge_result_pipeline_t *pipeline,
+                                            uint32_t link_id);
+/* 1 = new reference copied, 0 = nothing, -1 = aborted (motion during capture). */
+int edge_result_pipeline_poll_calibration(edge_result_pipeline_t *pipeline,
+                                          uint32_t link_id,
+                                          edge_result_abs_ref_t *out);
+bool edge_result_pipeline_import_abs_ref(edge_result_pipeline_t *pipeline,
+                                         uint32_t link_id,
+                                         const edge_result_abs_ref_t *ref);
 bool edge_result_pipeline_revoke_empty(edge_result_pipeline_t *pipeline, uint32_t link_id);
 
 /* This is the CSI callback boundary: bounded copy, constant-time checks and

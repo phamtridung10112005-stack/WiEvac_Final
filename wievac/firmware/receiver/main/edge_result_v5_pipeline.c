@@ -2,6 +2,11 @@
 #include "formula_flex.h"
 #include "noise_filter.h"
 
+_Static_assert(NOISE_FILTER_SELECTED_COUNT == EDGE_RESULT_V5_REF_BINS,
+               "absolute reference bins must match the HT20 mask");
+_Static_assert(NOISE_FILTER_NULL_DROP_DB == EDGE_RESULT_V5_ATTEN_DB,
+               "null-ratio drop and scalar attenuation must use one threshold");
+
 #include <inttypes.h>
 #include <math.h>
 #include <stdio.h>
@@ -338,6 +343,321 @@ static void pause_rebase_candidate(edge_result_link_state_t *link)
               "candidate_paused_quality_window");
 }
 
+static float reference_level(const edge_result_link_state_t *link)
+{
+    if (link->absolute_ref_valid && link->absolute_ref_center > 0.0f &&
+        finite_float(link->absolute_ref_center)) {
+        return link->absolute_ref_center;
+    }
+    if (link->baseline_ready && link->baseline_center > 0.0f &&
+        finite_float(link->baseline_center)) {
+        return link->baseline_center;
+    }
+    return NAN;
+}
+
+static bool deep_attenuation(float amplitude, float ref)
+{
+    if (!finite_float(amplitude) || !finite_float(ref) || ref <= 0.0f || amplitude <= 0.0f) {
+        return false;
+    }
+    const float keep = powf(10.0f, -EDGE_RESULT_V5_ATTEN_DB / 20.0f);
+    return amplitude < ref * keep;
+}
+
+static bool motion_disturbs(bool doppler_valid, bool doppler_walking, float hf, float corr)
+{
+    if (doppler_walking) {
+        return true;
+    }
+    if (!doppler_valid) {
+        return false;
+    }
+    if (finite_float(hf) && hf >= EDGE_RESULT_V5_HF_MOTION) {
+        return true;
+    }
+    if (finite_float(corr) && corr < EDGE_RESULT_V5_CORR_STATIC) {
+        return true;
+    }
+    return false;
+}
+
+static bool doppler_is_walking(const edge_result_link_state_t *link,
+                               const edge_result_v5_t *result)
+{
+    if (link == NULL || result == NULL || !result->doppler_valid ||
+        !(link->doppler_ratio_scale > 0.0f) || !finite_float(result->doppler_ratio)) {
+        return false;
+    }
+    const float z = result->doppler_ratio /
+                    fmaxf(link->doppler_ratio_scale, EDGE_RESULT_V5_TEMPORAL_SAFE_FLOOR);
+    return finite_float(z) && z >= 1.0f;
+}
+
+static void mean_bins(const edge_result_link_state_t *link,
+                      float out[EDGE_RESULT_V5_REF_BINS])
+{
+    for (uint16_t i = 0U; i < EDGE_RESULT_V5_REF_BINS; ++i) {
+        out[i] = link->window_bin_count[i] > 0U
+                     ? link->window_bin_sum[i] / (float)link->window_bin_count[i]
+                     : NAN;
+    }
+}
+
+static float atten_score(float amplitude, float ref)
+{
+    if (!finite_float(amplitude) || !finite_float(ref) || ref <= 0.0f || amplitude <= 0.0f) {
+        return 0.0f;
+    }
+    return clampf(100.0f * amplitude / ref, 0.0f, 100.0f);
+}
+
+static void mark_blocked(edge_result_v5_t *result, float score)
+{
+    result->state = EDGE_RESULT_STATE_BLOCKED;
+    result->reason_code = EDGE_RESULT_REASON_BLOCKED;
+    result->score_valid = true;
+    result->local_passability_score = score;
+    result->filtered_passability_score = score;
+    result->filtered_passability_valid = true;
+    result->formula_score = score;
+    result->raw_evidence_score = score;
+    result->raw_evidence_valid = true;
+}
+
+/* Static barrier: deep drop (or wide per-bin nulls) and the amplitude
+ * spectrum is not motion. Doppler-invalid loss stays UNKNOWN unless a
+ * previous clean window already latched the attenuation. */
+static bool barrier_now(const edge_result_link_state_t *link,
+                        float amplitude,
+                        const float bins[EDGE_RESULT_V5_REF_BINS],
+                        bool doppler_valid,
+                        bool doppler_walking,
+                        float hf,
+                        float corr,
+                        bool *deep_out,
+                        float *nulls_out)
+{
+    const float ref = reference_level(link);
+    const bool deep = deep_attenuation(amplitude, ref);
+    float nulls = NAN;
+    if (link->absolute_ref_valid) {
+        nulls = noise_filter_null_ratio(bins, link->absolute_ref_bins,
+                                        EDGE_RESULT_V5_REF_BINS,
+                                        NOISE_FILTER_NULL_DROP_DB);
+    }
+    if (deep_out != NULL) {
+        *deep_out = deep || (finite_float(nulls) && nulls >= EDGE_RESULT_V5_NULL_BLOCK);
+    }
+    if (nulls_out != NULL) {
+        *nulls_out = nulls;
+    }
+    if (!doppler_valid || motion_disturbs(doppler_valid, doppler_walking, hf, corr)) {
+        return false;
+    }
+    return deep || (finite_float(nulls) && nulls >= EDGE_RESULT_V5_NULL_BLOCK);
+}
+
+static bool hold_block_on_fault(edge_result_link_state_t *link,
+                                edge_result_v5_t *result,
+                                float hf,
+                                float corr)
+{
+    const uint32_t valid = result->sample_count >= result->invalid_count
+                               ? result->sample_count - result->invalid_count : 0U;
+    const bool walking = doppler_is_walking(link, result);
+    float bins[EDGE_RESULT_V5_REF_BINS];
+    mean_bins(link, bins);
+    bool deep = false;
+    float nulls = NAN;
+    const bool barrier = valid > 0U &&
+        barrier_now(link, result->features.common_amplitude, bins, result->doppler_valid,
+                    walking, hf, corr, &deep, &nulls);
+    if (walking || motion_disturbs(result->doppler_valid, walking, hf, corr)) {
+        if (deep) {
+            link->dynamic_baseline_frozen = true;
+        }
+        return false;
+    }
+    if (barrier) {
+        if (link->static_block_windows < UINT16_MAX) {
+            ++link->static_block_windows;
+        }
+        link->dynamic_baseline_frozen = true;
+        if (link->static_block_windows >= 2U ||
+            (finite_float(nulls) && nulls >= EDGE_RESULT_V5_NULL_BLOCK)) {
+            link->last_clean_attenuated = true;
+            mark_blocked(result, atten_score(result->features.common_amplitude,
+                                            reference_level(link)));
+            return true;
+        }
+    }
+    if (valid > 0U && !deep) {
+        link->last_clean_attenuated = false;
+        link->static_block_windows = 0U;
+        link->dynamic_baseline_frozen = false;
+        return false;
+    }
+    if (link->last_clean_attenuated) {
+        const float score = link->last_local_passability_valid
+                                ? link->last_local_passability_score
+                                : atten_score(result->features.common_amplitude,
+                                              reference_level(link));
+        link->dynamic_baseline_frozen = true;
+        mark_blocked(result, score);
+        return true;
+    }
+    return false;
+}
+
+static void note_clean_barrier(edge_result_link_state_t *link,
+                               edge_result_v5_t *result,
+                               float hf,
+                               float corr)
+{
+    float bins[EDGE_RESULT_V5_REF_BINS];
+    mean_bins(link, bins);
+    const bool walking = doppler_is_walking(link, result);
+    bool deep = false;
+    float nulls = NAN;
+    const bool barrier = barrier_now(link, result->features.common_amplitude, bins,
+                                    result->doppler_valid, walking, hf, corr,
+                                    &deep, &nulls);
+    if (barrier) {
+        if (link->static_block_windows < UINT16_MAX) {
+            ++link->static_block_windows;
+        }
+        link->dynamic_baseline_frozen = true;
+        if (link->static_block_windows >= 2U ||
+            (finite_float(nulls) && nulls >= EDGE_RESULT_V5_NULL_BLOCK)) {
+            link->last_clean_attenuated = true;
+            result->state = EDGE_RESULT_STATE_BLOCKED;
+            result->reason_code = EDGE_RESULT_REASON_BLOCKED;
+        }
+        return;
+    }
+    if (deep && (motion_disturbs(result->doppler_valid, walking, hf, corr) ||
+                 !result->doppler_valid)) {
+        link->dynamic_baseline_frozen = true;
+        link->static_block_windows = 0U;
+        link->last_clean_attenuated = false;
+        if (result->state == EDGE_RESULT_STATE_PASSABLE) {
+            result->state = EDGE_RESULT_STATE_DEGRADED;
+            result->reason_code = EDGE_RESULT_REASON_QUALITY_LOW;
+        }
+        return;
+    }
+    if (!deep) {
+        link->static_block_windows = 0U;
+        link->dynamic_baseline_frozen = false;
+        link->last_clean_attenuated = false;
+    }
+}
+
+static float median_inplace(float *values, uint8_t count)
+{
+    for (uint8_t i = 1U; i < count; ++i) {
+        const float value = values[i];
+        uint8_t j = i;
+        while (j > 0U && values[j - 1U] > value) {
+            values[j] = values[j - 1U];
+            --j;
+        }
+        values[j] = value;
+    }
+    if ((count & 1U) != 0U) {
+        return values[count / 2U];
+    }
+    return 0.5f * (values[count / 2U - 1U] + values[count / 2U]);
+}
+
+static void commit_calibration(edge_result_link_state_t *link)
+{
+    float amps[EDGE_RESULT_V5_CAL_WINDOWS];
+    memcpy(amps, link->cal_amp, (size_t)link->cal_count * sizeof(amps[0]));
+    const float center = median_inplace(amps, link->cal_count);
+    float deviations[EDGE_RESULT_V5_CAL_WINDOWS];
+    for (uint8_t i = 0U; i < link->cal_count; ++i) {
+        deviations[i] = fabsf(link->cal_amp[i] - center);
+    }
+    const float mad = median_inplace(deviations, link->cal_count);
+    link->absolute_ref_center = center;
+    link->absolute_ref_std = mad;
+    for (uint16_t bin = 0U; bin < EDGE_RESULT_V5_REF_BINS; ++bin) {
+        float column[EDGE_RESULT_V5_CAL_WINDOWS];
+        for (uint8_t i = 0U; i < link->cal_count; ++i) {
+            column[i] = link->cal_bins[i][bin];
+        }
+        link->absolute_ref_bins[bin] = median_inplace(column, link->cal_count);
+    }
+    link->absolute_ref_valid = finite_float(center) && center > 0.0f;
+    link->baseline_center = center;
+    link->baseline_mad = fmaxf(mad, EDGE_RESULT_V5_TEMPORAL_SAFE_FLOOR);
+    link->baseline_ready = link->absolute_ref_valid;
+    link->baseline_learning_enabled = true;
+    link->baseline_state = EDGE_RESULT_BASELINE_STABLE;
+    link->baseline_confidence = 80.0f;
+    link->dynamic_baseline_frozen = false;
+    link->last_clean_attenuated = false;
+    link->static_block_windows = 0U;
+    if (link->baseline_version < UINT32_MAX) {
+        ++link->baseline_version;
+    }
+    link->baseline_last_update_us = link->window_last_timestamp_us;
+    copy_text(link->baseline_update_reason, sizeof(link->baseline_update_reason),
+              "on_site_empty_calibration");
+    link->cal_active = false;
+    link->cal_commit_pending = link->absolute_ref_valid;
+    link->cal_aborted = !link->absolute_ref_valid;
+}
+
+static void calibration_finish_window(edge_result_link_state_t *link,
+                                      const edge_result_v5_t *result,
+                                      bool quiet)
+{
+    if (link == NULL || !link->cal_active) {
+        return;
+    }
+    if (!quiet || result == NULL || !finite_float(result->features.common_amplitude)) {
+        if (link->cal_dirty < UINT8_MAX) {
+            ++link->cal_dirty;
+        }
+        if (link->cal_dirty > 2U) {
+            link->cal_active = false;
+            link->cal_aborted = true;
+            copy_text(link->baseline_update_reason, sizeof(link->baseline_update_reason),
+                      "calibration_aborted_motion");
+        }
+        return;
+    }
+    if (link->cal_count >= EDGE_RESULT_V5_CAL_WINDOWS) {
+        return;
+    }
+    float bins[EDGE_RESULT_V5_REF_BINS];
+    mean_bins(link, bins);
+    for (uint16_t bin = 0U; bin < EDGE_RESULT_V5_REF_BINS; ++bin) {
+        if (!finite_float(bins[bin]) || bins[bin] <= 0.0f) {
+            if (link->cal_dirty < UINT8_MAX) {
+                ++link->cal_dirty;
+            }
+            if (link->cal_dirty > 2U) {
+                link->cal_active = false;
+                link->cal_aborted = true;
+                copy_text(link->baseline_update_reason, sizeof(link->baseline_update_reason),
+                          "calibration_aborted_motion");
+            }
+            return;
+        }
+    }
+    const uint8_t slot = link->cal_count;
+    link->cal_amp[slot] = result->features.common_amplitude;
+    memcpy(link->cal_bins[slot], bins, sizeof(bins));
+    ++link->cal_count;
+    if (link->cal_count >= EDGE_RESULT_V5_CAL_WINDOWS) {
+        commit_calibration(link);
+    }
+}
+
 static void reset_window(edge_result_link_state_t *link, uint64_t next_start_us)
 {
     if (link == NULL) {
@@ -431,6 +751,8 @@ static void reset_window(edge_result_link_state_t *link, uint64_t next_start_us)
     link->window_sum_interval_sq_us = 0.0;
     link->window_interval_count = 0U;
     link->doppler_count = 0U;
+    memset(link->window_bin_sum, 0, sizeof(link->window_bin_sum));
+    memset(link->window_bin_count, 0, sizeof(link->window_bin_count));
 }
 
 static void sync_baseline_metadata(edge_result_v5_t *result,
@@ -544,6 +866,8 @@ static edge_result_v5_t make_result(edge_result_pipeline_t *pipeline,
     result.doppler_ratio = 0.0f;
     result.doppler_fs_hz = 0.0f;
     result.doppler_samples = 0U;
+    float hf_ratio = 0.0f;
+    float corr_lag1 = 1.0f;
     {
         noise_filter_doppler_t doppler = {0};
         if (noise_filter_doppler_ratio(link->doppler_amp, link->doppler_t,
@@ -553,6 +877,8 @@ static edge_result_v5_t make_result(edge_result_pipeline_t *pipeline,
             result.doppler_ratio = doppler.ratio;
             result.doppler_fs_hz = doppler.fs_hz;
             result.doppler_samples = doppler.sample_count;
+            hf_ratio = doppler.hf_ratio;
+            corr_lag1 = doppler.corr_lag1;
         }
     }
     /* Occupancy freeze uses Doppler z vs this link's learned r, not r as a
@@ -627,6 +953,19 @@ static edge_result_v5_t make_result(edge_result_pipeline_t *pipeline,
             result.reason_code = EDGE_RESULT_REASON_SEQUENCE_GAP;
         } else if (result.invalid_count > 0U || result.sample_count == 0U) {
             result.reason_code = EDGE_RESULT_REASON_INVALID_CSI;
+        }
+        const bool transport_fault = result.invalid_count > 0U ||
+                                     result.queue_drop_count > 0U ||
+                                     result.sequence_gap > 0U ||
+                                     result.sample_count == 0U;
+        const bool cal_quiet = !transport_fault && result.doppler_valid &&
+            !motion_disturbs(result.doppler_valid, doppler_is_walking(link, &result),
+                             hf_ratio, corr_lag1) &&
+            !deep_attenuation(result.features.common_amplitude, reference_level(link));
+        calibration_finish_window(link, &result, cal_quiet);
+        if (transport_fault && hold_block_on_fault(link, &result, hf_ratio, corr_lag1)) {
+            sync_baseline_metadata(&result, link);
+            return result;
         }
         if (link->baseline_ready && emit_held_passability(link, &result)) {
             sync_baseline_metadata(&result, link);
@@ -882,7 +1221,8 @@ static edge_result_v5_t make_result(edge_result_pipeline_t *pipeline,
                             link->rebase_candidate_stable_windows >= required_candidate_count &&
                             link->rebase_candidate_pause_windows == 0U &&
                             (link->occupancy_memory_windows == 0U || stuck_force) &&
-                            (dirty_ratio <= EDGE_RESULT_V5_REBASE_DIRTY_RATIO || stuck_force)) {
+                            (dirty_ratio <= EDGE_RESULT_V5_REBASE_DIRTY_RATIO || stuck_force) &&
+                            !formula_flex_rebase_absorbs_attenuation(link)) {
                             formula_flex_promote_rebase_candidate(link);
                         }
                     }
@@ -915,6 +1255,7 @@ static edge_result_v5_t make_result(edge_result_pipeline_t *pipeline,
         copy_text(result.transition_state, sizeof(result.transition_state),
                   link->baseline_state == EDGE_RESULT_BASELINE_OCCUPIED_OR_BLOCKED
                       ? "OCCUPIED_OR_BLOCKED" : "ENVIRONMENT_SHIFT");
+        calibration_finish_window(link, &result, false);
         sync_baseline_metadata(&result, link);
         return result;
     }
@@ -1070,6 +1411,14 @@ static edge_result_v5_t make_result(edge_result_pipeline_t *pipeline,
             result.reason_code = EDGE_RESULT_REASON_NONE;
         }
     }
+    note_clean_barrier(link, &result, hf_ratio, corr_lag1);
+    calibration_finish_window(link, &result,
+                              result.doppler_valid &&
+                                  !motion_disturbs(result.doppler_valid,
+                                                   doppler_is_walking(link, &result),
+                                                   hf_ratio, corr_lag1) &&
+                                  !deep_attenuation(result.features.common_amplitude,
+                                                    reference_level(link)));
     if (result.state == EDGE_RESULT_STATE_PASSABLE && result.quality_score > 0.0f &&
         link->baseline_window_eligible && link->temporal_noise_confidence > 0.0f &&
         link->baseline_state == EDGE_RESULT_BASELINE_STABLE &&
@@ -1194,6 +1543,15 @@ static void update_link(edge_result_pipeline_t *pipeline,
     link->doppler_amp[link->doppler_count] = amplitude;
     link->doppler_t[link->doppler_count] = record->timestamp_us;
     ++link->doppler_count;
+    for (uint16_t bin = 0U; bin < EDGE_RESULT_V5_REF_BINS; ++bin) {
+        if (!finite_float(filter_output.bins[bin])) {
+            continue;
+        }
+        link->window_bin_sum[bin] += filter_output.bins[bin];
+        if (link->window_bin_count[bin] < UINT16_MAX) {
+            ++link->window_bin_count[bin];
+        }
+    }
 }
 
 void edge_result_pipeline_config_defaults(edge_result_pipeline_config_t *config)
@@ -1363,6 +1721,11 @@ bool edge_result_pipeline_reset_link_boot(edge_result_pipeline_t *pipeline,
     copy_text(tx_id_text, sizeof(tx_id_text), link->identity.tx_id_text);
     copy_text(rx_id_text, sizeof(rx_id_text), link->identity.rx_id_text);
     copy_text(link_id_text, sizeof(link_id_text), link->identity.link_id_text);
+    const bool keep_ref = link->absolute_ref_valid;
+    const float keep_center = link->absolute_ref_center;
+    const float keep_std = link->absolute_ref_std;
+    float keep_bins[EDGE_RESULT_V5_REF_BINS];
+    memcpy(keep_bins, link->absolute_ref_bins, sizeof(keep_bins));
     memset(link, 0, sizeof(*link));
     link->configured = true;
     link->identity = (edge_result_identity_t){
@@ -1385,10 +1748,95 @@ bool edge_result_pipeline_reset_link_boot(edge_result_pipeline_t *pipeline,
     link->baseline_state = EDGE_RESULT_BASELINE_CANDIDATE;
     link->explicit_baseline_confirmed = false;
     copy_text(link->baseline_update_reason, sizeof(link->baseline_update_reason), "automatic_candidate");
+    if (keep_ref) {
+        link->absolute_ref_valid = true;
+        link->absolute_ref_center = keep_center;
+        link->absolute_ref_std = keep_std;
+        memcpy(link->absolute_ref_bins, keep_bins, sizeof(keep_bins));
+        link->baseline_center = keep_center;
+        link->baseline_mad = fmaxf(keep_std, EDGE_RESULT_V5_TEMPORAL_SAFE_FLOOR);
+        link->baseline_ready = true;
+        link->baseline_state = EDGE_RESULT_BASELINE_STABLE;
+        link->baseline_confidence = 80.0f;
+        copy_text(link->baseline_update_reason, sizeof(link->baseline_update_reason),
+                  "nvs_absolute_ref");
+    }
     link->expected_tx_mac_valid = expected_valid;
     if (expected_valid) {
         memcpy(link->expected_tx_mac, expected_mac, EDGE_RESULT_V5_MAC_BYTES);
     }
+    return true;
+}
+
+bool edge_result_pipeline_begin_calibration(edge_result_pipeline_t *pipeline,
+                                            uint32_t link_id)
+{
+    edge_result_link_state_t *link = find_link(pipeline, link_id);
+    if (link == NULL) {
+        return false;
+    }
+    link->cal_active = true;
+    link->cal_commit_pending = false;
+    link->cal_aborted = false;
+    link->cal_count = 0U;
+    link->cal_dirty = 0U;
+    return true;
+}
+
+int edge_result_pipeline_poll_calibration(edge_result_pipeline_t *pipeline,
+                                          uint32_t link_id,
+                                          edge_result_abs_ref_t *out)
+{
+    edge_result_link_state_t *link = find_link(pipeline, link_id);
+    if (link == NULL) {
+        return 0;
+    }
+    if (link->cal_commit_pending && link->absolute_ref_valid && out != NULL) {
+        memset(out, 0, sizeof(*out));
+        out->magic = EDGE_RESULT_V5_CAL_MAGIC;
+        out->center = link->absolute_ref_center;
+        out->stddev = link->absolute_ref_std;
+        memcpy(out->bins, link->absolute_ref_bins, sizeof(out->bins));
+        link->cal_commit_pending = false;
+        return 1;
+    }
+    if (link->cal_aborted) {
+        link->cal_aborted = false;
+        return -1;
+    }
+    return 0;
+}
+
+bool edge_result_pipeline_import_abs_ref(edge_result_pipeline_t *pipeline,
+                                         uint32_t link_id,
+                                         const edge_result_abs_ref_t *ref)
+{
+    edge_result_link_state_t *link = find_link(pipeline, link_id);
+    if (link == NULL || ref == NULL || ref->magic != EDGE_RESULT_V5_CAL_MAGIC ||
+        !finite_float(ref->center) || ref->center <= 0.0f) {
+        return false;
+    }
+    for (uint16_t bin = 0U; bin < EDGE_RESULT_V5_REF_BINS; ++bin) {
+        if (!finite_float(ref->bins[bin]) || ref->bins[bin] <= 0.0f) {
+            return false;
+        }
+    }
+    link->absolute_ref_center = ref->center;
+    link->absolute_ref_std = finite_float(ref->stddev) && ref->stddev >= 0.0f
+                                 ? ref->stddev : 0.0f;
+    memcpy(link->absolute_ref_bins, ref->bins, sizeof(link->absolute_ref_bins));
+    link->absolute_ref_valid = true;
+    link->baseline_center = ref->center;
+    link->baseline_mad = fmaxf(link->absolute_ref_std, EDGE_RESULT_V5_TEMPORAL_SAFE_FLOOR);
+    link->baseline_ready = true;
+    link->baseline_learning_enabled = true;
+    link->baseline_state = EDGE_RESULT_BASELINE_STABLE;
+    link->baseline_confidence = 80.0f;
+    link->dynamic_baseline_frozen = false;
+    link->last_clean_attenuated = false;
+    link->static_block_windows = 0U;
+    copy_text(link->baseline_update_reason, sizeof(link->baseline_update_reason),
+              "nvs_absolute_ref");
     return true;
 }
 

@@ -146,6 +146,16 @@ bool noise_filter_process(const noise_filter_input_t *input,
     }
     const float *amp_src = selected_count >= NOISE_FILTER_SELECTED_MIN ? selected : magnitudes;
     const uint16_t amp_count = selected_count >= NOISE_FILTER_SELECTED_MIN ? selected_count : pairs;
+    output->bin_count = 0U;
+    for (uint16_t i = 0U; i < NOISE_FILTER_SELECTED_COUNT; ++i) {
+        const uint16_t bin = k_selected[i];
+        if (bin >= pairs) {
+            output->bins[i] = NAN;
+            continue;
+        }
+        output->bins[i] = magnitudes[bin];
+        ++output->bin_count;
+    }
     const float center = median_values(amp_src, amp_count);
     /* Use the robust center as the filtered amplitude so one impulse cannot
      * poison the feature that feeds baseline learning and scoring. */
@@ -304,12 +314,67 @@ bool noise_filter_doppler_ratio(const float *amplitudes,
     }
     const float denom_e = energy_dc + energy_motion + energy_high + NOISE_FILTER_DOPPLER_EPS;
     const float ratio = energy_motion / denom_e;
-    if (!isfinite((double)ratio) || ratio < 0.0f) {
+    const float hf_ratio = energy_high / denom_e;
+    if (!isfinite((double)ratio) || ratio < 0.0f ||
+        !isfinite((double)hf_ratio) || hf_ratio < 0.0f) {
         return false;
+    }
+    float corr_lag1 = 1.0f;
+    if (count >= 3U) {
+        float var0 = 0.0f;
+        float var1 = 0.0f;
+        float cov = 0.0f;
+        for (uint16_t i = 0U; i + 1U < count; ++i) {
+            const float a = amplitudes[i] - mean_amp;
+            const float b = amplitudes[i + 1U] - mean_amp;
+            var0 += a * a;
+            var1 += b * b;
+            cov += a * b;
+        }
+        const float corr_den = sqrtf(var0 * var1);
+        if (corr_den > NOISE_FILTER_DOPPLER_EPS) {
+            corr_lag1 = cov / corr_den;
+        }
+        if (!isfinite((double)corr_lag1)) {
+            corr_lag1 = 1.0f;
+        } else if (corr_lag1 > 1.0f) {
+            corr_lag1 = 1.0f;
+        } else if (corr_lag1 < -1.0f) {
+            corr_lag1 = -1.0f;
+        }
     }
     output->valid = true;
     output->ratio = ratio > 1.0f ? 1.0f : ratio;
+    output->hf_ratio = hf_ratio > 1.0f ? 1.0f : hf_ratio;
+    output->corr_lag1 = corr_lag1;
     output->fs_hz = fs_hz;
     output->sample_count = count;
     return true;
+}
+
+float noise_filter_null_ratio(const float *amps,
+                              const float *ref,
+                              uint16_t count,
+                              float drop_db)
+{
+    if (amps == NULL || ref == NULL || count == 0U ||
+        !isfinite((double)drop_db) || drop_db < 0.0f) {
+        return NAN;
+    }
+    const float keep = powf(10.0f, -drop_db / 20.0f);
+    uint16_t used = 0U;
+    uint16_t nulls = 0U;
+    for (uint16_t i = 0U; i < count; ++i) {
+        if (!isfinite((double)amps[i]) || !isfinite((double)ref[i]) || ref[i] <= 0.0f) {
+            continue;
+        }
+        ++used;
+        if (amps[i] < ref[i] * keep) {
+            ++nulls;
+        }
+    }
+    if (used == 0U) {
+        return NAN;
+    }
+    return (float)nulls / (float)used;
 }

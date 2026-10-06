@@ -1,2 +1,10 @@
 # Personal / Administrative contest files
 thngbovvicngktuynchntinckhcasinhv/
+
+# Local extras. The published tree is the wievac core.
+grok_bot/
+wievac_android/
+wievac_demo_project/
+WIEVAC_AI_HANDOFF.md
+*.pptx
+*.docx

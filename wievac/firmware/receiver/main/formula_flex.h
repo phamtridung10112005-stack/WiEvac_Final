@@ -28,6 +28,11 @@ void formula_flex_update_baseline(edge_result_link_state_t *link,
 
 void formula_flex_promote_rebase_candidate(edge_result_link_state_t *link);
 
+/* True when the quiet rebase candidate is an attenuation of the empty-corridor
+ * reference (or of the current baseline if no calibration is stored). That
+ * candidate must not become the new baseline. */
+bool formula_flex_rebase_absorbs_attenuation(const edge_result_link_state_t *link);
+
 #ifdef __cplusplus
 }
 #endif

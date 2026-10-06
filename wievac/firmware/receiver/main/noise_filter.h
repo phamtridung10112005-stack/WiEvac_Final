@@ -14,15 +14,18 @@ typedef struct {
     bool first_word_invalid;
 } noise_filter_input_t;
 
+/* HT20 data tones used for sensing: skip DC, pilots and OFDM guards.
+ * Same 12-index idea as ESPectre ML (even spacing, not all 64 bins). */
+#define NOISE_FILTER_SELECTED_COUNT 12U
+
 typedef struct {
     float amplitude;
     float robust_spread;
     uint16_t sample_pairs;
+    /* Fixed HT20 mask (DC/pilot/guard removed). NAN if that bin is absent. */
+    float bins[NOISE_FILTER_SELECTED_COUNT];
+    uint16_t bin_count;
 } noise_filter_output_t;
-
-/* HT20 data tones used for sensing: skip DC, pilots and OFDM guards.
- * Same 12-index idea as ESPectre ML (even spacing, not all 64 bins). */
-#define NOISE_FILTER_SELECTED_COUNT 12U
 #define NOISE_FILTER_SELECTED_MIN 4U
 #define NOISE_FILTER_HAMPEL_WINDOW 7U
 #define NOISE_FILTER_HAMPEL_THRESHOLD 5.0f
@@ -41,11 +44,19 @@ typedef struct {
 #define NOISE_FILTER_DOPPLER_F_HI_HZ 12.0f
 #define NOISE_FILTER_DOPPLER_MAX_RELATIVE_JITTER 0.25f
 
+/* Linear drop vs a per-bin empty-corridor reference. Knob: raise if an
+ * empty hall's own ripple trips nulls. */
+#define NOISE_FILTER_NULL_DROP_DB 6.0f
+
 typedef struct {
     bool valid;
     float ratio;
     float fs_hz;
     uint16_t sample_count;
+    /* High-band energy / total. Motion, not a static barrier. */
+    float hf_ratio;
+    /* Lag-1 autocorrelation of the amplitude series. ~1 is static. */
+    float corr_lag1;
 } noise_filter_doppler_t;
 
 bool noise_filter_validate(const noise_filter_input_t *input);
@@ -56,6 +67,13 @@ bool noise_filter_doppler_ratio(const float *amplitudes,
                                 const uint64_t *timestamps_us,
                                 uint16_t count,
                                 noise_filter_doppler_t *output);
+
+/* Fraction of masked bins whose amplitude is more than drop_db below ref.
+ * Returns NAN when no bin has a usable reference. */
+float noise_filter_null_ratio(const float *amps,
+                              const float *ref,
+                              uint16_t count,
+                              float drop_db);
 
 #ifdef __cplusplus
 }

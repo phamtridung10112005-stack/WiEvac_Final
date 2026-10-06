@@ -27,6 +27,9 @@
 #include "lwip/inet.h"
 #include "lwip/sockets.h"
 #include "nvs_flash.h"
+#include "nvs.h"
+#include "driver/gpio.h"
+#include "driver/uart.h"
 #include "edge_result_v5_pipeline.h"
 #include "noise_filter.h"
 
@@ -356,6 +359,19 @@ static void v6_pipeline_start_for_pair(const pair_state_t *pair)
     (void)edge_result_pipeline_reset_link_boot(&g_v6_pipeline, WIEVAC_LINK_ID, pair->tx_boot_id);
     g_v6_tx_boot_id = pair->tx_boot_id;
     g_v6_pipeline_ready = true;
+    {
+        nvs_handle_t handle;
+        edge_result_abs_ref_t ref;
+        size_t length = sizeof(ref);
+        if (nvs_open("wievac", NVS_READONLY, &handle) == ESP_OK) {
+            const esp_err_t err = nvs_get_blob(handle, "absref", &ref, &length);
+            nvs_close(handle);
+            if (err == ESP_OK && length == sizeof(ref) &&
+                edge_result_pipeline_import_abs_ref(&g_v6_pipeline, WIEVAC_LINK_ID, &ref)) {
+                ESP_LOGI(TAG, "absolute_ref loaded center=%.2f", (double)ref.center);
+            }
+        }
+    }
     ESP_LOGI(TAG, "edge_result_v6 active protocol=5 schema=7 link=link-%" PRIu32 " node=rx-%" PRIu32,
              WIEVAC_LINK_ID, WIEVAC_RX_ID);
 }
@@ -464,6 +480,26 @@ static void v6_submit_and_emit(const csi_record_t *record)
             __atomic_add_fetch(&g_v6_encode_failures, 1U, __ATOMIC_RELAXED);
             ESP_LOGW(TAG, "v6_encode_failed rc=%d length=%u", encode_rc, (unsigned)length);
         }
+    }
+    edge_result_abs_ref_t saved;
+    const int polled = edge_result_pipeline_poll_calibration(&g_v6_pipeline, WIEVAC_LINK_ID, &saved);
+    if (polled == 1) {
+        nvs_handle_t handle;
+        esp_err_t err = nvs_open("wievac", NVS_READWRITE, &handle);
+        if (err == ESP_OK) {
+            err = nvs_set_blob(handle, "absref", &saved, sizeof(saved));
+            if (err == ESP_OK) {
+                err = nvs_commit(handle);
+            }
+            nvs_close(handle);
+        }
+        if (err == ESP_OK) {
+            ESP_LOGI(TAG, "absolute_ref saved center=%.2f", (double)saved.center);
+        } else {
+            ESP_LOGE(TAG, "absolute_ref nvs write failed");
+        }
+    } else if (polled < 0) {
+        ESP_LOGW(TAG, "calibration aborted; corridor was not quiet");
     }
 }
 #endif
@@ -1844,6 +1880,34 @@ static void dsp_task(void *argument)
             reset_generation = current_generation;
         }
         const TickType_t timeout = pdMS_TO_TICKS(100);
+#if CONFIG_WIEVAC_EDGE_RESULT_V6_ACTIVE
+        if (g_v6_pipeline_ready) {
+            static int64_t boot_low_since_us;
+            static bool boot_cal_armed = true;
+            const int boot_level = gpio_get_level(GPIO_NUM_0);
+            const int64_t boot_now_us = esp_timer_get_time();
+            if (boot_level == 0) {
+                if (boot_low_since_us == 0) {
+                    boot_low_since_us = boot_now_us;
+                }
+                if (boot_cal_armed && boot_now_us - boot_low_since_us >= 2000000LL) {
+                    boot_cal_armed = false;
+                    if (edge_result_pipeline_begin_calibration(&g_v6_pipeline, WIEVAC_LINK_ID)) {
+                        ESP_LOGI(TAG, "calibration started; keep the corridor empty for 8s");
+                    }
+                }
+            } else {
+                boot_low_since_us = 0;
+                boot_cal_armed = true;
+            }
+            uint8_t cal_byte = 0U;
+            if (uart_read_bytes(UART_NUM_0, &cal_byte, 1, 0) == 1 &&
+                (cal_byte == 'C' || cal_byte == 'c') &&
+                edge_result_pipeline_begin_calibration(&g_v6_pipeline, WIEVAC_LINK_ID)) {
+                ESP_LOGI(TAG, "calibration started; keep the corridor empty for 8s");
+            }
+        }
+#endif
         if (xQueueReceive(g_csi_queue, &record, timeout) == pdTRUE) {
             const uint32_t received_generation =
                 __atomic_load_n(&g_dsp_reset_generation, __ATOMIC_ACQUIRE);
@@ -2040,6 +2104,15 @@ void app_main(void)
         err = nvs_flash_init();
     }
     ESP_ERROR_CHECK(err);
+    const gpio_config_t cal_pin = {
+        .pin_bit_mask = 1ULL << GPIO_NUM_0,
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_ENABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE,
+    };
+    ESP_ERROR_CHECK(gpio_config(&cal_pin));
+    ESP_LOGI(TAG, "empty-corridor cal: hold BOOT (GPIO0) 2s or send C on UART0");
     ESP_ERROR_CHECK(esp_read_mac(g_rx_mac, ESP_MAC_WIFI_STA));
     if (CONFIG_WIEVAC_EXPECTED_TX_MAC[0] == '\0') {
         ESP_LOGW(TAG, "pairing_auth=trusted_closed_lab expected_tx_mac=unset");
