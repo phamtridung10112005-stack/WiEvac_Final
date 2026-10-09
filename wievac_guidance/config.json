@@ -1,0 +1,1363 @@
+{
+  "areas": [
+    {
+      "id": "a_1788182777734",
+      "name": "Khu vực 1",
+      "type": "exit",
+      "visualKind": "exit",
+      "x": 802,
+      "y": 234.55757363112258,
+      "floor": 1,
+      "visual3d": {
+        "widthMeters": 1.8,
+        "depthMeters": 1.4,
+        "heightMeters": 2.6,
+        "rotationDegrees": 0,
+        "sizeMode": "auto",
+        "color": "#69b578"
+      }
+    },
+    {
+      "id": "a_1788182808441",
+      "name": "Khu vực 2",
+      "type": "room",
+      "visualKind": "room",
+      "x": 798,
+      "y": 59.4399323417108,
+      "floor": 1,
+      "visual3d": {
+        "widthMeters": 2.4,
+        "depthMeters": 2.4,
+        "heightMeters": 2.7,
+        "rotationDegrees": 0,
+        "sizeMode": "auto",
+        "color": "#6ea8d9"
+      }
+    },
+    {
+      "id": "a_1788182811417",
+      "name": "Khu vực 3",
+      "type": "room",
+      "visualKind": "junction",
+      "x": 1146,
+      "y": 57.43858786983188,
+      "floor": 1,
+      "visual3d": {
+        "widthMeters": 1.9,
+        "depthMeters": 1.9,
+        "heightMeters": 0.6,
+        "rotationDegrees": 0,
+        "sizeMode": "auto",
+        "color": "#6ea8d9"
+      }
+    },
+    {
+      "id": "a_1788182813186",
+      "name": "Khu vực 4",
+      "type": "room",
+      "visualKind": "junction",
+      "x": 454,
+      "y": 56.43791563389237,
+      "floor": 1,
+      "visual3d": {
+        "widthMeters": 1.9,
+        "depthMeters": 1.9,
+        "heightMeters": 0.6,
+        "rotationDegrees": 0,
+        "sizeMode": "auto",
+        "color": "#6ea8d9"
+      }
+    },
+    {
+      "id": "a_1788182817533",
+      "name": "Khu vực 5",
+      "type": "room",
+      "visualKind": "room",
+      "x": 1146,
+      "y": -260.7751831589279,
+      "floor": 1,
+      "visual3d": {
+        "widthMeters": 2.4,
+        "depthMeters": 2.4,
+        "heightMeters": 2.7,
+        "rotationDegrees": 0,
+        "sizeMode": "auto",
+        "color": "#6ea8d9"
+      }
+    },
+    {
+      "id": "a_1788182842776",
+      "name": "Khu vực 6",
+      "type": "stairs",
+      "visualKind": "stairs",
+      "x": 130.27173073577592,
+      "y": -123.67089760584656,
+      "floor": 1,
+      "stairwellId": "sw_1788183125503",
+      "visual3d": {
+        "widthMeters": 2.2,
+        "depthMeters": 3.2,
+        "heightMeters": 2.7,
+        "rotationDegrees": 0,
+        "sizeMode": "manual",
+        "color": "#f4a261"
+      }
+    },
+    {
+      "id": "a_1788182852450",
+      "name": "Khu vực 7",
+      "type": "room",
+      "visualKind": "room",
+      "x": 454,
+      "y": -271.78257775426243,
+      "floor": 1,
+      "visual3d": {
+        "widthMeters": 2.4,
+        "depthMeters": 2.4,
+        "heightMeters": 2.7,
+        "rotationDegrees": 0,
+        "sizeMode": "auto",
+        "color": "#6ea8d9"
+      }
+    },
+    {
+      "id": "a_1788182892191",
+      "name": "Khu vực 8",
+      "type": "exit",
+      "visualKind": "exit",
+      "x": 118,
+      "y": 217.54614562015098,
+      "floor": 1,
+      "visual3d": {
+        "widthMeters": 1.8,
+        "depthMeters": 1.4,
+        "heightMeters": 2.6,
+        "rotationDegrees": 0,
+        "sizeMode": "auto",
+        "color": "#69b578"
+      }
+    },
+    {
+      "id": "a_1788182912103",
+      "name": "Khu vực 9",
+      "type": "stairs",
+      "visualKind": "stairs",
+      "x": 800.1096783508377,
+      "y": -110.81129892003841,
+      "floor": 1,
+      "stairwellId": "sw_1788183135191",
+      "visual3d": {
+        "widthMeters": 2.2,
+        "depthMeters": 3.2,
+        "heightMeters": 2.7,
+        "rotationDegrees": 0,
+        "sizeMode": "manual",
+        "color": "#f4a261"
+      }
+    },
+    {
+      "id": "a_1788182959572",
+      "name": "Khu vực 10",
+      "type": "stairs",
+      "visualKind": "stairs",
+      "x": 953.2644171364464,
+      "y": -364.52531772631676,
+      "floor": 1,
+      "stairwellId": "sw_1788183141673",
+      "visual3d": {
+        "widthMeters": 2.2,
+        "depthMeters": 3.2,
+        "heightMeters": 2.7,
+        "rotationDegrees": 0,
+        "sizeMode": "manual",
+        "color": "#f4a261"
+      }
+    },
+    {
+      "id": "a_1788182960963",
+      "name": "Khu vực 11",
+      "type": "exit",
+      "visualKind": "exit",
+      "x": 805,
+      "y": -263.77719986674674,
+      "floor": 1,
+      "visual3d": {
+        "widthMeters": 1.8,
+        "depthMeters": 1.4,
+        "heightMeters": 2.6,
+        "rotationDegrees": 0,
+        "sizeMode": "auto",
+        "color": "#69b578"
+      }
+    },
+    {
+      "id": "area_1788183099728_881bsmqjp",
+      "name": "Khu vực 13",
+      "type": "room",
+      "visualKind": "room",
+      "x": 798,
+      "y": 59.4399323417108,
+      "floor": 2,
+      "visual3d": {
+        "widthMeters": 2.4,
+        "depthMeters": 2.4,
+        "heightMeters": 2.7,
+        "rotationDegrees": 0,
+        "sizeMode": "auto",
+        "color": "#6ea8d9"
+      }
+    },
+    {
+      "id": "area_1788183099728_nkds6g0fy",
+      "name": "Khu vực 14",
+      "type": "room",
+      "visualKind": "junction",
+      "x": 1146,
+      "y": 57.43858786983188,
+      "floor": 2,
+      "visual3d": {
+        "widthMeters": 1.9,
+        "depthMeters": 1.9,
+        "heightMeters": 0.6,
+        "rotationDegrees": 0,
+        "sizeMode": "auto",
+        "color": "#6ea8d9"
+      }
+    },
+    {
+      "id": "area_1788183099728_31lh9xd6a",
+      "name": "Khu vực 15",
+      "type": "room",
+      "visualKind": "junction",
+      "x": 454,
+      "y": 56.43791563389237,
+      "floor": 2,
+      "visual3d": {
+        "widthMeters": 1.9,
+        "depthMeters": 1.9,
+        "heightMeters": 0.6,
+        "rotationDegrees": 0,
+        "sizeMode": "auto",
+        "color": "#6ea8d9"
+      }
+    },
+    {
+      "id": "area_1788183099728_8i96witx6",
+      "name": "Khu vực 16",
+      "type": "room",
+      "visualKind": "room",
+      "x": 1146,
+      "y": -260.7751831589279,
+      "floor": 2,
+      "visual3d": {
+        "widthMeters": 2.4,
+        "depthMeters": 2.4,
+        "heightMeters": 2.7,
+        "rotationDegrees": 0,
+        "sizeMode": "auto",
+        "color": "#6ea8d9"
+      }
+    },
+    {
+      "id": "area_1788183099728_rxed8ci0t",
+      "name": "Khu vực 17",
+      "type": "stairs",
+      "visualKind": "stairs",
+      "x": 130.27173073577592,
+      "y": -123.67089760584656,
+      "floor": 2,
+      "stairwellId": "sw_1788183125503",
+      "visual3d": {
+        "widthMeters": 2.2,
+        "depthMeters": 3.2,
+        "heightMeters": 2.7,
+        "rotationDegrees": 0,
+        "sizeMode": "manual",
+        "color": "#f4a261"
+      }
+    },
+    {
+      "id": "area_1788183099728_rep99rh6l",
+      "name": "Khu vực 18",
+      "type": "room",
+      "visualKind": "room",
+      "x": 454,
+      "y": -271.78257775426243,
+      "floor": 2,
+      "visual3d": {
+        "widthMeters": 2.4,
+        "depthMeters": 2.4,
+        "heightMeters": 2.7,
+        "rotationDegrees": 0,
+        "sizeMode": "auto",
+        "color": "#6ea8d9"
+      }
+    },
+    {
+      "id": "area_1788183099728_d35az91f0",
+      "name": "Khu vực 20",
+      "type": "stairs",
+      "visualKind": "stairs",
+      "x": 800.1096783508377,
+      "y": -110.81129892003841,
+      "floor": 2,
+      "stairwellId": "sw_1788183135191",
+      "visual3d": {
+        "widthMeters": 2.2,
+        "depthMeters": 3.2,
+        "heightMeters": 2.7,
+        "rotationDegrees": 0,
+        "sizeMode": "manual",
+        "color": "#f4a261"
+      }
+    },
+    {
+      "id": "area_1788183099728_40q48xg02",
+      "name": "Khu vực 21",
+      "type": "stairs",
+      "visualKind": "stairs",
+      "x": 953.2644171364464,
+      "y": -364.52531772631676,
+      "floor": 2,
+      "stairwellId": "sw_1788183141673",
+      "visual3d": {
+        "widthMeters": 2.2,
+        "depthMeters": 3.2,
+        "heightMeters": 2.7,
+        "rotationDegrees": 0,
+        "sizeMode": "manual",
+        "color": "#f4a261"
+      }
+    },
+    {
+      "id": "a_1788183221638",
+      "name": "Khu vực 20",
+      "type": "stairs",
+      "visualKind": "stairs",
+      "x": 648.0585400934998,
+      "y": -368.0806005841957,
+      "floor": 1,
+      "stairwellId": "sw_1788183309467",
+      "visual3d": {
+        "widthMeters": 2.2,
+        "depthMeters": 3.2,
+        "heightMeters": 2.7,
+        "rotationDegrees": 0,
+        "sizeMode": "manual",
+        "color": "#f4a261"
+      }
+    },
+    {
+      "id": "a_1788183238859",
+      "name": "Khu vực 21",
+      "type": "stairs",
+      "visualKind": "stairs",
+      "x": 648.0585400934998,
+      "y": -368.0806005841957,
+      "floor": 2,
+      "stairwellId": "sw_1788183309467",
+      "visual3d": {
+        "widthMeters": 2.2,
+        "depthMeters": 3.2,
+        "heightMeters": 2.7,
+        "rotationDegrees": 0,
+        "sizeMode": "manual",
+        "color": "#f4a261"
+      }
+    },
+    {
+      "id": "a_1788183278981",
+      "name": "Khu vực 22",
+      "type": "room",
+      "visualKind": "room",
+      "x": -170.49901459965437,
+      "y": 48.66225435635958,
+      "floor": 2,
+      "visual3d": {
+        "widthMeters": 2.4,
+        "depthMeters": 2.4,
+        "heightMeters": 2.7,
+        "rotationDegrees": 0,
+        "sizeMode": "auto",
+        "color": "#6ea8d9"
+      }
+    },
+    {
+      "id": "a_1788183290539",
+      "name": "Khu vực 23",
+      "type": "room",
+      "visualKind": "room",
+      "x": 1423.6550051079623,
+      "y": 57.64662920366543,
+      "floor": 2,
+      "visual3d": {
+        "widthMeters": 2.4,
+        "depthMeters": 2.4,
+        "heightMeters": 2.7,
+        "rotationDegrees": 0,
+        "sizeMode": "auto",
+        "color": "#6ea8d9"
+      }
+    },
+    {
+      "id": "a_1788183428704",
+      "name": "Khu vực 24",
+      "type": "room",
+      "visualKind": "junction",
+      "x": 126.69961957319052,
+      "y": 52.278954321923216,
+      "floor": 2,
+      "visual3d": {
+        "widthMeters": 1.9,
+        "depthMeters": 1.9,
+        "heightMeters": 0.6,
+        "rotationDegrees": 0,
+        "sizeMode": "auto",
+        "color": "#6ea8d9"
+      }
+    },
+    {
+      "id": "area_1788184714250_cct7wrx5r",
+      "name": "Khu vực 25",
+      "type": "room",
+      "visualKind": "room",
+      "x": 798,
+      "y": 59.4399323417108,
+      "floor": 3,
+      "visual3d": {
+        "widthMeters": 2.4,
+        "depthMeters": 2.4,
+        "heightMeters": 2.7,
+        "rotationDegrees": 0,
+        "sizeMode": "auto",
+        "color": "#6ea8d9"
+      }
+    },
+    {
+      "id": "area_1788184714250_elv6jwlxn",
+      "name": "Khu vực 26",
+      "type": "room",
+      "visualKind": "junction",
+      "x": 1146,
+      "y": 57.43858786983188,
+      "floor": 3,
+      "visual3d": {
+        "widthMeters": 1.9,
+        "depthMeters": 1.9,
+        "heightMeters": 0.6,
+        "rotationDegrees": 0,
+        "sizeMode": "auto",
+        "color": "#6ea8d9"
+      }
+    },
+    {
+      "id": "area_1788184714250_rqmxk9a63",
+      "name": "Khu vực 27",
+      "type": "room",
+      "visualKind": "junction",
+      "x": 454,
+      "y": 56.43791563389237,
+      "floor": 3,
+      "visual3d": {
+        "widthMeters": 1.9,
+        "depthMeters": 1.9,
+        "heightMeters": 0.6,
+        "rotationDegrees": 0,
+        "sizeMode": "auto",
+        "color": "#6ea8d9"
+      }
+    },
+    {
+      "id": "area_1788184714250_15fxhvl3w",
+      "name": "Khu vực 28",
+      "type": "room",
+      "visualKind": "room",
+      "x": 1146,
+      "y": -260.7751831589279,
+      "floor": 3,
+      "visual3d": {
+        "widthMeters": 2.4,
+        "depthMeters": 2.4,
+        "heightMeters": 2.7,
+        "rotationDegrees": 0,
+        "sizeMode": "auto",
+        "color": "#6ea8d9"
+      }
+    },
+    {
+      "id": "area_1788184714250_4ndo77pt4",
+      "name": "Khu vực 29",
+      "type": "stairs",
+      "visualKind": "stairs",
+      "x": 130.27173073577592,
+      "y": -123.67089760584656,
+      "floor": 3,
+      "visual3d": {
+        "widthMeters": 2.2,
+        "depthMeters": 3.2,
+        "heightMeters": 2.7,
+        "rotationDegrees": 0,
+        "sizeMode": "manual",
+        "color": "#f4a261"
+      },
+      "stairwellId": "sw_1788183125503"
+    },
+    {
+      "id": "area_1788184714250_944clmcm4",
+      "name": "Khu vực 30",
+      "type": "room",
+      "visualKind": "room",
+      "x": 454,
+      "y": -271.78257775426243,
+      "floor": 3,
+      "visual3d": {
+        "widthMeters": 2.4,
+        "depthMeters": 2.4,
+        "heightMeters": 2.7,
+        "rotationDegrees": 0,
+        "sizeMode": "auto",
+        "color": "#6ea8d9"
+      }
+    },
+    {
+      "id": "area_1788184714250_xnw2jx2rw",
+      "name": "Khu vực 31",
+      "type": "stairs",
+      "visualKind": "stairs",
+      "x": 800.1096783508377,
+      "y": -110.81129892003841,
+      "floor": 3,
+      "visual3d": {
+        "widthMeters": 2.2,
+        "depthMeters": 3.2,
+        "heightMeters": 2.7,
+        "rotationDegrees": 0,
+        "sizeMode": "manual",
+        "color": "#f4a261"
+      },
+      "stairwellId": "sw_1788183135191"
+    },
+    {
+      "id": "area_1788184714250_sah1lprbr",
+      "name": "Khu vực 32",
+      "type": "stairs",
+      "visualKind": "stairs",
+      "x": 953.2644171364464,
+      "y": -364.52531772631676,
+      "floor": 3,
+      "visual3d": {
+        "widthMeters": 2.2,
+        "depthMeters": 3.2,
+        "heightMeters": 2.7,
+        "rotationDegrees": 0,
+        "sizeMode": "manual",
+        "color": "#f4a261"
+      },
+      "stairwellId": "sw_1788183141673"
+    },
+    {
+      "id": "area_1788184714250_em9qkb14a",
+      "name": "Khu vực 33",
+      "type": "stairs",
+      "visualKind": "stairs",
+      "x": 648.0585400934998,
+      "y": -368.0806005841957,
+      "floor": 3,
+      "visual3d": {
+        "widthMeters": 2.2,
+        "depthMeters": 3.2,
+        "heightMeters": 2.7,
+        "rotationDegrees": 0,
+        "sizeMode": "manual",
+        "color": "#f4a261"
+      },
+      "stairwellId": "sw_1788183309467"
+    },
+    {
+      "id": "area_1788184714250_y6m89uku2",
+      "name": "Khu vực 34",
+      "type": "room",
+      "visualKind": "room",
+      "x": -170.49901459965437,
+      "y": 48.66225435635958,
+      "floor": 3,
+      "visual3d": {
+        "widthMeters": 2.4,
+        "depthMeters": 2.4,
+        "heightMeters": 2.7,
+        "rotationDegrees": 0,
+        "sizeMode": "auto",
+        "color": "#6ea8d9"
+      }
+    },
+    {
+      "id": "area_1788184714250_1gpndduwc",
+      "name": "Khu vực 35",
+      "type": "room",
+      "visualKind": "room",
+      "x": 1423.6550051079623,
+      "y": 57.64662920366543,
+      "floor": 3,
+      "visual3d": {
+        "widthMeters": 2.4,
+        "depthMeters": 2.4,
+        "heightMeters": 2.7,
+        "rotationDegrees": 0,
+        "sizeMode": "auto",
+        "color": "#6ea8d9"
+      }
+    },
+    {
+      "id": "area_1788184714250_2mrzsbw8i",
+      "name": "Khu vực 36",
+      "type": "room",
+      "visualKind": "junction",
+      "x": 126.69961957319052,
+      "y": 52.278954321923216,
+      "floor": 3,
+      "visual3d": {
+        "widthMeters": 1.9,
+        "depthMeters": 1.9,
+        "heightMeters": 0.6,
+        "rotationDegrees": 0,
+        "sizeMode": "auto",
+        "color": "#6ea8d9"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_1788183031317",
+      "name": "Khu vực 2 – Khu vực 3",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "a_1788182808441",
+      "areaB_id": "a_1788182811417",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0,
+      "csiLinkId": ""
+    },
+    {
+      "id": "e_1788183040256",
+      "name": "Khu vực 2 – Khu vực 1",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "a_1788182808441",
+      "areaB_id": "a_1788182777734",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0,
+      "csiLinkId": "link-1, link-2"
+    },
+    {
+      "id": "e_1788183041772",
+      "name": "Khu vực 4 – Khu vực 2",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "a_1788182813186",
+      "areaB_id": "a_1788182808441",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0,
+      "csiLinkId": ""
+    },
+    {
+      "id": "e_1788183043600",
+      "name": "Khu vực 9 – Khu vực 2",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "a_1788182912103",
+      "areaB_id": "a_1788182808441",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "e_1788183045464",
+      "name": "Khu vực 10 – Khu vực 5",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "a_1788182959572",
+      "areaB_id": "a_1788182817533",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "e_1788183046338",
+      "name": "Khu vực 5 – Khu vực 3",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "a_1788182817533",
+      "areaB_id": "a_1788182811417",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "e_1788183048502",
+      "name": "Khu vực 7 – Khu vực 4",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "a_1788182852450",
+      "areaB_id": "a_1788182813186",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "e_1788183062403",
+      "name": "Khu vực 11 – Khu vực 5",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "a_1788182960963",
+      "areaB_id": "a_1788182817533",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "e_1788183064578",
+      "name": "Khu vực 7 – Khu vực 11",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "a_1788182852450",
+      "areaB_id": "a_1788182960963",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "e_1788183089765",
+      "name": "Khu vực 8 – Khu vực 6",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "a_1788182892191",
+      "areaB_id": "a_1788182842776",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "corr_1788183099728_lgmj3kglu",
+      "name": "Khu vực 13 – Khu vực 14",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "area_1788183099728_881bsmqjp",
+      "areaB_id": "area_1788183099728_nkds6g0fy",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "corr_1788183099728_dmbe9b6ar",
+      "name": "Khu vực 15 – Khu vực 13",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "area_1788183099728_31lh9xd6a",
+      "areaB_id": "area_1788183099728_881bsmqjp",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "corr_1788183099728_qu86yjrlq",
+      "name": "Khu vực 20 – Khu vực 13",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "area_1788183099728_d35az91f0",
+      "areaB_id": "area_1788183099728_881bsmqjp",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "corr_1788183099728_41yxp7vot",
+      "name": "Khu vực 21 – Khu vực 16",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "area_1788183099728_40q48xg02",
+      "areaB_id": "area_1788183099728_8i96witx6",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "corr_1788183099728_crr6ho0id",
+      "name": "Khu vực 16 – Khu vực 14",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "area_1788183099728_8i96witx6",
+      "areaB_id": "area_1788183099728_nkds6g0fy",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "corr_1788183099728_351y9bdgj",
+      "name": "Khu vực 18 – Khu vực 15",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "area_1788183099728_rep99rh6l",
+      "areaB_id": "area_1788183099728_31lh9xd6a",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "e_1788183125503_59",
+      "name": "Khu vực 17 – Khu vực 6",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "area_1788183099728_rxed8ci0t",
+      "areaB_id": "a_1788182842776",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "e_1788183135191_725",
+      "name": "Khu vực 20 – Khu vực 9",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "area_1788183099728_d35az91f0",
+      "areaB_id": "a_1788182912103",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "e_1788183141672_878",
+      "name": "Khu vực 21 – Khu vực 10",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "area_1788183099728_40q48xg02",
+      "areaB_id": "a_1788182959572",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "e_1788183231039",
+      "name": "Khu vực 7 – Khu vực 20",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "a_1788182852450",
+      "areaB_id": "a_1788183221638",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "e_1788183243655",
+      "name": "Khu vực 18 – Khu vực 21",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "area_1788183099728_rep99rh6l",
+      "areaB_id": "a_1788183238859",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "e_1788183297721",
+      "name": "Khu vực 14 – Khu vực 23",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "area_1788183099728_nkds6g0fy",
+      "areaB_id": "a_1788183290539",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "e_1788183309467_207",
+      "name": "Khu vực 21 – Khu vực 20",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "a_1788183238859",
+      "areaB_id": "a_1788183221638",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "e_1788183433468",
+      "name": "Khu vực 22 – Khu vực 24",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "a_1788183278981",
+      "areaB_id": "a_1788183428704",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "e_1788183434485",
+      "name": "Khu vực 24 – Khu vực 15",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "a_1788183428704",
+      "areaB_id": "area_1788183099728_31lh9xd6a",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "e_1788183435682",
+      "name": "Khu vực 24 – Khu vực 17",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "a_1788183428704",
+      "areaB_id": "area_1788183099728_rxed8ci0t",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "corr_1788184714250_kjnfptmkl",
+      "name": "Khu vực 25 – Khu vực 26",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "area_1788184714250_cct7wrx5r",
+      "areaB_id": "area_1788184714250_elv6jwlxn",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "corr_1788184714250_9c7qxlefz",
+      "name": "Khu vực 27 – Khu vực 25",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "area_1788184714250_rqmxk9a63",
+      "areaB_id": "area_1788184714250_cct7wrx5r",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "corr_1788184714250_g3hdqq170",
+      "name": "Khu vực 31 – Khu vực 25",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "area_1788184714250_xnw2jx2rw",
+      "areaB_id": "area_1788184714250_cct7wrx5r",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "corr_1788184714250_tqb6h5kpo",
+      "name": "Khu vực 32 – Khu vực 28",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "area_1788184714250_sah1lprbr",
+      "areaB_id": "area_1788184714250_15fxhvl3w",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "corr_1788184714250_wa67rgztf",
+      "name": "Khu vực 28 – Khu vực 26",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "area_1788184714250_15fxhvl3w",
+      "areaB_id": "area_1788184714250_elv6jwlxn",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "corr_1788184714250_ytehn53wx",
+      "name": "Khu vực 30 – Khu vực 27",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "area_1788184714250_944clmcm4",
+      "areaB_id": "area_1788184714250_rqmxk9a63",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "corr_1788184714250_yyz4v7sx7",
+      "name": "Khu vực 30 – Khu vực 33",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "area_1788184714250_944clmcm4",
+      "areaB_id": "area_1788184714250_em9qkb14a",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "corr_1788184714250_imknx62bk",
+      "name": "Khu vực 26 – Khu vực 35",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "area_1788184714250_elv6jwlxn",
+      "areaB_id": "area_1788184714250_1gpndduwc",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "corr_1788184714250_lymss8lhd",
+      "name": "Khu vực 34 – Khu vực 36",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "area_1788184714250_y6m89uku2",
+      "areaB_id": "area_1788184714250_2mrzsbw8i",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "corr_1788184714250_7v3ox7abo",
+      "name": "Khu vực 36 – Khu vực 27",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "area_1788184714250_2mrzsbw8i",
+      "areaB_id": "area_1788184714250_rqmxk9a63",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "corr_1788184714250_7ccxd3xha",
+      "name": "Khu vực 36 – Khu vực 29",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "area_1788184714250_2mrzsbw8i",
+      "areaB_id": "area_1788184714250_4ndo77pt4",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "e_1788690084006_68",
+      "name": "Khu vực 17 – Khu vực 29",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "area_1788183099728_rxed8ci0t",
+      "areaB_id": "area_1788184714250_4ndo77pt4",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "e_1788690114191_527",
+      "name": "Khu vực 20 – Khu vực 31",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "area_1788183099728_d35az91f0",
+      "areaB_id": "area_1788184714250_xnw2jx2rw",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "e_1788690135084_890",
+      "name": "Khu vực 21 – Khu vực 33",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "a_1788183238859",
+      "areaB_id": "area_1788184714250_em9qkb14a",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    },
+    {
+      "id": "e_1788690158142_748",
+      "name": "Khu vực 21 – Khu vực 32",
+      "length": 10,
+      "lengthEstimated": true,
+      "widthMeters": 1.2,
+      "widthEstimated": true,
+      "initialOccupancy": 0.5,
+      "areaA_id": "area_1788183099728_40q48xg02",
+      "areaB_id": "area_1788184714250_sah1lprbr",
+      "capacityPeople": 24,
+      "flowCapacity": 1.56,
+      "hazard": 0
+    }
+  ],
+  "devices": [
+    {
+      "id": "node_spkr_01",
+      "name": "Node 1 - Loa Cửa Thoát (Gateway)",
+      "type": "speaker",
+      "edge_id": "e_1788183040256",
+      "csiLinkId": "link-2",
+      "node_id": 1,
+      "topic": "building/guidance/speaker/node_1"
+    },
+    {
+      "id": "node_spkr_02",
+      "name": "Node 2 - Loa Giữa Hành Lang (Relay 1)",
+      "type": "speaker",
+      "edge_id": "e_1788183040256",
+      "csiLinkId": "link-1",
+      "node_id": 2,
+      "topic": "building/guidance/speaker/node_2"
+    },
+    {
+      "id": "node_spkr_03",
+      "name": "Node 3 - Loa Đầu Hành Lang (Relay 2)",
+      "type": "speaker",
+      "edge_id": "e_1788183040256",
+      "csiLinkId": "link-1",
+      "node_id": 3,
+      "topic": "building/guidance/speaker/node_3"
+    }
+  ],
+  "floorImages": {},
+  "floors": [
+    1,
+    2,
+    3
+  ],
+  "schemaVersion": 3,
+  "scene3d": {
+    "planUnitsPerMeter": 40,
+    "floorHeightMeters": 3.2,
+    "floorExplodeMeters": 2,
+    "gridSizeMeters": 1
+  },
+  "stairwells": [
+    {
+      "id": "sw_1788183125503",
+      "areaIds": [
+        "area_1788184714250_4ndo77pt4",
+        "area_1788183099728_rxed8ci0t",
+        "a_1788182842776"
+      ],
+      "planAnchor": {
+        "x": 130.27173073577592,
+        "y": -123.67089760584656
+      },
+      "visual3d": {
+        "widthMeters": 2.2,
+        "depthMeters": 3.2,
+        "rotationDegrees": 0
+      },
+      "landingConfigs": {
+        "area_1788184714250_4ndo77pt4": {
+          "entranceSide": "auto"
+        },
+        "area_1788183099728_rxed8ci0t": {
+          "entranceSide": "auto"
+        },
+        "a_1788182842776": {
+          "entranceSide": "auto"
+        }
+      }
+    },
+    {
+      "id": "sw_1788183135191",
+      "areaIds": [
+        "area_1788184714250_xnw2jx2rw",
+        "area_1788183099728_d35az91f0",
+        "a_1788182912103"
+      ],
+      "planAnchor": {
+        "x": 800.1096783508377,
+        "y": -110.81129892003841
+      },
+      "visual3d": {
+        "widthMeters": 2.2,
+        "depthMeters": 3.2,
+        "rotationDegrees": 0
+      },
+      "landingConfigs": {
+        "area_1788184714250_xnw2jx2rw": {
+          "entranceSide": "auto"
+        },
+        "area_1788183099728_d35az91f0": {
+          "entranceSide": "auto"
+        },
+        "a_1788182912103": {
+          "entranceSide": "auto"
+        }
+      }
+    },
+    {
+      "id": "sw_1788183309467",
+      "areaIds": [
+        "area_1788184714250_em9qkb14a",
+        "a_1788183238859",
+        "a_1788183221638"
+      ],
+      "planAnchor": {
+        "x": 648.0585400934998,
+        "y": -368.0806005841957
+      },
+      "visual3d": {
+        "widthMeters": 2.2,
+        "depthMeters": 3.2,
+        "rotationDegrees": 0
+      },
+      "landingConfigs": {
+        "area_1788184714250_em9qkb14a": {
+          "entranceSide": "auto"
+        },
+        "a_1788183238859": {
+          "entranceSide": "auto"
+        },
+        "a_1788183221638": {
+          "entranceSide": "auto"
+        }
+      }
+    },
+    {
+      "id": "sw_1788183141673",
+      "areaIds": [
+        "area_1788184714250_sah1lprbr",
+        "area_1788183099728_40q48xg02",
+        "a_1788182959572"
+      ],
+      "planAnchor": {
+        "x": 953.2644171364464,
+        "y": -364.52531772631676
+      },
+      "visual3d": {
+        "widthMeters": 2.2,
+        "depthMeters": 3.2,
+        "rotationDegrees": 0
+      },
+      "landingConfigs": {
+        "area_1788184714250_sah1lprbr": {
+          "entranceSide": "auto"
+        },
+        "area_1788183099728_40q48xg02": {
+          "entranceSide": "auto"
+        },
+        "a_1788182959572": {
+          "entranceSide": "auto"
+        }
+      }
+    }
+  ]
+}

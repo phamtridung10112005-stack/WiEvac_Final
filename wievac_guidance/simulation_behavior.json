@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "enabled": true,
+  "forecast_horizon_seconds": 60,
+  "forecast_lookahead_seconds": 15,
+  "forecast_scenarios": 20,
+  "tick_seconds": 1,
+  "guidance_compliance": 0.7,
+  "familiar_route_weight": 0.5,
+  "follow_crowd_weight": 0.3,
+  "random_safe_route_weight": 0.2,
+  "decision_hold_seconds": 2,
+  "scenario_seed": 20260813,
+  "area_overrides": {},
+  "familiar_routes": {}
+}

@@ -19,6 +19,9 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "nvs_flash.h"
+#include "nvs.h"
+#include <stdio.h>
+#include "dfplayer_mini.h"
 
 #if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(5, 0, 0) || \
     ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 5, 0)
@@ -27,7 +30,7 @@
 
 #define WIEVAC_LINK_ID             UINT32_C(1)
 #define WIEVAC_TX_ID               UINT32_C(1)
-#define WIEVAC_RX_COUNT            2U
+#define WIEVAC_RX_COUNT            10U
 #define WIEVAC_WIFI_CHANNEL        11U
 #define WIEVAC_WIFI_BANDWIDTH      WIFI_BW_HT20
 #define WIEVAC_ESPNOW_RATE         WIFI_PHY_RATE_MCS0_LGI
@@ -68,6 +71,56 @@ typedef struct {
     uint64_t timestamp_us;
 } v4_header_t;
 
+#define WIEVAC_MESH_MAGIC                UINT32_C(0x57455643) /* 'WEVC' */
+#define WIEVAC_MESH_VERSION              UINT8_C(1)
+
+#define WIEVAC_MSG_CSI_FEATURE           UINT8_C(1)
+#define WIEVAC_MSG_HEARTBEAT             UINT8_C(2)
+#define WIEVAC_MSG_ROUTE_REPORT          UINT8_C(3)
+#define WIEVAC_MSG_NODE_EVENT            UINT8_C(4)
+#define WIEVAC_MSG_CONTROL               UINT8_C(5)
+#define WIEVAC_MSG_CONTROL_ACK           UINT8_C(6)
+
+#pragma pack(push, 1)
+typedef struct {
+    uint8_t  node_id;
+    float    std_dev;
+    float    mean_amp;
+    uint32_t timestamp;
+} wievac_feature_t;
+
+typedef struct {
+    uint8_t  target_node_id;  // 0 = broadcast toan mang
+    uint8_t  command;         // 10=START_EVAC, 11=GO_STRAIGHT, 12=TURN_LEFT, 13=TURN_RIGHT, 17=STOP_DANGER, 19=CLEAR
+    uint8_t  priority;        // 1=Normal, 2=Evac, 3=Danger, 4=Emergency
+    uint8_t  status;          // 0=Command, 1=ACK Received, 2=ACK Executed
+    uint32_t command_id;     // ID dinh danh goi lenh
+    uint16_t duration_s;     // Thoi han hieu luc
+    uint16_t route_id;       // Ma tuyen
+    uint8_t  attempt;        // Lan phat tu Pi
+} wievac_control_payload_t;
+
+typedef struct {
+    uint32_t magic;
+    uint8_t  version;
+    uint8_t  message_type;
+    uint8_t  origin_node_id;
+    uint8_t  last_hop_node_id;
+    uint32_t sequence;
+    uint8_t  hop_count;
+    uint8_t  ttl;
+    uint8_t  flags;
+    int8_t   link_rssi;
+    union {
+        wievac_feature_t feature;
+        wievac_control_payload_t control;
+    };
+} wievac_mesh_packet_t;
+#pragma pack(pop)
+
+
+static uint32_t s_wievac_node_id = 2U;
+
 static const char *TAG = "wievac_tx_v4";
 static const uint8_t BROADCAST_MAC[ESP_NOW_ETH_ALEN] = {
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff
@@ -76,8 +129,8 @@ static const uint8_t BROADCAST_MAC[ESP_NOW_ETH_ALEN] = {
 static portMUX_TYPE s_mux = portMUX_INITIALIZER_UNLOCKED;
 static uint8_t s_rx_macs[WIEVAC_RX_COUNT][ESP_NOW_ETH_ALEN];
 static uint8_t s_reply_macs[WIEVAC_RX_COUNT][ESP_NOW_ETH_ALEN];
-static uint8_t s_reply_mask;
-static uint8_t s_paired_mask;
+static uint16_t s_reply_mask;
+static uint16_t s_paired_mask;
 static uint32_t s_boot_id;
 static uint32_t s_measurement_sequence;
 static uint32_t s_control_sequence;
@@ -317,7 +370,26 @@ static bool rx_id_slot(uint32_t rx_id, size_t *slot)
 
 static void receive_callback(const esp_now_recv_info_t *info, const uint8_t *data, int length)
 {
-    if (info == NULL || info->src_addr == NULL || data == NULL || length != V4_HEADER_SIZE) {
+    if (info == NULL || info->src_addr == NULL || data == NULL) {
+        return;
+    }
+    if (length == (int)sizeof(wievac_mesh_packet_t)) {
+        const wievac_mesh_packet_t *mesh = (const wievac_mesh_packet_t *)data;
+        if (mesh->magic == WIEVAC_MESH_MAGIC && mesh->message_type == WIEVAC_MSG_CONTROL &&
+            (mesh->control.target_node_id == (uint8_t)s_wievac_node_id || mesh->control.target_node_id == 0U)) {
+            ESP_LOGW(TAG, "TX downlink node=%u cmd=%u cmd_id=%" PRIu32,
+                     (unsigned)s_wievac_node_id, mesh->control.command, mesh->control.command_id);
+            dfplayer_execute_command(mesh->control.command);
+            wievac_mesh_packet_t ack = *mesh;
+            ack.message_type = WIEVAC_MSG_CONTROL_ACK;
+            ack.origin_node_id = (uint8_t)s_wievac_node_id;
+            ack.last_hop_node_id = (uint8_t)s_wievac_node_id;
+            ack.control.status = 1U;
+            (void)esp_now_send(BROADCAST_MAC, (const uint8_t *)&ack, sizeof(ack));
+        }
+        return;
+    }
+    if (length != (int)V4_HEADER_SIZE) {
         return;
     }
     v4_header_t header;
@@ -338,7 +410,7 @@ static void receive_callback(const esp_now_recv_info_t *info, const uint8_t *dat
     }
     portENTER_CRITICAL(&s_mux);
     memcpy(s_reply_macs[slot], info->src_addr, ESP_NOW_ETH_ALEN);
-    s_reply_mask |= (uint8_t)(1U << slot);
+    s_reply_mask |= (uint16_t)(1U << slot);
     portEXIT_CRITICAL(&s_mux);
 }
 
@@ -413,7 +485,7 @@ static void send_packet(uint8_t type, const uint8_t destination[ESP_NOW_ETH_ALEN
 static void expire_unresponsive_peers(int64_t now_us)
 {
     const int64_t timeout_us = (int64_t)WIEVAC_PEER_TIMEOUT_MS * 1000;
-    uint8_t expired_mask = 0U;
+    uint16_t expired_mask = 0U;
     uint32_t attempts[WIEVAC_RX_COUNT] = {0};
     uint32_t successes[WIEVAC_RX_COUNT] = {0};
     uint32_t failures[WIEVAC_RX_COUNT] = {0};
@@ -427,9 +499,9 @@ static void expire_unresponsive_peers(int64_t now_us)
         const int64_t last_delivery = s_last_success_us[slot];
         const int64_t liveness_start = last_delivery > 0 ? last_delivery : s_paired_since_us[slot];
         if (liveness_start > 0 && now_us - liveness_start > timeout_us) {
-            s_paired_mask &= (uint8_t)~(1U << slot);
+            s_paired_mask &= (uint16_t)~(1U << slot);
             s_outstanding_per_rx[slot] = 0U;
-            expired_mask |= (uint8_t)(1U << slot);
+            expired_mask |= (uint16_t)(1U << slot);
             attempts[slot] = s_attempted_per_rx[slot];
             successes[slot] = s_callback_success_per_rx[slot];
             failures[slot] = s_callback_failure_per_rx[slot] + s_send_error_per_rx[slot];
@@ -455,7 +527,7 @@ static void expire_unresponsive_peers(int64_t now_us)
 
 static void accept_pair_replies(void)
 {
-    uint8_t pending_mask;
+    uint16_t pending_mask;
     uint8_t candidates[WIEVAC_RX_COUNT][ESP_NOW_ETH_ALEN];
     portENTER_CRITICAL(&s_mux);
     pending_mask = s_reply_mask;
@@ -480,7 +552,7 @@ static void accept_pair_replies(void)
         const bool mac_changed = was_paired &&
                                  memcmp(s_rx_macs[slot], candidates[slot], ESP_NOW_ETH_ALEN) != 0;
         memcpy(s_rx_macs[slot], candidates[slot], ESP_NOW_ETH_ALEN);
-        s_paired_mask |= (uint8_t)(1U << slot);
+        s_paired_mask |= (uint16_t)(1U << slot);
         /* Pair replies establish identity only. They are not measurement
          * delivery, so they must never refresh last-success liveness. */
         if (!was_paired || mac_changed) {
@@ -525,7 +597,7 @@ static void log_status(void)
     uint32_t callback_failure;
     uint32_t send_error;
     uint32_t skipped_backpressure;
-    uint8_t paired_mask;
+    uint16_t paired_mask;
     portENTER_CRITICAL(&s_mux);
     requested = s_requested;
     succeeded = s_succeeded;
@@ -580,6 +652,43 @@ static void log_status(void)
     }
 }
 
+static void serial_id_config_task(void *arg)
+{
+    char line[32];
+    int idx = 0;
+    (void)arg;
+    for (;;) {
+        int c = getchar();
+        if (c != EOF && c > 0) {
+            if (c == '\r' || c == '\n') {
+                if (idx > 0) {
+                    line[idx] = '\0';
+                    uint32_t new_id = 0;
+                    if (sscanf(line, "ID=%" SCNu32, &new_id) == 1 || sscanf(line, "SET_ID=%" SCNu32, &new_id) == 1) {
+                        if (new_id >= 1U && new_id <= 254U) {
+                            nvs_handle_t nvs_cfg;
+                            if (nvs_open("wievac_cfg", NVS_READWRITE, &nvs_cfg) == ESP_OK) {
+                                (void)nvs_set_u32(nvs_cfg, "node_id", new_id);
+                                (void)nvs_set_u32(nvs_cfg, "tx_id", new_id);
+                                (void)nvs_commit(nvs_cfg);
+                                nvs_close(nvs_cfg);
+                                ESP_LOGW(TAG, "SET_ID=%" PRIu32 " saved; restarting", new_id);
+                                vTaskDelay(pdMS_TO_TICKS(1000));
+                                esp_restart();
+                            }
+                        }
+                    }
+                    idx = 0;
+                }
+            } else if (idx < (int)sizeof(line) - 1) {
+                line[idx++] = (char)c;
+            }
+        } else {
+            vTaskDelay(pdMS_TO_TICKS(100));
+        }
+    }
+}
+
 void app_main(void)
 {
     esp_err_t err = nvs_flash_init();
@@ -592,9 +701,10 @@ void app_main(void)
         CONFIG_WIEVAC_RX1_MAC, CONFIG_WIEVAC_RX2_MAC,
     };
     for (size_t slot = 0; slot < WIEVAC_RX_COUNT; ++slot) {
-        if (expected_rx_text[slot][0] == '\0') {
+        const char *expected = expected_rx_text[slot];
+        if (expected == NULL || expected[0] == '\0') {
             ESP_LOGW(TAG, "pairing_auth=trusted_closed_lab rx-%u_mac=unset", (unsigned)(slot + 1U));
-        } else if (parse_mac_text(expected_rx_text[slot], s_expected_rx_macs[slot])) {
+        } else if (parse_mac_text(expected, s_expected_rx_macs[slot])) {
             s_expected_rx_mac_configured[slot] = true;
         } else {
             s_expected_rx_mac_invalid[slot] = true;
@@ -611,6 +721,38 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_now_register_send_cb(send_callback));
     ESP_ERROR_CHECK(esp_now_register_recv_cb(receive_callback));
     ESP_ERROR_CHECK(add_peer(BROADCAST_MAC));
+    bool id_from_nvs = false;
+    nvs_handle_t nvs_cfg;
+    if (nvs_open("wievac_cfg", NVS_READONLY, &nvs_cfg) == ESP_OK) {
+        uint32_t custom_id = 0;
+        if ((nvs_get_u32(nvs_cfg, "node_id", &custom_id) == ESP_OK ||
+             nvs_get_u32(nvs_cfg, "tx_id", &custom_id) == ESP_OK ||
+             nvs_get_u32(nvs_cfg, "rx_id", &custom_id) == ESP_OK) && custom_id > 0U) {
+            s_wievac_node_id = custom_id;
+            id_from_nvs = true;
+        }
+        nvs_close(nvs_cfg);
+    }
+    if (!id_from_nvs) {
+        uint8_t my_mac[6];
+        if (esp_read_mac(my_mac, ESP_MAC_WIFI_STA) == ESP_OK) {
+            static const uint8_t MAC_NODE_1[6] = {0x94, 0xa9, 0x90, 0xea, 0xea, 0x10};
+            static const uint8_t MAC_NODE_2_A[6] = {0x28, 0x84, 0x85, 0x48, 0xed, 0x30};
+            static const uint8_t MAC_NODE_2_B[6] = {0x28, 0x84, 0x85, 0x48, 0xdb, 0xdc};
+            static const uint8_t MAC_NODE_3[6] = {0x28, 0x84, 0x85, 0x85, 0x53, 0x94};
+            if (memcmp(my_mac, MAC_NODE_1, 6) == 0) {
+                s_wievac_node_id = 1;
+            } else if (memcmp(my_mac, MAC_NODE_2_A, 6) == 0 || memcmp(my_mac, MAC_NODE_2_B, 6) == 0) {
+                s_wievac_node_id = 2;
+            } else if (memcmp(my_mac, MAC_NODE_3, 6) == 0) {
+                s_wievac_node_id = 3;
+            }
+        }
+    }
+    (void)dfplayer_init(DFPLAYER_DEFAULT_TX_PIN, DFPLAYER_DEFAULT_RX_PIN);
+    ESP_ERROR_CHECK(xTaskCreate(serial_id_config_task, "serial_cfg", 4096U, NULL, 1U, NULL) == pdPASS ? ESP_OK : ESP_ERR_NO_MEM);
+    ESP_LOGI(TAG, "runtime tx node_id=%" PRIu32 " source=%s",
+             s_wievac_node_id, id_from_nvs ? "NVS" : "MAC_OR_DEFAULT");
 
     ESP_LOGI(TAG, "V4 TX boot=%" PRIu32 " link=%" PRIu32
              " channel=%u bandwidth=HT20 mcs=0 phy_rate=%u measurement_hz=%u",
@@ -631,50 +773,10 @@ void app_main(void)
             last_hello_us = now_us;
         }
 
-        /* Increment sequence and capture timestamp once; both RX links get this exact pair. */
-        uint8_t paired_mask;
-        uint8_t destinations[WIEVAC_RX_COUNT][ESP_NOW_ETH_ALEN];
-        portENTER_CRITICAL(&s_mux);
-        paired_mask = s_paired_mask;
-        memcpy(destinations, s_rx_macs, sizeof(destinations));
-        bool backpressure = false;
-        for (size_t slot = 0; slot < WIEVAC_RX_COUNT; ++slot) {
-            if ((paired_mask & (1U << slot)) != 0U &&
-                s_outstanding_per_rx[slot] >= WIEVAC_MAX_OUTSTANDING_PER_RX) {
-                backpressure = true;
-            }
-        }
-        if (backpressure) {
-            for (size_t slot = 0; slot < WIEVAC_RX_COUNT; ++slot) {
-                if ((paired_mask & (1U << slot)) != 0U) {
-                    /* Count the skipped per-RX measurement exactly as
-                     * send_packet() would have counted a selective skip. */
-                    ++s_scheduled;
-                    ++s_scheduled_per_rx[slot];
-                    ++s_skipped_backpressure;
-                    ++s_skipped_backpressure_per_rx[slot];
-                }
-            }
-        }
-        portEXIT_CRITICAL(&s_mux);
-        if (paired_mask != 0U) {
-            if (backpressure) {
-                /* Keep the shared sequence contiguous when one RX cannot
-                 * accept the measurement; do not selectively skip a link. */
-                if (now_us - last_log_us >= (int64_t)WIEVAC_LOG_INTERVAL_MS * 1000) {
-                    ESP_LOGW(TAG, "measurement skipped=backpressure paired_mask=0x%02x", paired_mask);
-                }
-            } else {
-                const uint32_t sequence = ++s_measurement_sequence;
-                const uint64_t timestamp_us = (uint64_t)esp_timer_get_time();
-                for (size_t slot = 0; slot < WIEVAC_RX_COUNT; ++slot) {
-                    if ((paired_mask & (1U << slot)) != 0U) {
-                        send_packet(V4_MSG_MEASUREMENT, destinations[slot], (uint32_t)(slot + 1U),
-                                    sequence, timestamp_us);
-                    }
-                }
-            }
-        }
+        /* One broadcast measurement: every node on channel 11 captures the same CSI frame. */
+        const uint32_t sequence = ++s_measurement_sequence;
+        const uint64_t timestamp_us = (uint64_t)esp_timer_get_time();
+        send_packet(V4_MSG_MEASUREMENT, BROADCAST_MAC, 0U, sequence, timestamp_us);
         if (now_us - last_log_us >= (int64_t)WIEVAC_LOG_INTERVAL_MS * 1000) {
             log_status();
             last_log_us = now_us;

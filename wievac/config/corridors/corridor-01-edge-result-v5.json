@@ -28,7 +28,15 @@
   },
   "links": [
     {"link_id": "link-1", "device_id": "device-1", "node_id": "rx-1", "tx_id": "tx-1", "rx_id": "rx-1", "corridor_id": "corridor-01", "display_name": "Hành lang 1", "enabled": true, "sort_order": 1},
-    {"link_id": "link-2", "device_id": "device-1", "node_id": "rx-2", "tx_id": "tx-1", "rx_id": "rx-2", "corridor_id": "corridor-01", "display_name": "Hành lang 2", "enabled": true, "sort_order": 2}
+    {"link_id": "link-2", "device_id": "device-1", "node_id": "rx-2", "tx_id": "tx-1", "rx_id": "rx-2", "corridor_id": "corridor-01", "display_name": "Hành lang 2", "enabled": true, "sort_order": 2},
+    {"link_id": "link-3", "device_id": "device-1", "node_id": "rx-3", "tx_id": "tx-1", "rx_id": "rx-3", "corridor_id": "corridor-01", "display_name": "Hành lang 3", "enabled": true, "sort_order": 3},
+    {"link_id": "link-4", "device_id": "device-1", "node_id": "rx-4", "tx_id": "tx-1", "rx_id": "rx-4", "corridor_id": "corridor-01", "display_name": "Hành lang 4", "enabled": true, "sort_order": 4},
+    {"link_id": "link-5", "device_id": "device-1", "node_id": "rx-5", "tx_id": "tx-1", "rx_id": "rx-5", "corridor_id": "corridor-01", "display_name": "Hành lang 5", "enabled": true, "sort_order": 5},
+    {"link_id": "link-6", "device_id": "device-1", "node_id": "rx-6", "tx_id": "tx-1", "rx_id": "rx-6", "corridor_id": "corridor-01", "display_name": "Hành lang 6", "enabled": true, "sort_order": 6},
+    {"link_id": "link-7", "device_id": "device-1", "node_id": "rx-7", "tx_id": "tx-1", "rx_id": "rx-7", "corridor_id": "corridor-01", "display_name": "Hành lang 7", "enabled": true, "sort_order": 7},
+    {"link_id": "link-8", "device_id": "device-1", "node_id": "rx-8", "tx_id": "tx-1", "rx_id": "rx-8", "corridor_id": "corridor-01", "display_name": "Hành lang 8", "enabled": true, "sort_order": 8},
+    {"link_id": "link-9", "device_id": "device-1", "node_id": "rx-9", "tx_id": "tx-1", "rx_id": "rx-9", "corridor_id": "corridor-01", "display_name": "Hành lang 9", "enabled": true, "sort_order": 9},
+    {"link_id": "link-10", "device_id": "device-1", "node_id": "rx-10", "tx_id": "tx-1", "rx_id": "rx-10", "corridor_id": "corridor-01", "display_name": "Hành lang 10", "enabled": true, "sort_order": 10}
   ],
   "compatibility": {
     "v5_feature_schema_version": "5",

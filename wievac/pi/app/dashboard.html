@@ -268,6 +268,43 @@
     .label-bar button.active-human { background: #fff1dc; color: var(--warn); border-color: var(--warn); }
     .label-bar button.active-unknown { background: #edf0f1; color: var(--muted); }
     .label-current { margin: 8px 0 0; color: var(--muted); font-size: 0.95rem; font-weight: 700; }
+    .route-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 8px 0 10px;
+      padding: 6px 10px;
+      background: #f0f5f4;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font-size: 0.85rem;
+    }
+    .route-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 800;
+      font-size: 0.72rem;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .route-badge.direct {
+      background: #087ea4;
+      color: #fff;
+    }
+    .route-badge.relay {
+      background: #d65b36;
+      color: #fff;
+    }
+    .route-path {
+      color: var(--ink);
+      font-weight: 700;
+      letter-spacing: .01em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     .recording-line { margin: 0 0 8px; color: var(--ok); font-weight: 800; font-size: 0.95rem; }
     .recording-line.idle { color: var(--muted); font-weight: 700; }
     .capture-card {
@@ -441,6 +478,46 @@
       </div>
       <div id="schedule-list" class="schedule-list"></div>
     </section>
+    <section class="capture-card" aria-label="Phát gói tin điều hướng sơ tán">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2>Phát gói tin điều hướng (Downlink: Pi ➔ Node)</h2>
+        <span id="downlink-status-badge" style="font-size:0.85rem; font-weight:700; padding:4px 10px; border-radius:99px; background:#e0f2fe; color:#0369a1;">Sẵn sàng phát</span>
+      </div>
+      <p class="capture-help">Gửi trực tiếp gói tin 29 bytes từ Pi 5 qua UDP port 8889 tới Gateway và tự động chuyển tiếp qua ESP-NOW Mesh tới các Node ở xa.</p>
+      <div class="capture-grid" style="grid-template-columns: repeat(3, minmax(130px, 1fr)) auto auto;">
+        <label>Node đích
+          <select id="downlink-target">
+            <option value="1" selected>Node 1 (Gateway)</option>
+            <option value="2">Node 2 (Relay)</option>
+            <option value="3">Node 3 (Relay)</option>
+            <option value="0">TOÀN MẠNG (Broadcast 0)</option>
+          </select>
+        </label>
+        <label>Lệnh điều hướng
+          <select id="downlink-cmd">
+            <option value="11" selected>11 - Đi thẳng (GO_STRAIGHT)</option>
+            <option value="12">12 - Rẽ trái (TURN_LEFT)</option>
+            <option value="13">13 - Rẽ phải (TURN_RIGHT)</option>
+            <option value="10">10 - Bắt đầu sơ tán (START_EVAC)</option>
+            <option value="16">16 - Lối thoát an toàn (SAFE_EXIT)</option>
+            <option value="17">17 - Dừng lại / Nguy hiểm (STOP_DANGER)</option>
+            <option value="18">18 - Chờ hướng dẫn (WAIT)</option>
+            <option value="19">19 - Xóa điều hướng (CLEAR)</option>
+          </select>
+        </label>
+        <label>Mức ưu tiên
+          <select id="downlink-priority">
+            <option value="1" selected>1 - Bình thường (Normal)</option>
+            <option value="2">2 - Sơ tán (Evac)</option>
+            <option value="3">3 - Nguy hiểm (Danger)</option>
+            <option value="4">4 - Khẩn cấp (Emergency)</option>
+          </select>
+        </label>
+        <button id="downlink-send-btn" class="btn primary" type="button" style="background:#2563eb; color:#fff; font-weight:700;">Gửi gói tin</button>
+        <button id="downlink-clear-btn" class="btn" type="button" style="background:#ef4444; color:#fff; font-weight:700;">Dừng toàn mạng</button>
+      </div>
+      <div id="downlink-result" style="margin-top:10px; font-size:0.88rem; font-weight:600; color:#475569; padding:8px 12px; background:#f8fafc; border-radius:8px; border:1px solid #e2e8f0; display:none;"></div>
+    </section>
     <div class="workspace">
       <nav class="sidebar">
         <button id="nav-list" class="active" type="button">Danh sách</button>
@@ -490,6 +567,10 @@
           <p class="card-hint" data-hint>Đang chờ tín hiệu từ RX</p>
         </div>
       </div>
+      <div class="route-box" data-route-box>
+        <span class="route-badge direct" data-route-badge>TRỰC TIẾP (GATEWAY)</span>
+        <span class="route-path" data-route-path>➔ Pi 5 (Direct)</span>
+      </div>
       <b class="state-text" data-state-text>CHƯA NHẬN PACKET</b>
       <div class="primary">
         <div class="metric"><label>Độ ổn định</label><b data-stability>--</b></div>
@@ -509,7 +590,7 @@
         <button type="button" data-occupancy="UNKNOWN">Không rõ</button>
       </div>
       <p class="label-current" data-label-current>Nhãn: Chưa gắn nhãn</p>
-      <div class="fw-warn hidden" data-fw>Firmware hiện chỉ hỗ trợ RX 1–2. Node đã đăng ký nhưng chưa nhận packet cho đến khi firmware được nới.</div>
+      <div class="fw-warn hidden" data-fw>Node thêm hiện khi RX đã nạp firmware mới và SET_ID trùng số node.</div>
     </article>
   </template>
 
@@ -531,7 +612,7 @@
         <label>RX ID <input name="rx_id" required placeholder="rx-3"></label>
         <label>Node ID <input name="node_id" placeholder="mặc định = RX ID"></label>
         <label>Corridor <input name="corridor_id" placeholder="corridor-01"></label>
-        <label class="fw-warn hidden" id="form-fw">Firmware hiện chỉ hỗ trợ RX 1–2. Node sẽ hiện trên dashboard nhưng chưa nhận packet cho đến khi firmware được nới.</label>
+        <label class="fw-warn hidden" id="form-fw">Node thêm hiện khi RX đã nạp firmware mới và SET_ID trùng số node.</label>
       </div>
       <div class="form-actions">
         <button class="btn" id="form-cancel" type="button">Hủy</button>
@@ -556,13 +637,16 @@
     let recordingActive = false;
     let selectedId = null;
     let editingId = null;
-    let viewMode = localStorage.getItem("wievac-view") === "manage" ? "manage" : "wall";
-
+    let viewMode = localStorage.getItem("wievac-view") || "wall";
     function packetPresent(v) {
       return !!(v && v.arrival_timestamp_us!==null && v.arrival_timestamp_us!==undefined);
     }
     function unstableWindow(v) {
-      return v.display_unstable !== undefined ? v.display_unstable : (Number(v?.sequence_gap || 0) > 0 || Number(v?.queue_drop_count || 0) > 0 || Number(v?.invalid_count || 0) > 0);
+      if (v.display_unstable !== undefined) return v.display_unstable;
+      const sampleCount = Number(v?.sample_count || 100);
+      const gap = Number(v?.sequence_gap || 0);
+      const gapRatio = sampleCount + gap > 0 ? gap / (sampleCount + gap) : 0;
+      return (gapRatio > 0.25 || Number(v?.queue_drop_count || 0) > 5 || Number(v?.invalid_count || 0) > 10);
     }
     function commitDisplayState(id, candidate) {
       if (!displayState[id]) displayState[id] = { stable: null, pending: null, count: 0, score: null };
@@ -694,6 +778,52 @@
       else if (view.viewState === "PASSABLE") root.classList.add("is-ok");
       else if (view.viewState === "DEGRADED") root.classList.add("is-warn");
       else if (view.viewState === "BLOCKED" || view.stale || view.viewState === "UNSTABLE") root.classList.add("is-bad");
+      let isRelay = v?.is_relay || (Number(v?.hop_count || 0) > 0) || v?.role === "RELAY";
+      let path = v?.route_path || "";
+      const nodeNum = (root.dataset.linkId || "").replace("link-", "");
+      if (isRelay && path) {
+        // If the route claims to relay through Node X, but Node X is dead/stale, it cannot be relaying through it!
+        const match = path.match(/➔\s*Node\s*(\d+)\s*\(Gateway\)/);
+        if (match) {
+          const gwLinkId = "link-" + match[1];
+          const gwView = views[gwLinkId];
+          if (gwView && (gwView.stale || !gwView.hasPacket)) {
+            isRelay = false;
+            path = "Node " + nodeNum + " ➔ Pi 5 (Direct)";
+          }
+        }
+      }
+      const routeBox = root.querySelector("[data-route-box]");
+      const routeBadge = root.querySelector("[data-route-badge]");
+      const routePath = root.querySelector("[data-route-path]");
+      if (routeBox && routeBadge && routePath) {
+        if (!view.hasPacket) {
+          routeBadge.className = "route-badge";
+          routeBadge.style.background = "#94a3b8";
+          routeBadge.style.color = "#fff";
+          routeBadge.textContent = "CHƯA KẾT NỐI";
+          routePath.textContent = "Đang chờ tín hiệu...";
+        } else if (isRelay) {
+          routeBadge.className = "route-badge relay";
+          routeBadge.style.background = "";
+          routeBadge.textContent = "RELAY (" + (v?.hop_count || 1) + " CHẶNG)";
+          if (!path) {
+            path = "Node " + (nodeNum || "2") + " ➔ Node 1 (Gateway) ➔ Pi 5";
+          } else if (nodeNum) {
+            const selfGateway = "Node " + nodeNum + " (Gateway)";
+            if (path.includes("Node " + nodeNum + " ➔ " + selfGateway)) {
+              path = path.replace(selfGateway, "Node 1 (Gateway)");
+            }
+          }
+          routePath.textContent = path;
+        } else {
+          routeBadge.className = "route-badge direct";
+          routeBadge.style.background = "";
+          routeBadge.textContent = "TRỰC TIẾP (GATEWAY)";
+          const nodeId = (root.dataset.linkId || "").replace("link-", "Node ");
+          routePath.textContent = path || (nodeId + " ➔ Pi 5 (Direct)");
+        }
+      }
       paintLabelBar(root, root.dataset.linkId);
     }
     function occupancyCaption(code) {
@@ -1028,6 +1158,52 @@
     const endEl = document.querySelector("#capture-end");
     if (startEl && !startEl.value) startEl.value = toLocalInput(captureWindow.start);
     if (endEl && !endEl.value) endEl.value = toLocalInput(captureWindow.end);
+    const sendBtn = document.getElementById("downlink-send-btn");
+    const clearBtn = document.getElementById("downlink-clear-btn");
+    const dlResult = document.getElementById("downlink-result");
+    const dlBadge = document.getElementById("downlink-status-badge");
+
+    async function sendGuidance(target, cmd, priority) {
+      if (dlBadge) { dlBadge.textContent = "Đang phát gói tin..."; dlBadge.style.background = "#fef08a"; dlBadge.style.color = "#854d0e"; }
+      try {
+        const resp = await fetch("/api/v5/guidance", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ target, command: cmd, priority })
+        });
+        const data = await resp.json();
+        if (data.status === "ok") {
+          const res = data.result;
+          if (dlBadge) { dlBadge.textContent = "Đã phát thành công!"; dlBadge.style.background = "#bbf7d0"; dlBadge.style.color = "#166534"; }
+          if (dlResult) {
+            dlResult.style.display = "block";
+            dlResult.innerHTML = `<strong>[THÀNH CÔNG]</strong> Đã gửi gói tin điều hướng (Mã <strong>${res.command}</strong>) tới <strong>Node ${res.target_node_id === 0 ? "Toàn mạng (Broadcast)" : res.target_node_id}</strong> qua Gateway <code>${res.gateway_ip}:8889</code> (Command ID: <code>${res.command_id}</code>).`;
+          }
+        }
+      } catch (err) {
+        if (dlBadge) { dlBadge.textContent = "Lỗi phát tin!"; dlBadge.style.background = "#fecaca"; dlBadge.style.color = "#991b1b"; }
+        if (dlResult) {
+          dlResult.style.display = "block";
+          dlResult.innerHTML = `<span style="color:#dc2626;">Lỗi gửi lệnh: ${err.message}</span>`;
+        }
+      }
+    }
+
+    if (sendBtn) {
+      sendBtn.addEventListener("click", () => {
+        const target = parseInt(document.getElementById("downlink-target").value, 10);
+        const cmd = parseInt(document.getElementById("downlink-cmd").value, 10);
+        const prio = parseInt(document.getElementById("downlink-priority").value, 10);
+        sendGuidance(target, cmd, prio);
+      });
+    }
+
+    if (clearBtn) {
+      clearBtn.addEventListener("click", () => {
+        sendGuidance(0, 19, 4);
+      });
+    }
+
     refresh();
     setInterval(refresh,1000);
     window.addEventListener("resize", () => applyView());

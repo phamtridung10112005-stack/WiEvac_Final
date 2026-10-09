@@ -31,6 +31,8 @@
 #include "driver/gpio.h"
 #include "driver/uart.h"
 #include "edge_result_v5_pipeline.h"
+#include "dfplayer_mini.h"
+#include <stdio.h>
 #include "noise_filter.h"
 
 #if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(5, 0, 0) || \
@@ -60,12 +62,13 @@
 #ifndef CONFIG_WIEVAC_EDGE_RESULT_V6_ACTIVE
 #define CONFIG_WIEVAC_EDGE_RESULT_V6_ACTIVE 1
 #endif
-#define WIEVAC_RX_ID                     ((uint32_t)CONFIG_WIEVAC_RX_ID)
-#define WIEVAC_LINK_ID                   WIEVAC_RX_ID
+static uint32_t s_wievac_rx_id = CONFIG_WIEVAC_RX_ID;
+#define WIEVAC_RX_ID                     s_wievac_rx_id
+#define WIEVAC_LINK_ID                   s_wievac_rx_id
 #define WIEVAC_TX_ID                     UINT32_C(1)
-#define WIEVAC_WIFI_SSID                 CONFIG_WIEVAC_WIFI_SSID
-#define WIEVAC_WIFI_PASSWORD             CONFIG_WIEVAC_WIFI_PASSWORD
-#define WIEVAC_PI_IP                     CONFIG_WIEVAC_PI_IP
+#define WIEVAC_WIFI_SSID                 (sizeof(CONFIG_WIEVAC_WIFI_SSID) > 1 ? CONFIG_WIEVAC_WIFI_SSID : "WiEvac_Pi5")
+#define WIEVAC_WIFI_PASSWORD             (sizeof(CONFIG_WIEVAC_WIFI_PASSWORD) > 1 && strcmp(CONFIG_WIEVAC_WIFI_PASSWORD, "wievac2026") != 0 ? CONFIG_WIEVAC_WIFI_PASSWORD : "12345678")
+#define WIEVAC_PI_IP                     (sizeof(CONFIG_WIEVAC_PI_IP) > 1 ? CONFIG_WIEVAC_PI_IP : "10.42.0.1")
 #define WIEVAC_PI_UDP_PORT               ((uint16_t)CONFIG_WIEVAC_PI_UDP_PORT)
 #define WIEVAC_WIFI_CHANNEL              11U
 #define WIEVAC_WIFI_BANDWIDTH            WIFI_BW_HT20
@@ -315,6 +318,355 @@ static void drain_csi_queue(void);
 static bool enqueue_udp(const uint8_t *packet, uint16_t length);
 static bool csi_layout_valid(const csi_record_t *record);
 
+/* ========================================================================= */
+/* --- WIEVAC MULTI-HOP MESH & DISTRIBUTED WATCHDOG LAYER ------------------ */
+/* ========================================================================= */
+
+#define GPIO_FAIL_SAFE                   GPIO_NUM_4
+#define GPIO_TEST_RELAY                  GPIO_NUM_5
+
+#define WIEVAC_MESH_MAGIC                UINT32_C(0x57455643) /* 'WEVC' */
+#define WIEVAC_MESH_VERSION              UINT8_C(1)
+
+#define WIEVAC_MSG_CSI_FEATURE           UINT8_C(1)
+#define WIEVAC_MSG_HEARTBEAT             UINT8_C(2)
+#define WIEVAC_MSG_ROUTE_REPORT          UINT8_C(3)
+#define WIEVAC_MSG_NODE_EVENT            UINT8_C(4)
+#define WIEVAC_MSG_CONTROL               UINT8_C(5)
+#define WIEVAC_MSG_CONTROL_ACK           UINT8_C(6)
+
+#define WIEVAC_ROLE_GATEWAY              UINT8_C(0x01)
+#define WIEVAC_ROLE_RELAY                UINT8_C(0x02)
+#define WIEVAC_EVENT_LOST                UINT8_C(0x10)
+#define WIEVAC_EVENT_RECOVERED           UINT8_C(0x20)
+
+#define WIEVAC_MESH_MAX_HOPS             UINT8_C(5)
+#define WIEVAC_MESH_DEFAULT_TTL          UINT8_C(12)
+#define WIEVAC_HEARTBEAT_INTERVAL_MS     5000U
+#define WIEVAC_NODE_TIMEOUT_MS           16000U
+
+#define WIEVAC_MAX_PEERS                 16U
+#define WIEVAC_DEDUP_SIZE                64U
+
+#pragma pack(push, 1)
+typedef struct {
+    uint8_t  node_id;
+    float    std_dev;
+    float    mean_amp;
+    uint32_t timestamp;
+} wievac_feature_t;
+
+typedef struct {
+    uint8_t  target_node_id;  // 0 = broadcast toàn mạng
+    uint8_t  command;         // 10=START_EVAC, 11=GO_STRAIGHT, 12=TURN_LEFT, 13=TURN_RIGHT, 17=STOP_DANGER, 19=CLEAR
+    uint8_t  priority;        // 1=Normal, 2=Evac, 3=Danger, 4=Emergency
+    uint8_t  status;          // 0=Command, 1=ACK Received, 2=ACK Executed
+    uint32_t command_id;     // ID định danh gói lệnh
+    uint16_t duration_s;     // Thời hạn hiệu lực
+    uint16_t route_id;       // Mã tuyến
+    uint8_t  attempt;        // Lần phát từ Pi
+} wievac_control_payload_t;
+
+typedef struct {
+    uint32_t magic;
+    uint8_t  version;
+    uint8_t  message_type;
+    uint8_t  origin_node_id;
+    uint8_t  last_hop_node_id;
+    uint32_t sequence;
+    uint8_t  hop_count;
+    uint8_t  ttl;
+    uint8_t  flags;
+    int8_t   link_rssi;
+    union {
+        wievac_feature_t feature;
+        wievac_control_payload_t control;
+    };
+} wievac_mesh_packet_t;
+#pragma pack(pop)
+
+typedef struct {
+    uint8_t  node_id;
+    bool     active;
+    bool     is_lost;
+    uint64_t last_seen_us;
+    int8_t   last_rssi;
+} wievac_peer_t;
+
+typedef struct {
+    uint8_t  origin_id;
+    uint32_t sequence;
+    uint8_t  message_type;
+    uint64_t seen_time_us;
+} wievac_dedup_t;
+
+static const uint8_t BROADCAST_MAC[ESP_NOW_ETH_ALEN] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+
+static wievac_peer_t g_peer_table[WIEVAC_MAX_PEERS];
+static portMUX_TYPE g_peer_spinlock = portMUX_INITIALIZER_UNLOCKED;
+
+static wievac_dedup_t g_dedup_cache[WIEVAC_DEDUP_SIZE];
+static size_t g_dedup_head = 0U;
+static portMUX_TYPE g_dedup_spinlock = portMUX_INITIALIZER_UNLOCKED;
+
+static uint32_t g_mesh_sequence = 0U;
+static bool g_force_relay_mode = false;
+
+static bool is_gateway(void)
+{
+    if (g_force_relay_mode) {
+        return false;
+    }
+    const EventBits_t bits = xEventGroupGetBits(g_network_events);
+    return (bits & WIFI_CONNECTED_BIT) != 0U;
+}
+
+static bool is_duplicate_mesh(uint8_t origin_id, uint32_t sequence, uint8_t msg_type)
+{
+    portENTER_CRITICAL(&g_dedup_spinlock);
+    const uint64_t now_us = (uint64_t)esp_timer_get_time();
+    for (size_t i = 0; i < WIEVAC_DEDUP_SIZE; ++i) {
+        if (g_dedup_cache[i].origin_id == origin_id &&
+            g_dedup_cache[i].sequence == sequence &&
+            g_dedup_cache[i].message_type == msg_type) {
+            if (now_us - g_dedup_cache[i].seen_time_us < 10000000ULL) {
+                portEXIT_CRITICAL(&g_dedup_spinlock);
+                return true;
+            }
+        }
+    }
+    g_dedup_cache[g_dedup_head].origin_id = origin_id;
+    g_dedup_cache[g_dedup_head].sequence = sequence;
+    g_dedup_cache[g_dedup_head].message_type = msg_type;
+    g_dedup_cache[g_dedup_head].seen_time_us = now_us;
+    g_dedup_head = (g_dedup_head + 1U) % WIEVAC_DEDUP_SIZE;
+    portEXIT_CRITICAL(&g_dedup_spinlock);
+    return false;
+}
+
+static void update_peer(uint8_t node_id, int8_t rssi)
+{
+    if (node_id == 0U || node_id == WIEVAC_RX_ID) {
+        return;
+    }
+    bool recovered = false;
+    bool discovered = false;
+    portENTER_CRITICAL(&g_peer_spinlock);
+    const uint64_t now_us = (uint64_t)esp_timer_get_time();
+    int empty_idx = -1;
+    for (size_t i = 0; i < WIEVAC_MAX_PEERS; ++i) {
+        if (g_peer_table[i].active && g_peer_table[i].node_id == node_id) {
+            if (g_peer_table[i].is_lost) {
+                g_peer_table[i].is_lost = false;
+                recovered = true;
+            }
+            g_peer_table[i].last_seen_us = now_us;
+            g_peer_table[i].last_rssi = rssi;
+            portEXIT_CRITICAL(&g_peer_spinlock);
+            if (recovered) {
+                ESP_LOGI(TAG, "PEER RECOVERED: Node %u back online (rssi=%d)", (unsigned)node_id, (int)rssi);
+            }
+            return;
+        }
+        if (!g_peer_table[i].active && empty_idx == -1) {
+            empty_idx = (int)i;
+        }
+    }
+    if (empty_idx != -1) {
+        g_peer_table[empty_idx].active = true;
+        g_peer_table[empty_idx].node_id = node_id;
+        g_peer_table[empty_idx].is_lost = false;
+        g_peer_table[empty_idx].last_seen_us = now_us;
+        g_peer_table[empty_idx].last_rssi = rssi;
+        discovered = true;
+    }
+    portEXIT_CRITICAL(&g_peer_spinlock);
+    if (discovered) {
+        ESP_LOGI(TAG, "PEER DISCOVERED: Node %u (rssi=%d)", (unsigned)node_id, (int)rssi);
+    }
+}
+
+static void broadcast_espnow_mesh(const wievac_mesh_packet_t *packet)
+{
+    esp_err_t err = esp_now_send(BROADCAST_MAC, (const uint8_t *)packet, sizeof(*packet));
+    if (err != ESP_OK) {
+        ESP_LOGD(TAG, "esp_now_send failed: %s", esp_err_to_name(err));
+    }
+}
+
+static void send_mesh_feature(float std_dev, float mean_amp, uint64_t window_end_us, int8_t rssi)
+{
+    const bool gw = is_gateway();
+    wievac_mesh_packet_t pkt = {
+        .magic = WIEVAC_MESH_MAGIC,
+        .version = WIEVAC_MESH_VERSION,
+        .message_type = WIEVAC_MSG_CSI_FEATURE,
+        .origin_node_id = (uint8_t)WIEVAC_RX_ID,
+        .last_hop_node_id = (uint8_t)WIEVAC_RX_ID,
+        .sequence = ++g_mesh_sequence,
+        .hop_count = gw ? 0U : 1U,
+        .ttl = WIEVAC_MESH_DEFAULT_TTL,
+        .flags = gw ? WIEVAC_ROLE_GATEWAY : WIEVAC_ROLE_RELAY,
+        .link_rssi = rssi,
+        .feature = {
+            .node_id = (uint8_t)WIEVAC_RX_ID,
+            .std_dev = std_dev,
+            .mean_amp = mean_amp,
+            .timestamp = (uint32_t)(window_end_us / 1000000ULL),
+        },
+    };
+    /* Mesh feature broadcast stays on ESP-NOW mesh layer; do NOT pollute Pi UDP with WEVC */
+    broadcast_espnow_mesh(&pkt);
+}
+
+static void send_mesh_heartbeat(void)
+{
+    const bool gw = is_gateway();
+    wievac_mesh_packet_t pkt = {
+        .magic = WIEVAC_MESH_MAGIC,
+        .version = WIEVAC_MESH_VERSION,
+        .message_type = WIEVAC_MSG_HEARTBEAT,
+        .origin_node_id = (uint8_t)WIEVAC_RX_ID,
+        .last_hop_node_id = (uint8_t)WIEVAC_RX_ID,
+        .sequence = ++g_mesh_sequence,
+        .hop_count = 0U,
+        .ttl = 1U,
+        .flags = gw ? WIEVAC_ROLE_GATEWAY : WIEVAC_ROLE_RELAY,
+        .link_rssi = 0,
+        .feature = {
+            .node_id = (uint8_t)WIEVAC_RX_ID,
+            .std_dev = 0.0f,
+            .mean_amp = 0.0f,
+            .timestamp = (uint32_t)(esp_timer_get_time() / 1000000ULL),
+        },
+    };
+    broadcast_espnow_mesh(&pkt);
+}
+
+static void heartbeat_task(void *argument)
+{
+    (void)argument;
+    for (;;) {
+        vTaskDelay(pdMS_TO_TICKS(WIEVAC_HEARTBEAT_INTERVAL_MS));
+        send_mesh_heartbeat();
+    }
+}
+
+static void node_watchdog_task(void *argument)
+{
+    (void)argument;
+    for (;;) {
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        const uint64_t now_us = (uint64_t)esp_timer_get_time();
+        bool any_lost = false;
+
+        portENTER_CRITICAL(&g_peer_spinlock);
+        for (size_t i = 0; i < WIEVAC_MAX_PEERS; ++i) {
+            if (g_peer_table[i].active) {
+                if (!g_peer_table[i].is_lost) {
+                    if (now_us - g_peer_table[i].last_seen_us > ((uint64_t)WIEVAC_NODE_TIMEOUT_MS * 1000ULL)) {
+                        g_peer_table[i].is_lost = true;
+                        const uint8_t lost_node = g_peer_table[i].node_id;
+                        const int8_t lost_rssi = g_peer_table[i].last_rssi;
+                        portEXIT_CRITICAL(&g_peer_spinlock);
+
+                        ESP_LOGW(TAG, "WATCHDOG ALERT: Node %u LOST! (no signal > %u ms)",
+                                 (unsigned)lost_node, (unsigned)WIEVAC_NODE_TIMEOUT_MS);
+                        wievac_mesh_packet_t evt = {
+                            .magic = WIEVAC_MESH_MAGIC,
+                            .version = WIEVAC_MESH_VERSION,
+                            .message_type = WIEVAC_MSG_NODE_EVENT,
+                            .origin_node_id = lost_node,
+                            .last_hop_node_id = (uint8_t)WIEVAC_RX_ID,
+                            .sequence = ++g_mesh_sequence,
+                            .hop_count = 0U,
+                            .ttl = 3U,
+                            .flags = WIEVAC_EVENT_LOST,
+                            .link_rssi = lost_rssi,
+                            .feature = {
+                                .node_id = lost_node,
+                                .std_dev = 0.0f,
+                                .mean_amp = 0.0f,
+                                .timestamp = (uint32_t)(now_us / 1000000ULL),
+                            },
+                        };
+                        broadcast_espnow_mesh(&evt);
+                        /* Node event remains on ESP-NOW mesh */
+                        portENTER_CRITICAL(&g_peer_spinlock);
+                    }
+                }
+                if (g_peer_table[i].is_lost) {
+                    any_lost = true;
+                }
+            }
+        }
+        portEXIT_CRITICAL(&g_peer_spinlock);
+
+        /* GPIO 4 Fail-safe alert: HIGH if any node lost, LOW if healthy */
+        gpio_set_level(GPIO_FAIL_SAFE, any_lost ? 1 : 0);
+    }
+}
+
+static void network_manager_task(void *argument)
+{
+    (void)argument;
+    bool last_gw = false;
+    for (;;) {
+        vTaskDelay(pdMS_TO_TICKS(500));
+        const int test_relay_level = gpio_get_level(GPIO_TEST_RELAY);
+        g_force_relay_mode = (test_relay_level == 0);
+
+        const bool current_gw = is_gateway();
+        if (current_gw != last_gw) {
+            last_gw = current_gw;
+            ESP_LOGI(TAG, "NETWORK MODE CHANGED -> %s (force_relay=%d, wifi_connected=%d)",
+                     current_gw ? "GATEWAY" : "RELAY",
+                     g_force_relay_mode ? 1 : 0,
+                     (xEventGroupGetBits(g_network_events) & WIFI_CONNECTED_BIT) ? 1 : 0);
+        }
+    }
+}
+
+static void gpio_mesh_initialize(void)
+{
+    gpio_config_t out_conf = {
+        .pin_bit_mask = (1ULL << GPIO_FAIL_SAFE),
+        .mode = GPIO_MODE_OUTPUT,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_ENABLE,
+        .intr_type = GPIO_INTR_DISABLE,
+    };
+    ESP_ERROR_CHECK(gpio_config(&out_conf));
+    gpio_set_level(GPIO_FAIL_SAFE, 0);
+
+    gpio_config_t in_conf = {
+        .pin_bit_mask = (1ULL << GPIO_TEST_RELAY),
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_ENABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE,
+    };
+    ESP_ERROR_CHECK(gpio_config(&in_conf));
+}
+
+static void broadcast_peer_initialize(void)
+{
+    if (!esp_now_is_peer_exist(BROADCAST_MAC)) {
+        esp_now_peer_info_t peer = {0};
+        memcpy(peer.peer_addr, BROADCAST_MAC, ESP_NOW_ETH_ALEN);
+        peer.channel = 0;
+        peer.ifidx = WIFI_IF_STA;
+        peer.encrypt = false;
+        esp_err_t err = esp_now_add_peer(&peer);
+        if (err != ESP_OK) {
+            ESP_LOGW(TAG, "esp_now_add_peer broadcast err: %s", esp_err_to_name(err));
+        } else {
+            ESP_LOGI(TAG, "ESP-NOW broadcast peer FF:FF:FF:FF:FF:FF registered");
+        }
+    }
+}
+
+
 #if CONFIG_WIEVAC_EDGE_RESULT_V6_ACTIVE
 static void v6_pipeline_start_for_pair(const pair_state_t *pair)
 {
@@ -475,7 +827,14 @@ static void v6_submit_and_emit(const csi_record_t *record)
         size_t length = 0U;
         const int encode_rc = edge_result_v5_encode(&result, packet, sizeof(packet), &length);
         if (encode_rc == 0 && length <= UINT16_MAX) {
-            (void)enqueue_udp(packet, (uint16_t)length);
+            if (is_gateway()) {
+                (void)enqueue_udp(packet, (uint16_t)length);
+            } else {
+                send_mesh_feature(result.features.robust_spread,
+                                  result.features.common_amplitude,
+                                  result.window_end_us,
+                                  (int8_t)record->rx_ctrl.rssi);
+            }
         } else {
             __atomic_add_fetch(&g_v6_encode_failures, 1U, __ATOMIC_RELAXED);
             ESP_LOGW(TAG, "v6_encode_failed rc=%d length=%u", encode_rc, (unsigned)length);
@@ -913,7 +1272,72 @@ static bool measurement_context_admissible(uint32_t tx_boot_id, uint32_t sequenc
 
 static void espnow_receive_callback(const esp_now_recv_info_t *info, const uint8_t *data, int length)
 {
-    if (info == NULL || info->src_addr == NULL || data == NULL || length != V4_HEADER_SIZE) {
+    if (info == NULL || info->src_addr == NULL || data == NULL) {
+        __atomic_add_fetch(&g_control_drops, 1U, __ATOMIC_RELAXED);
+        return;
+    }
+    if (length == (int)sizeof(wievac_mesh_packet_t)) {
+        const wievac_mesh_packet_t *mesh = (const wievac_mesh_packet_t *)data;
+        if (mesh->magic == WIEVAC_MESH_MAGIC) {
+            const int8_t rssi = (info->rx_ctrl != NULL) ? info->rx_ctrl->rssi : -60;
+            update_peer(mesh->origin_node_id, rssi);
+            /* If this node is acting as GATEWAY, forward relay packets from other nodes to Pi over UDP */
+            if (is_gateway() && mesh->origin_node_id != (uint8_t)WIEVAC_RX_ID &&
+                (mesh->message_type == WIEVAC_MSG_CSI_FEATURE || mesh->message_type == WIEVAC_MSG_NODE_EVENT)) {
+                wievac_mesh_packet_t fwd = *mesh;
+                fwd.last_hop_node_id = (uint8_t)WIEVAC_RX_ID;
+                if (fwd.hop_count == 0) {
+                    fwd.hop_count = 1U;
+                }
+                (void)enqueue_udp((const uint8_t *)&fwd, (uint16_t)sizeof(fwd));
+            }
+            /* Handle Downlink CONTROL packet received over ESP-NOW */
+            if (mesh->message_type == WIEVAC_MSG_CONTROL) {
+                if (mesh->control.target_node_id == (uint8_t)WIEVAC_RX_ID || mesh->control.target_node_id == 0) {
+                    ESP_LOGW(TAG, ">>> [DOWNLINK ESP-NOW RX] Node %u nhan lenh tu Pi (chuyen tiep qua Node %u): cmd=%u, cmd_id=%" PRIu32 ", priority=%u",
+                             (unsigned)WIEVAC_RX_ID, mesh->last_hop_node_id, mesh->control.command,
+                             mesh->control.command_id, mesh->control.priority);
+                    /* Kich hoat phat am thanh tren Loa DFPlayer Mini */
+                    dfplayer_execute_command(mesh->control.command);
+
+                    // Send ACK back via ESP-NOW towards Gateway
+                    wievac_mesh_packet_t ack = *mesh;
+                    ack.message_type = WIEVAC_MSG_CONTROL_ACK;
+                    ack.origin_node_id = (uint8_t)WIEVAC_RX_ID;
+                    ack.last_hop_node_id = (uint8_t)WIEVAC_RX_ID;
+                    ack.control.status = 1; // ACK_RECEIVED
+                    broadcast_espnow_mesh(&ack);
+                }
+                /* If relay node and TTL allows, forward it along the mesh */
+                if (!is_gateway() && mesh->ttl > 1 && mesh->control.target_node_id != (uint8_t)WIEVAC_RX_ID) {
+                    wievac_mesh_packet_t fwd = *mesh;
+                    fwd.last_hop_node_id = (uint8_t)WIEVAC_RX_ID;
+                    fwd.hop_count++;
+                    fwd.ttl--;
+                    broadcast_espnow_mesh(&fwd);
+                }
+                return;
+            }
+
+            /* Handle Downlink CONTROL_ACK packet received over ESP-NOW */
+            if (mesh->message_type == WIEVAC_MSG_CONTROL_ACK) {
+                if (is_gateway()) {
+                    ESP_LOGI(TAG, ">>> [GATEWAY ACK FORWARD] Chuyen tiep ACK cua Node %u len Pi qua UDP",
+                             mesh->origin_node_id);
+                    (void)enqueue_udp((const uint8_t *)mesh, (uint16_t)sizeof(*mesh));
+                } else if (mesh->ttl > 1) {
+                    wievac_mesh_packet_t fwd = *mesh;
+                    fwd.last_hop_node_id = (uint8_t)WIEVAC_RX_ID;
+                    fwd.hop_count++;
+                    fwd.ttl--;
+                    broadcast_espnow_mesh(&fwd);
+                }
+                return;
+            }
+            return;
+        }
+    }
+    if (length != (int)V4_HEADER_SIZE) {
         __atomic_add_fetch(&g_control_drops, 1U, __ATOMIC_RELAXED);
         return;
     }
@@ -923,8 +1347,10 @@ static void espnow_receive_callback(const esp_now_recv_info_t *info, const uint8
     const uint8_t *fast_payload;
     if (protocol_decode(data, (size_t)length, &fast_header, &fast_payload) &&
         fast_header.type == V4_MSG_MEASUREMENT && fast_header.payload_length == 0U &&
-        fast_header.link_id == WIEVAC_LINK_ID && fast_header.tx_id == WIEVAC_TX_ID &&
-        fast_header.rx_id == WIEVAC_RX_ID && fast_header.boot_id != 0U &&
+        (fast_header.link_id == 0U || fast_header.link_id == WIEVAC_LINK_ID) &&
+        fast_header.tx_id == WIEVAC_TX_ID &&
+        (fast_header.rx_id == 0U || fast_header.rx_id == WIEVAC_RX_ID) &&
+        fast_header.boot_id != 0U &&
         fast_header.sequence != 0U && fast_header.timestamp_us != 0U) {
         const pair_state_t pair = pairing_snapshot();
         if (pair.valid && pair.tx_boot_id == fast_header.boot_id &&
@@ -975,11 +1401,16 @@ static void espnow_control_task(void *argument)
         }
         const pair_state_t pair = pairing_snapshot();
         if (header.type == V4_MSG_MEASUREMENT && header.payload_length == 0U &&
-            pair.valid && header.link_id == WIEVAC_LINK_ID && header.tx_id == WIEVAC_TX_ID &&
-            header.rx_id == WIEVAC_RX_ID && header.boot_id == pair.tx_boot_id &&
-            memcmp(pair.tx_mac, event.source_mac, ESP_NOW_ETH_ALEN) == 0) {
-            /* The fast callback already records this measurement before CSI
-               association. Avoid counting the same radio frame twice. */
+            (header.link_id == 0U || header.link_id == WIEVAC_LINK_ID) &&
+            header.tx_id == WIEVAC_TX_ID &&
+            (header.rx_id == 0U || header.rx_id == WIEVAC_RX_ID) &&
+            header.boot_id != 0U && header.sequence != 0U && header.timestamp_us != 0U) {
+            if (!pair.valid) {
+                if (set_pair(event.source_mac, header.boot_id)) {
+                    ESP_LOGI(TAG, "auto_pair on broadcast measurement tx_boot=%" PRIu32 " source=" MACSTR,
+                             header.boot_id, MAC2STR(event.source_mac));
+                }
+            }
             continue;
         }
     }
@@ -1026,10 +1457,10 @@ static void wifi_csi_callback(void *context, wifi_csi_info_t *info)
         return;
     }
     const pair_state_t pair = pairing_snapshot();
-    /* CSI is enabled in promiscuous mode. Require both MAC directions so a
-       HELLO broadcast or another TX frame cannot become a measurement. */
-    if (!pair.valid || memcmp(pair.tx_mac, info->mac, ESP_NOW_ETH_ALEN) != 0 ||
-        memcmp(g_rx_mac, info->dmac, ESP_NOW_ETH_ALEN) != 0) {
+    /* CSI is enabled in promiscuous mode. Allow this RX or a broadcast measurement. */
+    const bool dmac_ok = (memcmp(g_rx_mac, info->dmac, ESP_NOW_ETH_ALEN) == 0) ||
+                         (memcmp(BROADCAST_MAC, info->dmac, ESP_NOW_ETH_ALEN) == 0);
+    if (!pair.valid || memcmp(pair.tx_mac, info->mac, ESP_NOW_ETH_ALEN) != 0 || !dmac_ok) {
         if (!g_logged_csi_mac_reject) {
             g_logged_csi_mac_reject = true;
             ESP_LOGW(TAG, "csi_mac_reject pair_valid=%d src=" MACSTR " dst=" MACSTR
@@ -1060,9 +1491,9 @@ static void wifi_csi_callback(void *context, wifi_csi_info_t *info)
     if (!header_ok ||
         measurement_header.type != V4_MSG_MEASUREMENT ||
         measurement_header.payload_length != 0U ||
-        measurement_header.link_id != WIEVAC_LINK_ID ||
+        (measurement_header.link_id != 0U && measurement_header.link_id != WIEVAC_LINK_ID) ||
         measurement_header.tx_id != WIEVAC_TX_ID ||
-        measurement_header.rx_id != WIEVAC_RX_ID ||
+        (measurement_header.rx_id != 0U && measurement_header.rx_id != WIEVAC_RX_ID) ||
         measurement_header.boot_id != pair.tx_boot_id ||
         measurement_header.sequence == 0U || measurement_header.timestamp_us == 0U) {
         if (!g_logged_csi_header_reject) {
@@ -1900,11 +2331,36 @@ static void dsp_task(void *argument)
                 boot_low_since_us = 0;
                 boot_cal_armed = true;
             }
+            static char id_line[32];
+            static int id_idx;
             uint8_t cal_byte = 0U;
-            if (uart_read_bytes(UART_NUM_0, &cal_byte, 1, 0) == 1 &&
-                (cal_byte == 'C' || cal_byte == 'c') &&
-                edge_result_pipeline_begin_calibration(&g_v6_pipeline, WIEVAC_LINK_ID)) {
-                ESP_LOGI(TAG, "calibration started; keep the corridor empty for 8s");
+            if (uart_read_bytes(UART_NUM_0, &cal_byte, 1, 0) == 1) {
+                if ((cal_byte == 'C' || cal_byte == 'c') &&
+                    edge_result_pipeline_begin_calibration(&g_v6_pipeline, WIEVAC_LINK_ID)) {
+                    ESP_LOGI(TAG, "calibration started; keep the corridor empty for 8s");
+                } else if (cal_byte == '\r' || cal_byte == '\n') {
+                    if (id_idx > 0) {
+                        id_line[id_idx] = '\0';
+                        uint32_t new_id = 0U;
+                        if (sscanf(id_line, "ID=%" SCNu32, &new_id) == 1 ||
+                            sscanf(id_line, "SET_ID=%" SCNu32, &new_id) == 1) {
+                            if (new_id >= 1U && new_id <= 254U) {
+                                nvs_handle_t nvs_cfg;
+                                if (nvs_open("wievac_cfg", NVS_READWRITE, &nvs_cfg) == ESP_OK) {
+                                    (void)nvs_set_u32(nvs_cfg, "rx_id", new_id);
+                                    (void)nvs_commit(nvs_cfg);
+                                    nvs_close(nvs_cfg);
+                                    ESP_LOGW(TAG, "SET_ID=%" PRIu32 " saved; restarting", new_id);
+                                    vTaskDelay(pdMS_TO_TICKS(1000));
+                                    esp_restart();
+                                }
+                            }
+                        }
+                        id_idx = 0;
+                    }
+                } else if (id_idx < (int)sizeof(id_line) - 1) {
+                    id_line[id_idx++] = (char)cal_byte;
+                }
             }
         }
 #endif
@@ -1997,6 +2453,67 @@ static void udp_sender_task(void *argument)
     }
 }
 
+static void udp_downlink_listener_task(void *argument)
+{
+    (void)argument;
+    int socket_fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
+    if (socket_fd < 0) {
+        ESP_LOGE(TAG, "cannot create UDP downlink socket");
+        vTaskDelete(NULL);
+        return;
+    }
+    struct sockaddr_in local_address = {0};
+    local_address.sin_family = AF_INET;
+    local_address.sin_port = htons(8889);
+    local_address.sin_addr.s_addr = htonl(INADDR_ANY);
+    if (bind(socket_fd, (struct sockaddr *)&local_address, sizeof(local_address)) != 0) {
+        ESP_LOGE(TAG, "cannot bind UDP port 8889: errno=%d", errno);
+        close(socket_fd);
+        vTaskDelete(NULL);
+        return;
+    }
+    ESP_LOGI(TAG, "UDP downlink listener active on port 8889");
+    uint8_t buffer[64];
+    for (;;) {
+        struct sockaddr_in source_addr = {0};
+        socklen_t source_len = sizeof(source_addr);
+        int received = recvfrom(socket_fd, buffer, sizeof(buffer), 0,
+                                (struct sockaddr *)&source_addr, &source_len);
+        if (received == (int)sizeof(wievac_mesh_packet_t)) {
+            wievac_mesh_packet_t *pkt = (wievac_mesh_packet_t *)buffer;
+            if (pkt->magic == WIEVAC_MESH_MAGIC && pkt->message_type == WIEVAC_MSG_CONTROL) {
+                ESP_LOGW(TAG, ">>> [DOWNLINK UDP RX] Gateway Node %u nhan goi tin tu Pi: target=%u, cmd=%u, cmd_id=%" PRIu32 ", priority=%u",
+                         (unsigned)WIEVAC_RX_ID, pkt->control.target_node_id, pkt->control.command,
+                         pkt->control.command_id, pkt->control.priority);
+                
+                // 1. Neu goi tin danh cho chinh minh (hoac broadcast toan mang)
+                if (pkt->control.target_node_id == (uint8_t)WIEVAC_RX_ID || pkt->control.target_node_id == 0) {
+                    ESP_LOGW(TAG, ">>> [THUC THI GOI TIN] Node %u thuc thi thanh cong cmd=%u (cmd_id=%" PRIu32 ")",
+                             (unsigned)WIEVAC_RX_ID, pkt->control.command, pkt->control.command_id);
+                    /* Kich hoat phat am thanh tren Loa DFPlayer Mini cua Gateway */
+                    dfplayer_execute_command(pkt->control.command);
+
+                    // Gui ACK truc tiep ve Pi qua UDP
+                    wievac_mesh_packet_t ack = *pkt;
+                    ack.message_type = WIEVAC_MSG_CONTROL_ACK;
+                    ack.origin_node_id = (uint8_t)WIEVAC_RX_ID;
+                    ack.control.status = 1; // ACK_RECEIVED
+                    (void)enqueue_udp((const uint8_t *)&ack, (uint16_t)sizeof(ack));
+                }
+                
+                // 2. Neu goi tin danh cho Node khac hoac broadcast, Gateway phat qua ESP-NOW de cac Node Relay nhan duoc!
+                if (pkt->control.target_node_id != (uint8_t)WIEVAC_RX_ID || pkt->control.target_node_id == 0) {
+                    ESP_LOGI(TAG, ">>> [DOWNLINK FORWARD] Gateway phat qua ESP-NOW Mesh toi target=%u",
+                             pkt->control.target_node_id);
+                    pkt->last_hop_node_id = (uint8_t)WIEVAC_RX_ID;
+                    pkt->hop_count = 1;
+                    broadcast_espnow_mesh(pkt);
+                }
+            }
+        }
+    }
+}
+
 static void wifi_event_handler(void *argument, esp_event_base_t base, int32_t event_id, void *event_data)
 {
     (void)argument;
@@ -2076,7 +2593,11 @@ static void wifi_initialize(void)
                                           WIFI_PROTOCOL_11B | WIFI_PROTOCOL_11G |
                                               WIFI_PROTOCOL_11N));
     ESP_ERROR_CHECK(esp_wifi_set_bandwidth(WIFI_IF_STA, WIEVAC_WIFI_BANDWIDTH));
-    ESP_ERROR_CHECK(esp_wifi_connect());
+    const esp_err_t connect_err = esp_wifi_connect();
+    if (connect_err != ESP_OK) {
+        ESP_LOGW(TAG, "initial esp_wifi_connect: %s (relay mode still runs)",
+                 esp_err_to_name(connect_err));
+    }
 }
 
 static void csi_initialize(void)
@@ -2114,6 +2635,32 @@ void app_main(void)
     ESP_ERROR_CHECK(gpio_config(&cal_pin));
     ESP_LOGI(TAG, "empty-corridor cal: hold BOOT (GPIO0) 2s or send C on UART0");
     ESP_ERROR_CHECK(esp_read_mac(g_rx_mac, ESP_MAC_WIFI_STA));
+    /* Runtime node id: NVS SET_ID, else known lab MACs, else sdkconfig. */
+    bool id_from_nvs = false;
+    nvs_handle_t nvs_cfg;
+    if (nvs_open("wievac_cfg", NVS_READONLY, &nvs_cfg) == ESP_OK) {
+        uint32_t custom_id = 0;
+        if (nvs_get_u32(nvs_cfg, "rx_id", &custom_id) == ESP_OK && custom_id > 0U) {
+            s_wievac_rx_id = custom_id;
+            id_from_nvs = true;
+        }
+        nvs_close(nvs_cfg);
+    }
+    if (!id_from_nvs) {
+        static const uint8_t MAC_NODE_1[6] = {0x94, 0xa9, 0x90, 0xea, 0xea, 0x10};
+        static const uint8_t MAC_NODE_2_A[6] = {0x28, 0x84, 0x85, 0x48, 0xed, 0x30};
+        static const uint8_t MAC_NODE_2_B[6] = {0x28, 0x84, 0x85, 0x48, 0xdb, 0xdc};
+        static const uint8_t MAC_NODE_3[6] = {0x28, 0x84, 0x85, 0x85, 0x53, 0x94};
+        if (memcmp(g_rx_mac, MAC_NODE_1, 6) == 0) {
+            s_wievac_rx_id = 1;
+        } else if (memcmp(g_rx_mac, MAC_NODE_2_A, 6) == 0 || memcmp(g_rx_mac, MAC_NODE_2_B, 6) == 0) {
+            s_wievac_rx_id = 2;
+        } else if (memcmp(g_rx_mac, MAC_NODE_3, 6) == 0) {
+            s_wievac_rx_id = 3;
+        }
+    }
+    ESP_LOGI(TAG, "runtime rx_id=%" PRIu32 " source=%s mac=" MACSTR,
+             s_wievac_rx_id, id_from_nvs ? "NVS" : "MAC_OR_CONFIG", MAC2STR(g_rx_mac));
     if (CONFIG_WIEVAC_EXPECTED_TX_MAC[0] == '\0') {
         ESP_LOGW(TAG, "pairing_auth=trusted_closed_lab expected_tx_mac=unset");
     } else if (parse_mac_text(CONFIG_WIEVAC_EXPECTED_TX_MAC, g_expected_tx_mac)) {
@@ -2128,6 +2675,8 @@ void app_main(void)
         g_rx_boot_id = 1U;
     }
     g_network_events = xEventGroupCreate();
+    gpio_mesh_initialize();
+    (void)dfplayer_init(DFPLAYER_DEFAULT_TX_PIN, DFPLAYER_DEFAULT_RX_PIN);
     g_control_queue = xQueueCreate(WIEVAC_CONTROL_QUEUE_DEPTH, sizeof(control_event_t));
     g_csi_queue = xQueueCreate(WIEVAC_CSI_QUEUE_DEPTH, sizeof(csi_record_t));
     g_udp_queue = xQueueCreate(WIEVAC_UDP_QUEUE_DEPTH, sizeof(udp_packet_t));
@@ -2141,10 +2690,15 @@ void app_main(void)
     wifi_initialize();
     ESP_ERROR_CHECK(esp_now_init());
     ESP_ERROR_CHECK(esp_now_register_recv_cb(espnow_receive_callback));
+    broadcast_peer_initialize();
     csi_initialize();
     ESP_ERROR_CHECK(xTaskCreate(espnow_control_task, "wievac_ctrl", 4096U, NULL, 6U, NULL) == pdPASS ? ESP_OK : ESP_ERR_NO_MEM);
     ESP_ERROR_CHECK(xTaskCreate(dsp_task, "wievac_dsp", 8192U, NULL, 5U, NULL) == pdPASS ? ESP_OK : ESP_ERR_NO_MEM);
     ESP_ERROR_CHECK(xTaskCreate(udp_sender_task, "wievac_udp", 4096U, NULL, 4U, NULL) == pdPASS ? ESP_OK : ESP_ERR_NO_MEM);
+    ESP_ERROR_CHECK(xTaskCreate(udp_downlink_listener_task, "wievac_cmd", 4096U, NULL, 4U, NULL) == pdPASS ? ESP_OK : ESP_ERR_NO_MEM);
+    ESP_ERROR_CHECK(xTaskCreate(heartbeat_task, "wievac_hb", 4096U, NULL, 3U, NULL) == pdPASS ? ESP_OK : ESP_ERR_NO_MEM);
+    ESP_ERROR_CHECK(xTaskCreate(node_watchdog_task, "wievac_wdog", 4096U, NULL, 3U, NULL) == pdPASS ? ESP_OK : ESP_ERR_NO_MEM);
+    ESP_ERROR_CHECK(xTaskCreate(network_manager_task, "wievac_netmgr", 4096U, NULL, 2U, NULL) == pdPASS ? ESP_OK : ESP_ERR_NO_MEM);
     ESP_LOGI(TAG, "%s", WIEVAC_BINARY_ID_MARKER);
     ESP_LOGI(TAG, "EDGE_RESULT_V6 boot=%" PRIu32 " link=link-%" PRIu32 " rx_id=rx-%" PRIu32
              " channel=%u bandwidth=HT20 mcs=%u phy_rate=%u Pi=%s:%u snapshots=%uHz",

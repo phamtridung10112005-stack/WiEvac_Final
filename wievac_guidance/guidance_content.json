@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "language": "vi",
+  "intents": {
+    "LEFT": {"visual_intent": "ARROW_LEFT", "alert_level": "normal", "audio_clip_id": "evacuate_left", "min_repeat_seconds": 5, "priority": 50},
+    "RIGHT": {"visual_intent": "ARROW_RIGHT", "alert_level": "normal", "audio_clip_id": "evacuate_right", "min_repeat_seconds": 5, "priority": 50},
+    "STRAIGHT": {"visual_intent": "ARROW_STRAIGHT", "alert_level": "normal", "audio_clip_id": "evacuate_straight", "min_repeat_seconds": 5, "priority": 50},
+    "BACK": {"visual_intent": "ARROW_BACK", "alert_level": "warning", "audio_clip_id": "turn_back", "min_repeat_seconds": 4, "priority": 80},
+    "UP": {"visual_intent": "ARROW_UP", "alert_level": "normal", "audio_clip_id": "go_upstairs", "min_repeat_seconds": 5, "priority": 50},
+    "DOWN": {"visual_intent": "ARROW_DOWN", "alert_level": "normal", "audio_clip_id": "go_downstairs", "min_repeat_seconds": 5, "priority": 50},
+    "EXIT": {"visual_intent": "EXIT", "alert_level": "normal", "audio_clip_id": "exit_here", "min_repeat_seconds": 5, "priority": 70},
+    "NO_SAFE_ROUTE": {"visual_intent": "DO_NOT_ENTER", "alert_level": "critical", "audio_clip_id": "shelter_in_place", "min_repeat_seconds": 3, "priority": 100},
+    "STANDBY": {"visual_intent": "STANDBY", "alert_level": "none", "audio_clip_id": "", "min_repeat_seconds": 0, "priority": 0}
+  }
+}
