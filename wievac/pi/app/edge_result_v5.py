@@ -59,7 +59,8 @@ PROTOCOL_VERSION = 5
 SCHEMA_V5 = 5
 SCHEMA_V6 = 6
 SCHEMA_V7 = 7
-SCHEMA_VERSION = SCHEMA_V7
+SCHEMA_V8 = 8
+SCHEMA_VERSION = SCHEMA_V8
 FEATURE_SCHEMA_VERSION = str(SCHEMA_VERSION)
 MESSAGE_TYPE_EDGE_RESULT = 0x30
 MSG_EDGE_RESULT = MESSAGE_TYPE_EDGE_RESULT
@@ -184,6 +185,11 @@ class EdgeResultV5:
     doppler_ratio: float | None = None
     doppler_fs_hz: float | None = None
     doppler_samples: int = 0
+    static_change_index: int = 0
+    n_null: int = 0
+    static_flag: int = 0
+    boot_unverified: bool = False
+    width_score: float | None = None
 
     MAGIC: ClassVar[int] = MAGIC
     PROTOCOL_VERSION: ClassVar[int] = PROTOCOL_VERSION
@@ -270,7 +276,7 @@ class EdgeResultV5:
             raise EdgeResultProtocolError("disagreement_not_bool")
         _coerce_reason(self.reason_code)
         _validate_version("feature_schema_version", self.feature_schema_version)
-        if str(self.feature_schema_version) not in {str(SCHEMA_V5), str(SCHEMA_V6), str(SCHEMA_V7)}:
+        if str(self.feature_schema_version) not in {str(SCHEMA_V5), str(SCHEMA_V6), str(SCHEMA_V7), str(SCHEMA_V8)}:
             raise EdgeResultProtocolError("feature_schema_version_mismatch")
 
         _validate_uint("baseline_version", self.baseline_version, 32)
@@ -291,6 +297,16 @@ class EdgeResultV5:
         _validate_finite_range("packet_loss_ratio", self.packet_loss_ratio, 0.0, 1.0)
         _validate_finite_range("jitter_ms", self.jitter_ms, 0.0, float(0xFFFFFFFF))
         _validate_uint("doppler_samples", self.doppler_samples, 16)
+        _validate_uint("static_change_index", self.static_change_index, 8)
+        _validate_uint("n_null", self.n_null, 8)
+        _validate_uint("static_flag", self.static_flag, 8)
+        if int(self.static_flag) > 3:
+            raise EdgeResultProtocolError("static_flag_invalid")
+        if not (isinstance(self.boot_unverified, bool) or
+                (isinstance(self.boot_unverified, int) and self.boot_unverified in (0, 1))):
+            raise EdgeResultProtocolError("boot_unverified_not_bool")
+        if self.width_score is not None:
+            _validate_finite_range("width_score", self.width_score, 0.0, 1.0e12)
         if not (isinstance(self.doppler_valid, bool) or
                 (isinstance(self.doppler_valid, int) and self.doppler_valid in (0, 1))):
             raise EdgeResultProtocolError("doppler_valid_not_bool")
@@ -342,6 +358,11 @@ class EdgeResultV5:
             doppler_ratio=(None if self.doppler_ratio is None else float(self.doppler_ratio)),
             doppler_fs_hz=(None if self.doppler_fs_hz is None else float(self.doppler_fs_hz)),
             doppler_samples=int(self.doppler_samples),
+            static_change_index=int(self.static_change_index),
+            n_null=int(self.n_null),
+            static_flag=int(self.static_flag),
+            boot_unverified=bool(self.boot_unverified),
+            width_score=None if self.width_score is None else float(self.width_score),
         )
 
     def encode(self) -> bytes:
@@ -542,6 +563,21 @@ def _pack_payload_v7(result: EdgeResultV5) -> bytes:
     return bytes(payload)
 
 
+def _pack_payload_v8(result: EdgeResultV5) -> bytes:
+    """Pack schema 7 plus automatic SCI, null count, static flag and boot flag."""
+    value = result.normalized()
+    payload = bytearray(_pack_payload_v7(value))
+    payload.extend(struct.pack(
+        ">BBBB",
+        int(value.static_change_index) & 0xFF,
+        int(value.n_null) & 0xFF,
+        int(value.static_flag) & 0xFF,
+        1 if value.boot_unverified else 0,
+    ))
+    payload.extend(struct.pack(">f", -1.0 if value.width_score is None else float(value.width_score)))
+    return bytes(payload)
+
+
 def _pack_payload(result: EdgeResultV5, schema_version: int = SCHEMA_VERSION) -> bytes:
     if schema_version == SCHEMA_V5:
         return _pack_payload_v5(result)
@@ -549,14 +585,16 @@ def _pack_payload(result: EdgeResultV5, schema_version: int = SCHEMA_VERSION) ->
         return _pack_payload_v6(result)
     if schema_version == SCHEMA_V7:
         return _pack_payload_v7(result)
+    if schema_version == SCHEMA_V8:
+        return _pack_payload_v8(result)
     raise EdgeResultProtocolError("unsupported_schema_version")
 
 
 def encode_edge_result(result: EdgeResultV5, *, schema_version: int = SCHEMA_VERSION) -> bytes:
-    """Serialize one EdgeResult using schema 7 by default; 5/6 are compatibility."""
+    """Serialize one EdgeResult using schema 8 by default; 5/6/7 stay decodable."""
     if not isinstance(result, EdgeResultV5):
         raise TypeError("result must be EdgeResultV5")
-    if schema_version not in (SCHEMA_V5, SCHEMA_V6, SCHEMA_V7):
+    if schema_version not in (SCHEMA_V5, SCHEMA_V6, SCHEMA_V7, SCHEMA_V8):
         raise EdgeResultProtocolError("unsupported_schema_version")
     expected_feature_schema = str(schema_version)
     if str(result.feature_schema_version) != expected_feature_schema:
@@ -633,8 +671,12 @@ def _unpack_payload(payload: bytes, *, schema_version: int = SCHEMA_V7) -> EdgeR
         "doppler_ratio": None,
         "doppler_fs_hz": None,
         "doppler_samples": 0,
+        "static_change_index": 0,
+        "n_null": 0,
+        "static_flag": 0,
+        "boot_unverified": False,
     }
-    if schema_version in (SCHEMA_V6, SCHEMA_V7):
+    if schema_version in (SCHEMA_V6, SCHEMA_V7, SCHEMA_V8):
         for name in ("baseline_state", "baseline_update_reason", "drift_state"):
             metadata[name], offset = _read_string(payload, offset, name)
         adaptive_header = struct.Struct(">If")
@@ -660,7 +702,7 @@ def _unpack_payload(payload: bytes, *, schema_version: int = SCHEMA_V7) -> EdgeR
                 if not math.isfinite(adaptive_score):
                     raise EdgeResultProtocolError(name + "_non_finite")
                 metadata[name] = adaptive_score
-        if schema_version == SCHEMA_V7:
+        if schema_version in (SCHEMA_V7, SCHEMA_V8):
             if offset + 11 > len(payload):
                 raise EdgeResultProtocolError("truncated_v7_doppler")
             present, ratio, fs_hz, samples = struct.unpack_from(">BffH", payload, offset)
@@ -683,6 +725,20 @@ def _unpack_payload(payload: bytes, *, schema_version: int = SCHEMA_V7) -> EdgeR
                 metadata["doppler_ratio"] = ratio
                 metadata["doppler_fs_hz"] = fs_hz
                 metadata["doppler_samples"] = int(samples)
+            if schema_version == SCHEMA_V8:
+                if offset + 8 > len(payload):
+                    raise EdgeResultProtocolError("truncated_v8_static")
+                sci, nulls, flag, boot_flag = struct.unpack_from(">BBBB", payload, offset)
+                offset += 4
+                width = struct.unpack_from(">f", payload, offset)[0]
+                offset += 4
+                if flag > 3 or boot_flag > 1 or not math.isfinite(width):
+                    raise EdgeResultProtocolError("static_profile_invalid")
+                metadata["static_change_index"] = int(sci)
+                metadata["n_null"] = int(nulls)
+                metadata["static_flag"] = int(flag)
+                metadata["boot_unverified"] = boot_flag == 1
+                metadata["width_score"] = None if width < 0.0 else float(width)
         if offset != len(payload):
             raise EdgeResultProtocolError("payload_trailing_bytes")
     elif offset != len(payload):
@@ -717,7 +773,7 @@ def decode_edge_result(datagram: bytes) -> EdgeResultV5:
         raise EdgeResultProtocolError("wrong_protocol_version")
     if message_type != MESSAGE_TYPE_EDGE_RESULT:
         raise EdgeResultProtocolError("wrong_message_type")
-    if schema_version not in (SCHEMA_V5, SCHEMA_V6, SCHEMA_V7):
+    if schema_version not in (SCHEMA_V5, SCHEMA_V6, SCHEMA_V7, SCHEMA_V8):
         raise EdgeResultProtocolError("wrong_schema_version")
     if payload_length > MAX_PAYLOAD_BYTES:
         raise EdgeResultProtocolError("payload_too_large")
@@ -731,10 +787,31 @@ def decode_edge_result(datagram: bytes) -> EdgeResultV5:
     return _unpack_payload(payload, schema_version=schema_version)
 
 
+def width_index(ref_bins: list[float], static_change_index: int, n_null: int) -> float | None:
+    """This node's own radio level, reduced while a static object stays.
+
+    The opening number is the sum of this link's empty-corridor bins. A
+    stronger link starts higher. No typed width and no shared 1000-point scale.
+    """
+    if not ref_bins:
+        return None
+    base = 0.0
+    for value in ref_bins:
+        if value > 0.0:
+            base += float(value)
+    if base <= 0.0:
+        return None
+    sci = max(0.0, min(1.0, int(static_change_index) / 255.0))
+    null_frac = max(0.0, min(1.0, int(n_null) / float(len(ref_bins))))
+    changed = max(sci, null_frac)
+    return round(base * (1.0 - changed), 2)
+
+
 __all__ = [
-    "MAGIC", "PROTOCOL_VERSION", "SCHEMA_VERSION", "SCHEMA_V5", "SCHEMA_V6", "SCHEMA_V7", "FEATURE_SCHEMA_VERSION",
+    "MAGIC", "PROTOCOL_VERSION", "SCHEMA_VERSION", "SCHEMA_V5", "SCHEMA_V6", "SCHEMA_V7", "SCHEMA_V8", "FEATURE_SCHEMA_VERSION",
     "MAX_STRING_BYTES", "MAX_MODEL_HASH_BYTES", "MAX_PAYLOAD_BYTES", "MAX_PACKET_BYTES",
     "MESSAGE_TYPE_EDGE_RESULT", "MSG_EDGE_RESULT", "EDGE_RESULT_MESSAGE_TYPE",
     "HEADER", "HEADER_SIZE", "EdgeResultProtocolError", "EdgeResultState",
     "EdgeResultReason", "EdgeResultV5", "crc32", "encode_edge_result", "decode_edge_result",
+    "width_index",
 ]

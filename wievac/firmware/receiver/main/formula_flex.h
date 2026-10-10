@@ -33,6 +33,23 @@ void formula_flex_promote_rebase_candidate(edge_result_link_state_t *link);
  * candidate must not become the new baseline. */
 bool formula_flex_rebase_absorbs_attenuation(const edge_result_link_state_t *link);
 
+/* 1 - cosine of mean-normalized amplitudes. Gain is removed. This is a shape
+ * change, not a width in metres. */
+float formula_flex_shape_change(const float *now, const float *ref, uint16_t count);
+
+/* Bins where now < alpha * ref. This is a count, not a width in metres. */
+uint16_t formula_flex_null_count(const float *now, const float *ref,
+                                 uint16_t count, float alpha);
+
+#define FORMULA_FLEX_NULL_ALPHA 0.5f
+
+/* Cosine dissimilarity above this holds a quiet rebase. Knob: raise if an
+ * empty hall's ordinary multipath drift is marked static_change. */
+#define FORMULA_FLEX_SCI_HOLD 0.25f
+#define FORMULA_FLEX_SCORE_K 0.55f
+/* dB of attenuation that maps to stress 1. 6 dB stays near the old index 33. */
+#define FORMULA_FLEX_ATTEN_STRESS_DB 5.45f
+
 #ifdef __cplusplus
 }
 #endif

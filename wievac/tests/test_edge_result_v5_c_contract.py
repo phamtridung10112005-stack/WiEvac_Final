@@ -1,3 +1,4 @@
+import math
 import re
 import unittest
 from pathlib import Path
@@ -31,7 +32,41 @@ class EdgeResultV5CContractTests(unittest.TestCase):
         self.assertIn("expected_tx_mac == NULL", self.source)
 
     def test_c_formula_is_versioned_separately_from_python_reference(self):
-        self.assertIn("formula-flex-v5.3-rx-median-mad", self.source)
+        self.assertIn("formula-flex-v5.4-atten-exp", self.source)
+        self.assertIn("formula_flex_shape_change", self.formula)
+        self.assertIn("static_change", self.source)
+        self.assertIn("boot_unverified", self.source)
+
+    def test_attenuation_score_can_approach_zero_without_uncapping_z(self):
+        def score(deviation, drop_db=None):
+            stress = min(max(deviation, 0.0), 2.0)
+            if drop_db is not None and drop_db > 0.0:
+                stress = max(stress, drop_db / 5.45)
+            return 100.0 * math.exp(-0.55 * stress)
+
+        self.assertAlmostEqual(score(0.0), 100.0, places=3)
+        self.assertAlmostEqual(score(2.0), 33.287, places=2)
+        self.assertGreater(score(8.0), 30.0)
+        self.assertLess(score(2.0, drop_db=40.0), 2.0)
+        same = [1.0, 2.0, 3.0, 4.0]
+        self.assertAlmostEqual(self._shape_change(same, same), 0.0, places=6)
+        scaled = [2.0, 4.0, 6.0, 8.0]
+        self.assertAlmostEqual(self._shape_change(same, scaled), 0.0, places=6)
+        self.assertGreater(self._shape_change(same, [1.0, 1.0, 8.0, 1.0]), 0.25)
+
+    @staticmethod
+    def _shape_change(now, ref):
+        mean_now = sum(now) / len(now)
+        mean_ref = sum(ref) / len(ref)
+        dot = norm_now = norm_ref = 0.0
+        for a, b in zip(now, ref):
+            a /= mean_now
+            b /= mean_ref
+            dot += a * b
+            norm_now += a * a
+            norm_ref += b * b
+        cosine = dot / math.sqrt(norm_now * norm_ref)
+        return 1.0 - cosine
 
     def test_score_filter_keeps_raw_evidence_separate_from_display_score(self):
         self.assertIn("EDGE_RESULT_V5_SCORE_HISTORY_CAPACITY 5U", self.header)

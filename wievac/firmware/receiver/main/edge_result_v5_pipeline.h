@@ -19,10 +19,11 @@ extern "C" {
 
 #define EDGE_RESULT_V5_MAGIC UINT32_C(0x57495635) /* "WIV5" */
 #define EDGE_RESULT_V5_PROTOCOL_VERSION UINT8_C(5)
-#define EDGE_RESULT_V5_SCHEMA_VERSION UINT16_C(7)
+#define EDGE_RESULT_V5_SCHEMA_VERSION UINT16_C(8)
 #define EDGE_RESULT_V5_SCHEMA_V5 UINT16_C(5)
 #define EDGE_RESULT_V5_SCHEMA_V6 UINT16_C(6)
 #define EDGE_RESULT_V5_SCHEMA_V7 UINT16_C(7)
+#define EDGE_RESULT_V5_SCHEMA_V8 UINT16_C(8)
 #define EDGE_RESULT_V5_MESSAGE_TYPE UINT8_C(0x30)
 
 /* Machine-readable lifecycle markers.  Keep these in the reference module so
@@ -86,6 +87,13 @@ typedef enum {
     EDGE_RESULT_MODEL_REJECTED = 2,
     EDGE_RESULT_MODEL_OOD = 3,
 } edge_result_model_state_t;
+
+typedef enum {
+    EDGE_RESULT_STATIC_STABLE = 0,
+    EDGE_RESULT_STATIC_CANDIDATE = 1,
+    EDGE_RESULT_STATIC_CHANGE = 2,
+    EDGE_RESULT_STATIC_OCCUPIED = 3,
+} edge_result_static_flag_t;
 
 typedef enum {
     EDGE_RESULT_BASELINE_NO_BASELINE = 0,
@@ -324,6 +332,22 @@ typedef struct edge_result_link_state {
     uint8_t cal_dirty;
     float cal_amp[EDGE_RESULT_V5_CAL_WINDOWS];
     float cal_bins[EDGE_RESULT_V5_CAL_WINDOWS][EDGE_RESULT_V5_REF_BINS];
+    /* Compared with the stored empty reference after boot. The flag itself
+     * goes out as baseline_update_reason "boot_unverified". */
+    uint8_t boot_compare_windows;
+    uint8_t boot_motion_windows;
+    bool boot_compare_pending;
+    bool boot_unverified;
+    /* Automatic static-profile monitor. SCI and null count are measurements
+     * of spectral change, not metres of corridor width. */
+    uint8_t static_flag;
+    uint8_t static_change_index;
+    uint8_t n_null;
+    uint64_t static_candidate_start_us;
+    float static_latched_score;
+    bool static_score_latched;
+    float width_score;
+    bool width_valid;
 } edge_result_link_state_t;
 
 typedef struct {
@@ -398,6 +422,14 @@ typedef struct {
     float doppler_ratio;
     float doppler_fs_hz;
     uint16_t doppler_samples;
+    /* Schema 8. static_change_index is SCI scaled to 0..255. */
+    uint8_t static_change_index;
+    uint8_t n_null;
+    uint8_t static_flag;
+    bool boot_unverified;
+    /* This link's own radio level at startup, reduced while a static object stays. */
+    float width_score;
+    bool width_valid;
 } edge_result_v5_t;
 
 void edge_result_pipeline_config_defaults(edge_result_pipeline_config_t *config);

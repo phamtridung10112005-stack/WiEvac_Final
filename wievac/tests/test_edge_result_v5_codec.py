@@ -50,7 +50,7 @@ def result(**changes: object) -> EdgeResultV5:
         "formula_version": "formula-flex-1",
         "model_version": "none",
         "model_hash": "",
-        "feature_schema_version": "7",
+        "feature_schema_version": "8",
         "sample_count": 25,
         "invalid_count": 1,
         "queue_drop_count": 0,

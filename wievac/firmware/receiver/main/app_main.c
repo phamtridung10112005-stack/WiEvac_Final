@@ -104,7 +104,7 @@ static uint32_t s_wievac_rx_id = CONFIG_WIEVAC_RX_ID;
 #define WIEVAC_STRINGIFY(value)          WIEVAC_STRINGIFY_INNER(value)
 /* Keep the configured identity discoverable in the active V6 image. */
 static const char *const WIEVAC_BINARY_ID_MARKER __attribute__((used)) =
-    "V6 RX protocol=5 schema=7 rx_id=" WIEVAC_STRINGIFY(CONFIG_WIEVAC_RX_ID);
+    "V6 RX protocol=5 schema=8 rx_id=" WIEVAC_STRINGIFY(CONFIG_WIEVAC_RX_ID);
 
 #define V4_MAGIC                         UINT32_C(0x57495634) /* WIV4 */
 #define V4_VERSION                       4U
@@ -698,9 +698,9 @@ static void v6_pipeline_start_for_pair(const pair_state_t *pair)
     config.boot_id = g_rx_boot_id;
     config.corridor_id = "corridor-01";
     config.session_id = "runtime";
-    config.formula_version = "formula-flex-v5.3-rx-median-mad";
+    config.formula_version = "formula-flex-v5.4-atten-exp";
     config.model_version = "NOT_READY";
-    config.feature_schema_version = "7";
+    config.feature_schema_version = "8";
     if (!edge_result_pipeline_init(&g_v6_pipeline, &config) ||
         !edge_result_pipeline_register_link(&g_v6_pipeline, WIEVAC_LINK_ID,
                                             WIEVAC_TX_ID, WIEVAC_RX_ID, pair->tx_mac)) {
@@ -724,7 +724,7 @@ static void v6_pipeline_start_for_pair(const pair_state_t *pair)
             }
         }
     }
-    ESP_LOGI(TAG, "edge_result_v6 active protocol=5 schema=7 link=link-%" PRIu32 " node=rx-%" PRIu32,
+    ESP_LOGI(TAG, "edge_result_v6 active protocol=5 schema=8 link=link-%" PRIu32 " node=rx-%" PRIu32,
              WIEVAC_LINK_ID, WIEVAC_RX_ID);
 }
 

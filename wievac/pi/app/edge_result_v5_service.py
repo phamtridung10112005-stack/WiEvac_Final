@@ -24,7 +24,8 @@ from .edge_result_v5_runtime import EdgeResultV5Api, EdgeResultV5Ingestor, EdgeR
 
 IDENTITY_FIELDS = ("device_id", "node_id", "tx_id", "rx_id", "corridor_id")
 FIRMWARE_RX_MAX = 64
-_PATCHABLE_FIELDS = ("display_name", "enabled", "sort_order", "corridor_id")
+_PATCHABLE_FIELDS = ("display_name", "enabled", "sort_order", "corridor_id",
+                     "nominal_width_m", "occupied_width_m")
 
 
 OCCUPANCY_LABELS = ("EMPTY", "HUMAN_PRESENT", "UNKNOWN")
@@ -67,6 +68,18 @@ def _default_display_name(item: Mapping[str, Any], index: int) -> str:
 
 def _identity_from(item: Mapping[str, Any]) -> dict[str, str]:
     return {name: str(item[name]) for name in IDENTITY_FIELDS}
+
+
+def _optional_meters(value: Any) -> Optional[float]:
+    if value is None or value == "":
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    if number < 0.0 or number > 30.0 or number != number:
+        return None
+    return number
 
 
 def _as_bool(value: Any, default: bool = True) -> bool:
@@ -208,6 +221,8 @@ class EdgeResultV5Service:
             "device_id": str(item.get("device_id") or ""),
             "tx_id": str(item.get("tx_id") or ""),
             "firmware_supported": _firmware_supported(rx_id),
+            "nominal_width_m": _optional_meters(item.get("nominal_width_m")),
+            "occupied_width_m": _optional_meters(item.get("occupied_width_m")),
         }
 
     def catalog(self) -> dict[str, dict[str, Any]]:
@@ -380,6 +395,8 @@ class EdgeResultV5Service:
                 if not corridor:
                     raise ValueError("topology_identity_incomplete")
                 item["corridor_id"] = corridor
+            elif field in ("nominal_width_m", "occupied_width_m"):
+                item[field] = _optional_meters(payload.get(field))
         if any(item.get(name) in (None, "") for name in IDENTITY_FIELDS):
             raise ValueError("topology_identity_incomplete")
         self.ingest.upsert_identity(key, _identity_from(item))

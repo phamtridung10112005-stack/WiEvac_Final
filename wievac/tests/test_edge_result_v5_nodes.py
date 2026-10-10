@@ -56,6 +56,20 @@ class EdgeResultV5NodeCatalogTests(unittest.TestCase):
             remaining = [item["link_id"] for item in json.loads(path.read_text(encoding="utf-8"))["links"]]
             self.assertEqual(remaining, ["link-1", "link-2"])
 
+    def test_width_patch_stores_operator_inventory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "topology.json"
+            path.write_text(ACTIVE.read_text(encoding="utf-8"), encoding="utf-8")
+            service = EdgeResultV5Service(config=V5ServiceConfig(topology_path=str(path)))
+            patched = service.patch_node("link-1", {"nominal_width_m": 3.0, "occupied_width_m": 0.6})
+            self.assertEqual(patched["node"]["nominal_width_m"], 3.0)
+            self.assertEqual(patched["node"]["occupied_width_m"], 0.6)
+            saved = json.loads(path.read_text(encoding="utf-8"))
+            row = next(item for item in saved["links"] if item["link_id"] == "link-1")
+            self.assertEqual(row["nominal_width_m"], 3.0)
+            self.assertEqual(row["occupied_width_m"], 0.6)
+            self.assertAlmostEqual((3.0 - 0.6) * 50 / 100, 1.2)
+
     def test_duplicate_link_is_rejected(self):
         service = EdgeResultV5Service(config=V5ServiceConfig(topology_path=str(ACTIVE)))
         with self.assertRaises(ValueError) as raised:

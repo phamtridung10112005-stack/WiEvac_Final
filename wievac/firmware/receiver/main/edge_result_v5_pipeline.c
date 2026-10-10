@@ -21,10 +21,11 @@ _Static_assert(NOISE_FILTER_NULL_DROP_DB == EDGE_RESULT_V5_ATTEN_DB,
  * contract.  This is the Formula Flex implementation version, not a C
  * implementation label; changing it would make otherwise valid packets
  * appear to come from a different scoring contract. */
-#define EDGE_RESULT_V5_FORMULA_DEFAULT "formula-flex-v5.3-rx-median-mad"
+#define EDGE_RESULT_V5_FORMULA_DEFAULT "formula-flex-v5.4-atten-exp"
 #define EDGE_RESULT_V5_MODEL_DEFAULT "NOT_READY"
 #define EDGE_RESULT_V5_MODEL_TARGET "rx-tiny-ai"
-#define EDGE_RESULT_V5_SCHEMA_DEFAULT "7"
+#define EDGE_RESULT_V5_SCHEMA_DEFAULT "8"
+#define EDGE_RESULT_STATIC_HOLD_US UINT64_C(30000000)
 #define EDGE_RESULT_V5_TEMPORAL_SAFE_FLOOR 0.0001f
 #define EDGE_RESULT_V5_SEVERE_WINDOW_TOLERANCE 1U
 #define EDGE_RESULT_V5_LIGHT_PAUSE_TOLERANCE 4U
@@ -600,6 +601,13 @@ static void commit_calibration(edge_result_link_state_t *link)
     link->dynamic_baseline_frozen = false;
     link->last_clean_attenuated = false;
     link->static_block_windows = 0U;
+    link->boot_compare_pending = false;
+    link->boot_unverified = false;
+    link->boot_compare_windows = 0U;
+    link->boot_motion_windows = 0U;
+    link->static_flag = EDGE_RESULT_STATIC_STABLE;
+    link->static_score_latched = false;
+    link->static_candidate_start_us = 0U;
     if (link->baseline_version < UINT32_MAX) {
         ++link->baseline_version;
     }
@@ -755,12 +763,188 @@ static void reset_window(edge_result_link_state_t *link, uint64_t next_start_us)
     memset(link->window_bin_count, 0, sizeof(link->window_bin_count));
 }
 
+static void note_boot_compare(edge_result_link_state_t *link, const edge_result_v5_t *result)
+{
+    if (link == NULL || result == NULL || !link->boot_compare_pending ||
+        !link->absolute_ref_valid || result->sample_count == 0U ||
+        result->invalid_count > 0U || result->sequence_gap > 0U ||
+        result->queue_drop_count > 0U || result->quality_score <= 0.0f ||
+        !finite_float(result->features.common_amplitude) ||
+        result->features.common_amplitude <= 0.0f) {
+        return;
+    }
+    const bool moving = doppler_is_walking(link, result) ||
+        (finite_float(result->features.temporal_motion) &&
+         result->features.temporal_motion >= 1.5f);
+    if (moving) {
+        if (link->boot_motion_windows < UINT8_MAX) {
+            ++link->boot_motion_windows;
+        }
+        link->boot_compare_windows = 0U;
+        if (link->boot_motion_windows >= 2U) {
+            link->boot_unverified = true;
+            link->boot_compare_pending = false;
+            link->dynamic_baseline_frozen = true;
+            copy_text(link->baseline_update_reason, sizeof(link->baseline_update_reason),
+                      "boot_unverified");
+        }
+        return;
+    }
+    link->boot_motion_windows = 0U;
+    if (link->boot_compare_windows < UINT8_MAX) {
+        ++link->boot_compare_windows;
+    }
+    if (link->boot_compare_windows < 5U) {
+        return;
+    }
+    float bins[EDGE_RESULT_V5_REF_BINS];
+    mean_bins(link, bins);
+    const float sci = formula_flex_shape_change(bins, link->absolute_ref_bins,
+                                                EDGE_RESULT_V5_REF_BINS);
+    const bool changed = deep_attenuation(result->features.common_amplitude,
+                                          link->absolute_ref_center) ||
+        (finite_float(sci) && sci >= FORMULA_FLEX_SCI_HOLD);
+    link->boot_compare_pending = false;
+    if (changed) {
+        link->boot_unverified = true;
+        link->dynamic_baseline_frozen = true;
+        copy_text(link->baseline_update_reason, sizeof(link->baseline_update_reason),
+                  "boot_unverified");
+    }
+}
+
+static void update_static_profile(edge_result_link_state_t *link, edge_result_v5_t *result)
+{
+    if (link == NULL || result == NULL || !link->absolute_ref_valid ||
+        result->sample_count == 0U || result->invalid_count > 0U ||
+        result->sequence_gap > 0U || result->queue_drop_count > 0U ||
+        result->quality_score <= 0.0f ||
+        !finite_float(result->features.common_amplitude) ||
+        result->features.common_amplitude <= 0.0f) {
+        return;
+    }
+    float bins[EDGE_RESULT_V5_REF_BINS];
+    mean_bins(link, bins);
+    float sci = formula_flex_shape_change(bins, link->absolute_ref_bins, EDGE_RESULT_V5_REF_BINS);
+    if (!finite_float(sci) || sci < 0.0f) {
+        sci = 0.0f;
+    } else if (sci > 1.0f) {
+        sci = 1.0f;
+    }
+    const uint16_t nulls = formula_flex_null_count(bins, link->absolute_ref_bins,
+                                                   EDGE_RESULT_V5_REF_BINS,
+                                                   FORMULA_FLEX_NULL_ALPHA);
+    link->static_change_index = (uint8_t)(sci * 255.0f + 0.5f);
+    link->n_null = nulls > 255U ? 255U : (uint8_t)nulls;
+    float base = 0.0f;
+    for (uint16_t bin = 0U; bin < EDGE_RESULT_V5_REF_BINS; ++bin) {
+        if (finite_float(link->absolute_ref_bins[bin]) && link->absolute_ref_bins[bin] > 0.0f) {
+            base += link->absolute_ref_bins[bin];
+        }
+    }
+    float changed = sci;
+    const float null_frac = (float)link->n_null / (float)EDGE_RESULT_V5_REF_BINS;
+    if (null_frac > changed) {
+        changed = null_frac;
+    }
+    if (changed > 1.0f) {
+        changed = 1.0f;
+    }
+    if (base > 0.0f) {
+        link->width_score = base * (1.0f - changed);
+        link->width_valid = true;
+    }
+    if (link->boot_unverified || link->static_flag == EDGE_RESULT_STATIC_CHANGE) {
+        if (link->static_flag == EDGE_RESULT_STATIC_CHANGE) {
+            link->dynamic_baseline_frozen = true;
+        }
+        return;
+    }
+    const float deviation = formula_flex_baseline_deviation(link, result->features.common_amplitude);
+    const bool level_shift = (finite_float(deviation) && deviation >= 1.5f) ||
+        deep_attenuation(result->features.common_amplitude, link->absolute_ref_center) ||
+        sci >= FORMULA_FLEX_SCI_HOLD || link->n_null >= 3U;
+    const bool micro_motion = doppler_is_walking(link, result) ||
+        (finite_float(result->features.temporal_motion) &&
+         result->features.temporal_motion >= 1.5f);
+    if (!level_shift) {
+        link->static_flag = EDGE_RESULT_STATIC_STABLE;
+        link->static_candidate_start_us = 0U;
+        link->static_score_latched = false;
+        return;
+    }
+    if (micro_motion) {
+        link->static_flag = EDGE_RESULT_STATIC_OCCUPIED;
+        link->static_candidate_start_us = 0U;
+        link->static_score_latched = false;
+        return;
+    }
+    if (link->static_candidate_start_us == 0U) {
+        link->static_candidate_start_us = result->window_end_us;
+    }
+    link->static_flag = EDGE_RESULT_STATIC_CANDIDATE;
+    const uint64_t elapsed = result->window_end_us > link->static_candidate_start_us
+                                 ? result->window_end_us - link->static_candidate_start_us : 0U;
+    if (elapsed >= EDGE_RESULT_STATIC_HOLD_US) {
+        link->static_flag = EDGE_RESULT_STATIC_CHANGE;
+        link->dynamic_baseline_frozen = true;
+        copy_text(link->baseline_update_reason, sizeof(link->baseline_update_reason),
+                  "static_change");
+    }
+}
+
+static void hold_static_score(edge_result_link_state_t *link, edge_result_v5_t *result)
+{
+    if (link == NULL || result == NULL || !result->score_valid) {
+        return;
+    }
+    if (link->static_flag != EDGE_RESULT_STATIC_CANDIDATE &&
+        link->static_flag != EDGE_RESULT_STATIC_CHANGE) {
+        return;
+    }
+    if (!link->static_score_latched ||
+        result->local_passability_score < link->static_latched_score) {
+        link->static_latched_score = result->local_passability_score;
+        link->static_score_latched = true;
+        return;
+    }
+    result->local_passability_score = link->static_latched_score;
+    result->formula_score = link->static_latched_score;
+    result->filtered_passability_score = link->static_latched_score;
+    result->filtered_passability_valid = true;
+}
+
 static void sync_baseline_metadata(edge_result_v5_t *result,
-                                   const edge_result_link_state_t *link)
+                                   edge_result_link_state_t *link)
 {
     if (result == NULL || link == NULL) {
         return;
     }
+    note_boot_compare(link, result);
+    update_static_profile(link, result);
+    hold_static_score(link, result);
+    if (link->boot_unverified) {
+        result->state = EDGE_RESULT_STATE_UNKNOWN;
+        result->score_valid = false;
+        result->reason_code = EDGE_RESULT_REASON_ENVIRONMENT_SHIFT;
+        copy_text(result->transition_state, sizeof(result->transition_state),
+                  "BOOT_UNVERIFIED");
+        copy_text(link->baseline_update_reason, sizeof(link->baseline_update_reason),
+                  "boot_unverified");
+    } else if (link->static_flag == EDGE_RESULT_STATIC_CHANGE) {
+        copy_text(result->transition_state, sizeof(result->transition_state), "STATIC_CHANGE");
+    } else if (link->static_flag == EDGE_RESULT_STATIC_CANDIDATE) {
+        copy_text(result->transition_state, sizeof(result->transition_state), "STATIC_CANDIDATE");
+    } else if (link->static_flag == EDGE_RESULT_STATIC_OCCUPIED) {
+        copy_text(result->transition_state, sizeof(result->transition_state),
+                  "OCCUPIED_STATIONARY");
+    }
+    result->static_change_index = link->static_change_index;
+    result->n_null = link->n_null;
+    result->static_flag = link->static_flag;
+    result->boot_unverified = link->boot_unverified;
+    result->width_valid = link->width_valid;
+    result->width_score = link->width_valid ? link->width_score : -1.0f;
     /* Synchronize after transitions so metadata describes this result. */
     result->baseline_state = link->baseline_state;
     result->baseline_version = link->baseline_version;
@@ -1216,13 +1400,24 @@ static edge_result_v5_t make_result(edge_result_pipeline_t *pipeline,
                         const bool stuck_force =
                             link->stuck_low_score_windows >= EDGE_RESULT_V5_STUCK_LOW_WINDOWS &&
                             !doppler_walking;
-                        if (candidate_elapsed_us >= required_elapsed_us &&
+                        float shape_bins[EDGE_RESULT_V5_REF_BINS];
+                        mean_bins(link, shape_bins);
+                        const float shape_sci = link->absolute_ref_valid
+                            ? formula_flex_shape_change(shape_bins, link->absolute_ref_bins,
+                                                       EDGE_RESULT_V5_REF_BINS)
+                            : NAN;
+                        const bool shape_hold = finite_float(shape_sci) &&
+                            shape_sci >= FORMULA_FLEX_SCI_HOLD;
+                        const bool atten_hold = formula_flex_rebase_absorbs_attenuation(link);
+                        const bool rebase_ready =
+                            candidate_elapsed_us >= required_elapsed_us &&
                             link->rebase_candidate_count >= required_candidate_count &&
                             link->rebase_candidate_stable_windows >= required_candidate_count &&
                             link->rebase_candidate_pause_windows == 0U &&
                             (link->occupancy_memory_windows == 0U || stuck_force) &&
-                            (dirty_ratio <= EDGE_RESULT_V5_REBASE_DIRTY_RATIO || stuck_force) &&
-                            !formula_flex_rebase_absorbs_attenuation(link)) {
+                            (dirty_ratio <= EDGE_RESULT_V5_REBASE_DIRTY_RATIO || stuck_force);
+                        if (rebase_ready && !atten_hold && !shape_hold &&
+                            link->static_flag == EDGE_RESULT_STATIC_STABLE) {
                             formula_flex_promote_rebase_candidate(link);
                         }
                     }
@@ -1253,8 +1448,10 @@ static edge_result_v5_t make_result(edge_result_pipeline_t *pipeline,
             result.uncertainty_score = 100.0f;
         }
         copy_text(result.transition_state, sizeof(result.transition_state),
-                  link->baseline_state == EDGE_RESULT_BASELINE_OCCUPIED_OR_BLOCKED
-                      ? "OCCUPIED_OR_BLOCKED" : "ENVIRONMENT_SHIFT");
+                  strcmp(link->baseline_update_reason, "static_change") == 0
+                      ? "STATIC_CHANGE"
+                      : (link->baseline_state == EDGE_RESULT_BASELINE_OCCUPIED_OR_BLOCKED
+                             ? "OCCUPIED_OR_BLOCKED" : "ENVIRONMENT_SHIFT"));
         calibration_finish_window(link, &result, false);
         sync_baseline_metadata(&result, link);
         return result;
@@ -1760,6 +1957,10 @@ bool edge_result_pipeline_reset_link_boot(edge_result_pipeline_t *pipeline,
         link->baseline_confidence = 80.0f;
         copy_text(link->baseline_update_reason, sizeof(link->baseline_update_reason),
                   "nvs_absolute_ref");
+        link->boot_compare_pending = true;
+        link->boot_unverified = false;
+        link->boot_compare_windows = 0U;
+        link->boot_motion_windows = 0U;
     }
     link->expected_tx_mac_valid = expected_valid;
     if (expected_valid) {
@@ -1837,6 +2038,10 @@ bool edge_result_pipeline_import_abs_ref(edge_result_pipeline_t *pipeline,
     link->static_block_windows = 0U;
     copy_text(link->baseline_update_reason, sizeof(link->baseline_update_reason),
               "nvs_absolute_ref");
+    link->boot_compare_pending = true;
+    link->boot_unverified = false;
+    link->boot_compare_windows = 0U;
+    link->boot_motion_windows = 0U;
     return true;
 }
 
@@ -2297,6 +2502,15 @@ static size_t write_payload(const edge_result_v5_t *result, uint8_t *payload, si
     offset += 4U;
     put_u16(payload + offset, result->doppler_valid ? result->doppler_samples : 0U);
     offset += 2U;
+    if (offset + 8U > capacity) {
+        return 0U;
+    }
+    payload[offset++] = result->static_change_index;
+    payload[offset++] = result->n_null;
+    payload[offset++] = result->static_flag;
+    payload[offset++] = result->boot_unverified ? 1U : 0U;
+    put_f32(payload + offset, result->width_valid ? result->width_score : -1.0f);
+    offset += 4U;
     return offset;
 }
 
@@ -2327,7 +2541,7 @@ int edge_result_v5_encode(const edge_result_v5_t *result,
         /* The active encoder is schema 7.  A mismatched feature marker with
          * this header is rejected instead of emitting a packet the Pi codec
          * must discard.  Schema 5/6 remain decode-only compatibility. */
-        strcmp(result->feature_schema_version, "7") != 0 ||
+        strcmp(result->feature_schema_version, "8") != 0 ||
         !finite_float(result->packet_loss_ratio) || result->packet_loss_ratio < 0.0f || result->packet_loss_ratio > 1.0f ||
         !finite_float(result->jitter_ms) || result->jitter_ms < 0.0f ||
         result->invalid_count > result->sample_count) {
@@ -2411,7 +2625,8 @@ int edge_result_v5_decode(const uint8_t *packet,
         packet[5] != EDGE_RESULT_V5_MESSAGE_TYPE ||
         ((schema_version = get_u16(packet + 8U)) != EDGE_RESULT_V5_SCHEMA_V5 &&
          schema_version != EDGE_RESULT_V5_SCHEMA_V6 &&
-         schema_version != EDGE_RESULT_V5_SCHEMA_V7)) {
+         schema_version != EDGE_RESULT_V5_SCHEMA_V7 &&
+         schema_version != EDGE_RESULT_V5_SCHEMA_V8)) {
         REJECT(EDGE_RESULT_REASON_MODEL_REJECTED);
     }
     const uint16_t payload_length = get_u16(packet + 6U);
@@ -2477,7 +2692,8 @@ int edge_result_v5_decode(const uint8_t *packet,
                      EDGE_RESULT_V5_MAX_TEXT, true) ||
         (strcmp(result->feature_schema_version, "5") != 0 &&
          strcmp(result->feature_schema_version, "6") != 0 &&
-         strcmp(result->feature_schema_version, "7") != 0) ||
+         strcmp(result->feature_schema_version, "7") != 0 &&
+         strcmp(result->feature_schema_version, "8") != 0) ||
         offset + 24U > payload_length) {
         REJECT(EDGE_RESULT_REASON_INVALID_CSI);
     }
@@ -2499,12 +2715,15 @@ int edge_result_v5_decode(const uint8_t *packet,
     result->occupancy_evidence_valid = false;
     result->blocking_evidence_valid = false;
     if (schema_version == EDGE_RESULT_V5_SCHEMA_V6 ||
-        schema_version == EDGE_RESULT_V5_SCHEMA_V7) {
+        schema_version == EDGE_RESULT_V5_SCHEMA_V7 ||
+        schema_version == EDGE_RESULT_V5_SCHEMA_V8) {
         char baseline_text[EDGE_RESULT_V5_MAX_TEXT];
         char drift_text[EDGE_RESULT_V5_MAX_TEXT];
         char model_text[EDGE_RESULT_V5_MAX_TEXT];
-        const size_t adaptive_tail = 20U +
-            (schema_version == EDGE_RESULT_V5_SCHEMA_V7 ? 11U : 0U);
+        const bool doppler_schema = schema_version == EDGE_RESULT_V5_SCHEMA_V7 ||
+                                    schema_version == EDGE_RESULT_V5_SCHEMA_V8;
+        const size_t adaptive_tail = 20U + (doppler_schema ? 11U : 0U) +
+            (schema_version == EDGE_RESULT_V5_SCHEMA_V8 ? 8U : 0U);
         if (!read_string(payload, payload_length, &offset, baseline_text, sizeof(baseline_text), true) ||
             !read_string(payload, payload_length, &offset, result->baseline_update_reason,
                          sizeof(result->baseline_update_reason), true) ||
@@ -2537,7 +2756,8 @@ int edge_result_v5_decode(const uint8_t *packet,
             if (index == 2U) { result->occupancy_evidence_valid = present != 0U; result->occupancy_evidence = score; }
             if (index == 3U) { result->blocking_evidence_valid = present != 0U; result->blocking_evidence = score; }
         }
-        if (schema_version == EDGE_RESULT_V5_SCHEMA_V7) {
+        if (schema_version == EDGE_RESULT_V5_SCHEMA_V7 ||
+            schema_version == EDGE_RESULT_V5_SCHEMA_V8) {
             const uint8_t present = payload[offset++];
             const float ratio = get_f32(payload + offset); offset += 4U;
             const float fs_hz = get_f32(payload + offset); offset += 4U;
@@ -2558,6 +2778,23 @@ int edge_result_v5_decode(const uint8_t *packet,
                 result->doppler_fs_hz = fs_hz;
                 result->doppler_samples = samples;
             }
+        }
+        if (schema_version == EDGE_RESULT_V5_SCHEMA_V8) {
+            if (offset + 8U > payload_length) {
+                REJECT(EDGE_RESULT_REASON_INVALID_CSI);
+            }
+            result->static_change_index = payload[offset++];
+            result->n_null = payload[offset++];
+            result->static_flag = payload[offset++];
+            const uint8_t boot_flag = payload[offset++];
+            result->width_score = get_f32(payload + offset);
+            offset += 4U;
+            if (boot_flag > 1U || result->static_flag > EDGE_RESULT_STATIC_OCCUPIED ||
+                !finite_float(result->width_score)) {
+                REJECT(EDGE_RESULT_REASON_INVALID_CSI);
+            }
+            result->boot_unverified = boot_flag != 0U;
+            result->width_valid = result->width_score >= 0.0f;
         }
     } else if (offset != payload_length) {
         REJECT(EDGE_RESULT_REASON_INVALID_CSI);

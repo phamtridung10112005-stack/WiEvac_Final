@@ -76,19 +76,88 @@ float formula_flex_default_formula(const edge_result_features_t *features,
     if (!isfinite((double)deviation)) {
         return NAN;
     }
-    /* Link-local z-scores only: amplitude vs this link's MAD, motion vs this
-     * link's temporal envelope.  The same rule moves with the kit.  Do not
-     * penalize intra-packet subcarrier MAD; that is frequency-selective
-     * fading of an empty hall, not occupancy, and is not a z-score of the
-     * same quantity.  Occupancy freeze is Doppler+temporal in the pipeline.
-     * Uncapped level z used to collapse a quiet AGC shift to ~14; cap the
-     * published mix so level and motion stay on a comparable scale. */
+    /* Link-local z stays capped at 2. An uncapped z treats a quiet AGC step
+     * as a blocked hall. Deep blockage is the drop in dB versus this link's
+     * empty-corridor reference, which can drive the index near 0. */
     const float excess_motion = fmaxf(0.0f, features->temporal_motion - 1.0f);
     const float level_term = fminf(fmaxf(0.0f, deviation), 2.0f);
-    const float combined_stress = level_term + 0.50f * excess_motion;
-    /* A bounded ratio preserves the local 0..100 index without introducing
-     * node-independent penalty gains or raw thresholds. */
-    return clampf_local(100.0f / (1.0f + combined_stress), 0.0f, 100.0f);
+    float stress = level_term + 0.50f * excess_motion;
+    if (link->absolute_ref_valid && link->absolute_ref_center > 0.0f &&
+        features->common_amplitude > 0.0f) {
+        const float ratio = features->common_amplitude / link->absolute_ref_center;
+        if (isfinite((double)ratio) && ratio > 0.0f && ratio < 1.0f) {
+            const float drop_db = -20.0f * log10f(ratio);
+            const float atten_stress = drop_db / FORMULA_FLEX_ATTEN_STRESS_DB;
+            if (isfinite((double)atten_stress) && atten_stress > stress) {
+                stress = atten_stress;
+            }
+        }
+    }
+    return clampf_local(100.0f * expf(-FORMULA_FLEX_SCORE_K * stress), 0.0f, 100.0f);
+}
+
+float formula_flex_shape_change(const float *now, const float *ref, uint16_t count)
+{
+    if (now == NULL || ref == NULL || count < 2U) {
+        return NAN;
+    }
+    double sum_now = 0.0;
+    double sum_ref = 0.0;
+    uint16_t used = 0U;
+    for (uint16_t i = 0U; i < count; ++i) {
+        if (!isfinite((double)now[i]) || !isfinite((double)ref[i]) ||
+            now[i] <= 0.0f || ref[i] <= 0.0f) {
+            continue;
+        }
+        sum_now += (double)now[i];
+        sum_ref += (double)ref[i];
+        ++used;
+    }
+    if (used < 2U || sum_now <= 0.0 || sum_ref <= 0.0) {
+        return NAN;
+    }
+    const double mean_now = sum_now / (double)used;
+    const double mean_ref = sum_ref / (double)used;
+    double dot = 0.0;
+    double norm_now = 0.0;
+    double norm_ref = 0.0;
+    for (uint16_t i = 0U; i < count; ++i) {
+        if (!isfinite((double)now[i]) || !isfinite((double)ref[i]) ||
+            now[i] <= 0.0f || ref[i] <= 0.0f) {
+            continue;
+        }
+        const double a = (double)now[i] / mean_now;
+        const double b = (double)ref[i] / mean_ref;
+        dot += a * b;
+        norm_now += a * a;
+        norm_ref += b * b;
+    }
+    const double denom = sqrt(norm_now * norm_ref);
+    if (!(denom > 0.0)) {
+        return NAN;
+    }
+    double cosine = dot / denom;
+    if (cosine < 0.0) cosine = 0.0;
+    if (cosine > 1.0) cosine = 1.0;
+    return (float)(1.0 - cosine);
+}
+
+uint16_t formula_flex_null_count(const float *now, const float *ref,
+                                 uint16_t count, float alpha)
+{
+    if (now == NULL || ref == NULL || !(alpha > 0.0f)) {
+        return 0U;
+    }
+    uint16_t nulls = 0U;
+    for (uint16_t i = 0U; i < count; ++i) {
+        if (!isfinite((double)now[i]) || !isfinite((double)ref[i]) || ref[i] <= 0.0f) {
+            continue;
+        }
+        if (now[i] < alpha * ref[i]) {
+            ++nulls;
+        }
+    }
+    return nulls;
 }
 
 void formula_flex_update_baseline(edge_result_link_state_t *link,

@@ -36,7 +36,7 @@ def _result(**changes: object) -> EdgeResultV5:
         "state": EdgeResultState.DEGRADED, "quality": 91.0, "uncertainty": 8.0,
         "disagreement": True, "reason_code": 7,
         "formula_version": "formula-flex-v6", "model_version": "tiny-v6",
-        "model_hash": "a" * 64, "feature_schema_version": "7", "sample_count": 25,
+        "model_hash": "a" * 64, "feature_schema_version": "8", "sample_count": 25,
         "invalid_count": 1, "queue_drop_count": 2, "sequence_gap": 3,
         "packet_loss_ratio": 0.02, "jitter_ms": 1.25,
         "baseline_state": "SHIFT_CANDIDATE", "baseline_version": 17,
@@ -86,18 +86,20 @@ class EdgeResultV6CodecTests(unittest.TestCase):
         self.assertIn(f'FORMULA_VERSION = "{config["formula"]["version"]}"', formula_source)
 
     def test_v6_round_trip_preserves_adaptive_metadata(self) -> None:
-        original = _result()
+        original = _result(static_change_index=40, n_null=3, static_flag=2, boot_unverified=True, width_score=180.5)
         packet = encode_edge_result(original)
-        self.assertEqual(int.from_bytes(packet[8:10], "big"), SCHEMA_V7)
+        self.assertEqual(int.from_bytes(packet[8:10], "big"), SCHEMA_VERSION)
         decoded = decode_edge_result(packet)
         for field in (
             "baseline_state", "baseline_version", "baseline_update_reason",
             "baseline_confidence", "drift_state", "raw_evidence_score",
             "filtered_passability_score", "transition_state", "occupancy_evidence",
             "blocking_evidence", "model_state", "doppler_valid", "doppler_ratio",
-            "doppler_fs_hz", "doppler_samples",
+            "doppler_fs_hz", "doppler_samples", "static_change_index", "n_null",
+            "static_flag", "boot_unverified", "width_score",
         ):
             self.assertEqual(getattr(decoded, field), getattr(original.normalized(), field), field)
+        self.assertAlmostEqual(decoded.width_score, 180.5, places=4)
 
     def test_v5_packet_decodes_with_conservative_metadata_defaults(self) -> None:
         packet = encode_edge_result(_result(feature_schema_version="5"), schema_version=SCHEMA_V5)
@@ -116,8 +118,8 @@ class EdgeResultV6CodecTests(unittest.TestCase):
             encode_edge_result(_result(feature_schema_version="5"), schema_version=SCHEMA_V6)
 
     def test_schema7_doppler_round_trip(self) -> None:
-        original = _result(doppler_valid=True, doppler_ratio=0.42, doppler_fs_hz=100.0, doppler_samples=64)
-        packet = encode_edge_result(original)
+        original = _result(feature_schema_version="7", doppler_valid=True, doppler_ratio=0.42, doppler_fs_hz=100.0, doppler_samples=64)
+        packet = encode_edge_result(original, schema_version=SCHEMA_V7)
         self.assertEqual(int.from_bytes(packet[8:10], "big"), SCHEMA_V7)
         decoded = decode_edge_result(packet)
         self.assertTrue(decoded.doppler_valid)
@@ -125,6 +127,15 @@ class EdgeResultV6CodecTests(unittest.TestCase):
         self.assertAlmostEqual(decoded.doppler_fs_hz, 100.0, places=3)
         self.assertEqual(decoded.doppler_samples, 64)
         self.assertAlmostEqual(decoded.occupancy_evidence, 66.0, places=5)
+
+    def test_width_index_starts_at_1000_and_drops_for_a_static_change(self) -> None:
+        from wievac.pi.app.edge_result_v5 import width_index
+        wide = [20.0] * 12
+        narrow = [8.0] * 12
+        self.assertEqual(width_index(wide, 0, 0), 240.0)
+        self.assertEqual(width_index(narrow, 0, 0), 96.0)
+        self.assertGreater(width_index(wide, 13, 0), width_index(narrow, 13, 0))
+        self.assertLess(width_index(wide, 13, 0), 240.0)
 
 
 if __name__ == "__main__":

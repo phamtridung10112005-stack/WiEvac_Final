@@ -22,7 +22,7 @@ int edge_result_v6_vector(edge_result_v5_t *out, uint8_t *packet,
     strcpy(out->formula_version, "formula-flex-v5.2-rx-median-mad");
     strcpy(out->model_version, "NOT_READY");
     out->model_hash[0] = '\0';
-    strcpy(out->feature_schema_version, "7");
+    strcpy(out->feature_schema_version, "8");
     strcpy(out->identity.device_id_text, "device-1");
     strcpy(out->identity.node_id_text, "rx-1");
     strcpy(out->identity.tx_id_text, "tx-1");

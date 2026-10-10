@@ -233,6 +233,8 @@
     .metric label { display: block; color: var(--muted); font-size: 1rem; font-weight: 700; }
     .metric b { display: block; font-size: 1.3rem; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .card-meta { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; color: var(--muted); font-size: 1.02rem; font-weight: 600; margin-top: 14px; }
+    .width-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 8px; color: var(--muted); font-size: 0.95rem; }
+    .width-row input { width: 4.5rem; font: inherit; padding: 2px 6px; }
     .fresh { color: var(--muted); }
     .chart-wrap { height: 96px; margin-top: 16px; background: color-mix(in srgb, var(--accent) 8%, #f5f8f7); border-radius: 14px; padding: 8px; }
     .chart-wrap.empty { display: none; }
@@ -584,6 +586,7 @@
       </div>
       <div class="chart-wrap empty"><canvas class="chart" data-chart aria-label="Biểu đồ passability"></canvas></div>
       <div class="chart-empty">Chưa có lịch sử điểm — sparkline sẽ hiện khi RX bắt đầu gửi</div>
+      <p class="card-hint" data-sci>Điểm độ rộng --</p>
       <div class="label-bar" data-labels>
         <button type="button" data-occupancy="EMPTY">Trống</button>
         <button type="button" data-occupancy="HUMAN_PRESENT">Có người</button>
@@ -762,7 +765,22 @@
       const fresh = root.querySelector("[data-fresh]");
       if (fresh) fresh.textContent = view.stale ? (age !== null ? "Dữ liệu đã cũ " + round(age) + " giây" : "MẤT KẾT NỐI") : (age !== null ? "Dữ liệu mới " + round(age) + " giây trước" : "");
       const hint = root.querySelector("[data-hint]");
-      if (hint) hint.textContent = view.hasPacket ? (view.stale ? "Tín hiệu đã cũ — kiểm tra RX" : "Chỉ số passability tại node") : "Đang chờ tín hiệu từ RX";
+      const sciEl = root.querySelector("[data-sci]");
+      const bootUnverified = v?.baseline_update_reason === "boot_unverified" || v?.transition_state === "BOOT_UNVERIFIED" || v?.boot_unverified === true;
+      if (sciEl) {
+        const width = finite(v?.width_score) && Number(v.width_score) >= 0 ? Number(v.width_score) : null;
+        sciEl.textContent = width === null ? "Điểm độ rộng --" : "Điểm độ rộng " + round(width);
+      }
+      if (bootUnverified) {
+        root.querySelector("[data-state]").textContent = "CHƯA XÁC ĐỊNH";
+        const stateText = root.querySelector("[data-state-text]");
+        if (stateText) stateText.textContent = "CHƯA XÁC ĐỊNH";
+      }
+      if (hint) {
+        const parts = [view.hasPacket ? (view.stale ? "Tín hiệu đã cũ — kiểm tra RX" : "Node tự tính lúc mở. Tủ để yên thì điểm giảm và giữ nguyên.") : "Đang chờ tín hiệu từ RX"];
+        if (v?.baseline_update_reason === "static_change" || v?.transition_state === "STATIC_CHANGE" || Number(v?.static_flag) === 2) parts.push("thay đổi tĩnh, điểm không tự hồi");
+        hint.textContent = parts.join(" · ");
+      }
       const gauge = root.querySelector("[data-gauge]");
       if (gauge) {
         gauge.style.strokeDasharray = String(GAUGE_C);
