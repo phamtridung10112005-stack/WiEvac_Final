@@ -200,6 +200,9 @@ typedef struct {
     uint16_t baseline_min_samples;
     float max_ai_correction;
     float stale_after_ms;
+    /* Link span in metres. 0 means unset: capacity uses d0 and gain 1.
+     * The Pi topology JSON is the deployment value operators edit. */
+    float nominal_distance_m;
     const char *formula_version;
     const char *model_version;
     const char *model_hash;
@@ -348,6 +351,14 @@ typedef struct edge_result_link_state {
     bool static_score_latched;
     float width_score;
     bool width_valid;
+    /* Boot capacity. cap_ref_bins stay fixed so a static object cannot be
+     * rebased into a full-width corridor. */
+    float nominal_distance_m;
+    float cap_base;
+    float cap_ref_bins[EDGE_RESULT_V5_REF_BINS];
+    bool cap_locked;
+    uint8_t cap_quiet_windows;
+    uint64_t cap_quiet_start_us;
 } edge_result_link_state_t;
 
 typedef struct {

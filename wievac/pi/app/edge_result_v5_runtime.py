@@ -428,11 +428,16 @@ class EdgeResultV5Ingestor:
                 "last_packet_age_ms": None,
                 "last_rejection_reason": state.rejection_reasons[-1] if state.rejection_reasons else None,
                 "last_rejected_packet": state.last_rejected_packet,
+                "width_score": None,
+                "w_cap": None,
+                "p_dyn": None,
+                "effective_flow": None,
             }
         data = _as_dict(latest)
         if stale:
             data["state"] = "STALE"
             data["local_passability_score"] = None
+            data["width_score"] = None
             reason = "stale"
         else:
             reason = str(data.get("reason_code", data.get("reason", "")))
@@ -489,8 +494,16 @@ class EdgeResultV5Ingestor:
                 "legacy_packet_loss_ratio": legacy_packet_loss_ratio,
                 "packet_loss_ratio_source": PACKET_LOSS_RATIO_SOURCE,
                 "last_packet_age_ms": age_ms,
+                "w_cap": None if stale else data.get("width_score"),
+                "p_dyn": None if stale else data.get("local_passability_score"),
             }
         )
+        width = data.get("w_cap")
+        p_dyn = data.get("p_dyn")
+        if _finite(width) and float(width) >= 0.0 and _finite(p_dyn):
+            data["effective_flow"] = float(width) * float(p_dyn) / 100.0
+        else:
+            data["effective_flow"] = None
         return data
 
     def latest_by_link(self, *, now_us: Optional[int] = None) -> Dict[str, Dict[str, Any]]:
@@ -637,6 +650,13 @@ class DirectionRouter:
         if not (_finite(quality) and _finite(score)) or float(quality) < self.ingest.min_quality:
             return None
         uncertainty_value = float(uncertainty) if _finite(uncertainty) else 1.0
+        flow = link.get("effective_flow")
+        if not _finite(flow):
+            width = link.get("w_cap", link.get("width_score"))
+            if _finite(width) and float(width) > 0.0:
+                flow = float(width) * float(score) / 100.0
+        if _finite(flow) and float(flow) > 0.0:
+            return 1.0 + (2000.0 / float(flow)) + uncertainty_value
         return 1.0 + (100.0 - float(score)) / 100.0 + uncertainty_value
 
     def route(self, source: str, target: str, *, now_us: Optional[int] = None) -> Dict[str, Any]:

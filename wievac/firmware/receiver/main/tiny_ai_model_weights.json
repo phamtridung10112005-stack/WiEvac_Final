@@ -1,0 +1,8 @@
+{
+  "present": false,
+  "rung": 0,
+  "version": "NOT_READY",
+  "feature_schema": "dyn-42-v1",
+  "sha256": "",
+  "note": "No dataset has been trained. Firmware stays on MAD z-score. Not field-verified."
+}

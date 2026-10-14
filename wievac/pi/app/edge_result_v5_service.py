@@ -18,14 +18,14 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Mapping, Optional, Tuple
 
-from .edge_result_v5 import EdgeResultV5
+from .edge_result_v5 import EdgeResultV5, compensate_width
 from .edge_result_v5_runtime import EdgeResultV5Api, EdgeResultV5Ingestor, EdgeResultRecorder, IngestDecision, jsonl_stem
 
 
 IDENTITY_FIELDS = ("device_id", "node_id", "tx_id", "rx_id", "corridor_id")
 FIRMWARE_RX_MAX = 64
 _PATCHABLE_FIELDS = ("display_name", "enabled", "sort_order", "corridor_id",
-                     "nominal_width_m", "occupied_width_m")
+                     "nominal_distance_m", "nominal_width_m", "occupied_width_m")
 
 
 OCCUPANCY_LABELS = ("EMPTY", "HUMAN_PRESENT", "UNKNOWN")
@@ -152,6 +152,7 @@ class EdgeResultV5Service:
         else:
             self._schedule_path = None
         self._schedules: list[dict[str, Any]] = self._load_schedules()
+        self._cap_base: dict[str, float] = {}
 
     @staticmethod
     def _load_topology(config: V5ServiceConfig) -> dict[str, Any]:
@@ -221,6 +222,7 @@ class EdgeResultV5Service:
             "device_id": str(item.get("device_id") or ""),
             "tx_id": str(item.get("tx_id") or ""),
             "firmware_supported": _firmware_supported(rx_id),
+            "nominal_distance_m": _optional_meters(item.get("nominal_distance_m")),
             "nominal_width_m": _optional_meters(item.get("nominal_width_m")),
             "occupied_width_m": _optional_meters(item.get("occupied_width_m")),
         }
@@ -395,7 +397,7 @@ class EdgeResultV5Service:
                 if not corridor:
                     raise ValueError("topology_identity_incomplete")
                 item["corridor_id"] = corridor
-            elif field in ("nominal_width_m", "occupied_width_m"):
+            elif field in ("nominal_distance_m", "nominal_width_m", "occupied_width_m"):
                 item[field] = _optional_meters(payload.get(field))
         if any(item.get(name) in (None, "") for name in IDENTITY_FIELDS):
             raise ValueError("topology_identity_incomplete")
@@ -787,15 +789,70 @@ class EdgeResultV5Service:
             )
         return decision
 
+    def _annotate_capacity(self, payload: Mapping[str, Any]) -> dict[str, Any]:
+        """Attach topology distance and the evacuation flow F_eff = W_cap * P_dyn."""
+        data = dict(payload)
+        links = data.get("links")
+        if not isinstance(links, dict):
+            return data
+        catalog = self.catalog()
+        for link_id, row in links.items():
+            if not isinstance(row, dict):
+                continue
+            meta = catalog.get(str(link_id), {})
+            distance = meta.get("nominal_distance_m")
+            row["nominal_distance_m"] = distance
+            row["nominal_width_m"] = meta.get("nominal_width_m")
+            if row.get("stale") or row.get("state") == "STALE":
+                row["width_score"] = None
+                row["w_cap"] = None
+                row["p_dyn"] = None
+                row["effective_flow"] = None
+                continue
+            compensated = compensate_width(row.get("width_score"), distance)
+            row["width_score"] = compensated
+            row["w_cap"] = compensated
+            p_dyn = row.get("p_dyn")
+            if p_dyn is None:
+                p_dyn = row.get("local_passability_score")
+            row["p_dyn"] = p_dyn
+            if compensated is not None and isinstance(p_dyn, (int, float)):
+                row["effective_flow"] = float(compensated) * float(p_dyn) / 100.0
+            else:
+                row["effective_flow"] = None
+            base = self._locked_cap_base(str(link_id), compensated, row)
+            row["cap_base"] = base
+            row["w_base"] = base
+        return data
+
+    def _locked_cap_base(self, link_id: str, width: Any, row: Mapping[str, Any]) -> Optional[float]:
+        """Recover W_base = W_cap / (1 - changed). Hold the last safe lock when the gap is too small."""
+        held = self._cap_base.get(link_id)
+        if not isinstance(width, (int, float)):
+            return None
+        try:
+            sci = float(row.get("static_change_index") or 0) / 255.0
+            null_frac = float(row.get("n_null") or 0) / 12.0
+        except (TypeError, ValueError):
+            sci, null_frac = 0.0, 0.0
+        changed = min(1.0, max(0.0, sci, null_frac))
+        if (1.0 - changed) <= 0.05:
+            return held
+        base = float(width) / (1.0 - changed)
+        if not (base > 0.0) or base > 1.0e12:
+            return held
+        self._cap_base[link_id] = base
+        return base
+
     def response(self, path: str, *, now_us: Optional[int] = None, source: Optional[str] = None, target: Optional[str] = None) -> Mapping[str, Any]:
         if path == "/api/v5/latest":
-            return self.api.latest(now_us=now_us)
+            return self._annotate_capacity(self.api.latest(now_us=now_us))
         if path == "/api/v5/overview":
             payload = dict(self.api.overview(now_us=now_us))
             payload["catalog"] = self.catalog()
             payload["active_labels"] = self.active_labels()
             payload["recording"] = self.recording_status()
-            return payload
+            return self._annotate_capacity(payload)
         if path == "/api/v5/nodes":
             return self.list_nodes(now_us=now_us)
         if path == "/api/v5/trends" and self.config.enable_reference_modules:

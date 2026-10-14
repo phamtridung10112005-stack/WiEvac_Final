@@ -50,6 +50,26 @@ uint16_t formula_flex_null_count(const float *now, const float *ref,
 /* dB of attenuation that maps to stress 1. 6 dB stays near the old index 33. */
 #define FORMULA_FLEX_ATTEN_STRESS_DB 5.45f
 
+/* Path loss P_norm = P_rx * (d / d0)^gamma lives on the Pi, once, from
+ * topology nominal_distance_m. Firmware always emits the d0 = 1 m score. */
+#define FORMULA_FLEX_PATH_GAMMA 1.8f
+#define FORMULA_FLEX_PATH_D0_M 1.0f
+/* Quiet windows required before the first W_base lock. Motion resets it. */
+#define FORMULA_FLEX_CAP_HOLD_US 5000000ULL
+#define FORMULA_FLEX_MOTION_GATE 1.5f
+
+/* Sum of |H_k|^2 at d0 = 1 m (gain = 1). distance_m is ignored.
+ * NAN when power is not usable. */
+float formula_flex_capacity_base(float power, float distance_m);
+
+/* W_cap = W_base * (1 - max(N_null / N_total, SCI)). */
+float formula_flex_capacity_score(float base, float sci, uint16_t n_null,
+                                  uint16_t n_total);
+
+/* People moving through the link. Static attenuation stays in W_cap. */
+float formula_flex_dynamic_passability(const edge_result_features_t *features,
+                                       const edge_result_link_state_t *link);
+
 #ifdef __cplusplus
 }
 #endif

@@ -160,6 +160,50 @@ uint16_t formula_flex_null_count(const float *now, const float *ref,
     return nulls;
 }
 
+float formula_flex_capacity_base(float power, float distance_m)
+{
+    /* Wire W_base is the d0 = 1 m value. Pi applies (d/d0)^gamma once. */
+    (void)distance_m;
+    if (!isfinite((double)power) || power <= 0.0f) {
+        return NAN;
+    }
+    return power;
+}
+
+float formula_flex_capacity_score(float base, float sci, uint16_t n_null,
+                                  uint16_t n_total)
+{
+    if (!isfinite((double)base) || base <= 0.0f || n_total == 0U) {
+        return NAN;
+    }
+    float shape = sci;
+    if (!isfinite((double)shape) || shape < 0.0f) {
+        shape = 0.0f;
+    } else if (shape > 1.0f) {
+        shape = 1.0f;
+    }
+    float null_frac = (float)n_null / (float)n_total;
+    if (null_frac < 0.0f) {
+        null_frac = 0.0f;
+    } else if (null_frac > 1.0f) {
+        null_frac = 1.0f;
+    }
+    const float changed = shape > null_frac ? shape : null_frac;
+    return base * (1.0f - changed);
+}
+
+float formula_flex_dynamic_passability(const edge_result_features_t *features,
+                                       const edge_result_link_state_t *link)
+{
+    (void)link;
+    if (features == NULL || !isfinite((double)features->temporal_motion)) {
+        return NAN;
+    }
+    const float excess = fmaxf(0.0f, features->temporal_motion - 1.0f);
+    const float stress = 0.50f * excess;
+    return clampf_local(100.0f * expf(-FORMULA_FLEX_SCORE_K * stress), 0.0f, 100.0f);
+}
+
 void formula_flex_update_baseline(edge_result_link_state_t *link,
                                   const edge_result_pipeline_config_t *config,
                                   float amplitude,

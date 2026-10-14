@@ -365,8 +365,13 @@ class EdgeResultV5:
             width_score=None if self.width_score is None else float(self.width_score),
         )
 
-    def encode(self) -> bytes:
-        return encode_edge_result(self)
+    def encode(self, *, schema_version: int | None = None) -> bytes:
+        if schema_version is None:
+            try:
+                schema_version = int(self.feature_schema_version)
+            except (TypeError, ValueError):
+                schema_version = SCHEMA_VERSION
+        return encode_edge_result(self, schema_version=schema_version)
 
     def to_dict(self) -> dict[str, Any]:
         """Return a JSON-friendly mapping without changing wire semantics."""
@@ -787,6 +792,38 @@ def decode_edge_result(datagram: bytes) -> EdgeResultV5:
     return _unpack_payload(payload, schema_version=schema_version)
 
 
+PATH_LOSS_GAMMA = 1.8
+PATH_LOSS_D0_M = 1.0
+
+
+def compensate_width(width_score: float | None, distance_m: float | None) -> float | None:
+    """P_norm = P_rx * (d / d0)^gamma. The wire score is the d0 = 1 m value.
+
+    Unset or invalid distance keeps the wire score. A negative score stays
+    absent so a dead window cannot become 0.
+    """
+    if width_score is None:
+        return None
+    try:
+        width = float(width_score)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(width) or width < 0.0:
+        return None
+    distance = PATH_LOSS_D0_M
+    if distance_m is not None:
+        try:
+            parsed = float(distance_m)
+        except (TypeError, ValueError):
+            parsed = PATH_LOSS_D0_M
+        if math.isfinite(parsed) and parsed >= 0.5:
+            distance = min(parsed, 100.0)
+    value = width * (distance / PATH_LOSS_D0_M) ** PATH_LOSS_GAMMA
+    if not math.isfinite(value) or value < 0.0 or value > 1.0e12:
+        return None
+    return value
+
+
 def width_index(ref_bins: list[float], static_change_index: int, n_null: int) -> float | None:
     """This node's own radio level, reduced while a static object stays.
 
@@ -813,5 +850,22 @@ __all__ = [
     "MESSAGE_TYPE_EDGE_RESULT", "MSG_EDGE_RESULT", "EDGE_RESULT_MESSAGE_TYPE",
     "HEADER", "HEADER_SIZE", "EdgeResultProtocolError", "EdgeResultState",
     "EdgeResultReason", "EdgeResultV5", "crc32", "encode_edge_result", "decode_edge_result",
-    "width_index",
+    "width_index", "compensate_width", "PATH_LOSS_GAMMA", "PATH_LOSS_D0_M",
 ]
+
+
+def _capacity_self_check() -> None:
+    power = 12 * 13.0 * 13.0
+    assert abs(power - 2028.0) < 1e-6
+    w_cap = power * (1.0 - 0.075)
+    assert abs(w_cap - 1875.9) < 1e-6
+    assert compensate_width(w_cap, 1.0) == w_cap
+    assert compensate_width(w_cap, None) == w_cap
+    boosted = compensate_width(100.0, 10.0)
+    assert boosted is not None and boosted > 100.0
+    assert compensate_width(-1.0, 5.0) is None
+    assert compensate_width(None, 5.0) is None
+
+
+if __name__ == "__main__":
+    _capacity_self_check()
