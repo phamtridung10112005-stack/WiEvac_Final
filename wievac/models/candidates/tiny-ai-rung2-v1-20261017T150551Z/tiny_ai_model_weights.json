@@ -1,0 +1,24 @@
+{
+  "present": true,
+  "rung": 2,
+  "version": "tiny-ai-rung2-v1",
+  "feature_schema": "dyn-42-v1",
+  "sha256": "4fcb28b5086fbc99d02dcc88ca79fa3cdfe852cfd9ed0dfe5035886d3962f231",
+  "threshold": 227.48785564305825,
+  "threshold_adjust": 161.33601322236638,
+  "loco_selected": 2,
+  "deploy_rule": "non-inferiority: simplest rung 1-3 with FPR at the deployed threshold <= 0.05 on every test corridor and TPR@FPR1% >= rung0 - 0.01 on every test corridor. Changed on 2026-10-17 from 'beat rung 0 by +0.05' because rung 0 reached the ceiling (TPR@1% 0.997) and rung 0 (42-feature MAD) cannot run on the RX; only rungs 1-3 are firmware-deployable.",
+  "corridors": [
+    "corridor-A",
+    "corridor-B",
+    "corridor-C"
+  ],
+  "train_corridors": [
+    "corridor-A",
+    "corridor-B"
+  ],
+  "test_corridors": [
+    "corridor-C"
+  ],
+  "note": "Empty-class novelty only. IMPLEMENTED_PENDING_FIELD_TEST. AI may only lower a score or block rebase."
+}

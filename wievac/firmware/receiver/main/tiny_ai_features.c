@@ -2,7 +2,10 @@
 
 #include <string.h>
 
+/* GCC rejects the STDC pragma; CMakeLists passes -ffp-contract=off instead. */
+#if defined(__clang__)
 #pragma STDC FP_CONTRACT OFF
+#endif
 
 _Static_assert(TINY_AI_FEATURES == 42, "dynamic feature count");
 _Static_assert(TINY_AI_TONES == 52, "HT20 tone count");
@@ -260,6 +263,23 @@ static void add_acc(tiny_ai_acc_t *acc, const float bands[TINY_AI_BANDS])
     ++acc->count;
 }
 
+static float median_of_init(const tiny_ai_extractor_t *extractor, uint16_t band)
+{
+    float sorted[TINY_AI_NOISE_INIT_N];
+    uint16_t i;
+    uint16_t j;
+    for (i = 0; i < TINY_AI_NOISE_INIT_N; ++i) {
+        const float value = extractor->noise_init[i][band];
+        j = i;
+        while (j > 0U && sorted[j - 1U] > value) {
+            sorted[j] = sorted[j - 1U];
+            --j;
+        }
+        sorted[j] = value;
+    }
+    return sorted[TINY_AI_NOISE_INIT_N / 2U];
+}
+
 static bool emit_features(tiny_ai_extractor_t *extractor, uint64_t timestamp_us, float out[TINY_AI_FEATURES])
 {
     static float long_rows[TINY_AI_LONG_N][TINY_AI_BANDS];
@@ -329,12 +349,26 @@ static bool emit_features(tiny_ai_extractor_t *extractor, uint64_t timestamp_us,
             short_column[row] = short_rows[row][band];
         }
         mean_var(short_column, short_n, &mean, &variances[band]);
-        if (!extractor->noise_ready[band]) {
-            extractor->noise[band] = variances[band] > eps ? variances[band] : eps;
+    }
+    if (extractor->noise_init_n < TINY_AI_NOISE_INIT_N) {
+        memcpy(extractor->noise_init[extractor->noise_init_n], variances, sizeof(variances));
+        ++extractor->noise_init_n;
+        extractor->last_emit_ts = timestamp_us;
+        extractor->emit_started = true;
+        if (extractor->noise_init_n < TINY_AI_NOISE_INIT_N) {
+            return false;
+        }
+        for (band = 0; band < TINY_AI_BANDS; ++band) {
+            const float median = median_of_init(extractor, band);
+            extractor->noise[band] = median > eps ? median : eps;
             extractor->noise_ready[band] = true;
-        } else if (!(variances[band] > mulf(2.0f, extractor->noise[band]))) {
-            extractor->noise[band] = addf(mulf(fbits(0x3f733333u), extractor->noise[band]),
-                                          mulf(fbits(0x3d4ccccdu), variances[band]));
+        }
+    } else {
+        for (band = 0; band < TINY_AI_BANDS; ++band) {
+            if (!(variances[band] > mulf(2.0f, extractor->noise[band]))) {
+                extractor->noise[band] = addf(mulf(fbits(0x3f733333u), extractor->noise[band]),
+                                              mulf(fbits(0x3d4ccccdu), variances[band]));
+            }
         }
     }
     for (band = 0; band < TINY_AI_BANDS; ++band) {

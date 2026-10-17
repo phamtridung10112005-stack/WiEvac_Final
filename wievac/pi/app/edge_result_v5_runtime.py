@@ -59,6 +59,16 @@ def _finite(value: Any) -> bool:
     return isinstance(value, (int, float)) and math.isfinite(float(value))
 
 
+def _percent_width(value: Any) -> Optional[float]:
+    """Knife-edge width is 0..100. A larger number is an old power-sum score."""
+    if isinstance(value, bool) or not _finite(value):
+        return None
+    width = float(value)
+    if width < 0.0 or width > 100.5:
+        return None
+    return width
+
+
 def _as_dict(result: EdgeResultV5) -> Dict[str, Any]:
     if hasattr(result, "to_dict"):
         raw = dict(result.to_dict())  # type: ignore[no-any-return]
@@ -494,16 +504,15 @@ class EdgeResultV5Ingestor:
                 "legacy_packet_loss_ratio": legacy_packet_loss_ratio,
                 "packet_loss_ratio_source": PACKET_LOSS_RATIO_SOURCE,
                 "last_packet_age_ms": age_ms,
-                "w_cap": None if stale else data.get("width_score"),
+                "w_cap": _percent_width(None if stale else data.get("width_score")),
                 "p_dyn": None if stale else data.get("local_passability_score"),
             }
         )
-        width = data.get("w_cap")
+        if data.get("w_cap") is None:
+            data["width_score"] = None
         p_dyn = data.get("p_dyn")
-        if _finite(width) and float(width) >= 0.0 and _finite(p_dyn):
-            data["effective_flow"] = float(width) * float(p_dyn) / 100.0
-        else:
-            data["effective_flow"] = None
+        # Live passability already includes static blockage. Do not scale it again.
+        data["effective_flow"] = float(p_dyn) if _finite(p_dyn) else None
         return data
 
     def latest_by_link(self, *, now_us: Optional[int] = None) -> Dict[str, Dict[str, Any]]:
@@ -652,9 +661,7 @@ class DirectionRouter:
         uncertainty_value = float(uncertainty) if _finite(uncertainty) else 1.0
         flow = link.get("effective_flow")
         if not _finite(flow):
-            width = link.get("w_cap", link.get("width_score"))
-            if _finite(width) and float(width) > 0.0:
-                flow = float(width) * float(score) / 100.0
+            flow = score
         if _finite(flow) and float(flow) > 0.0:
             return 1.0 + (2000.0 / float(flow)) + uncertainty_value
         return 1.0 + (100.0 - float(score)) / 100.0 + uncertainty_value

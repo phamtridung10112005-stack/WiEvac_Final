@@ -3,6 +3,15 @@
 #include "noise_filter.h"
 #include "tiny_ai_gatekeeper.h"
 
+#if defined(__has_include)
+#  if __has_include("sdkconfig.h")
+#    include "sdkconfig.h"
+#  endif
+#endif
+#if defined(CONFIG_WIEVAC_RAW_CSI_UDP) && CONFIG_WIEVAC_RAW_CSI_UDP
+extern void wievac_raw_csi_hook(const edge_result_csi_record_t *record);
+#endif
+
 _Static_assert(NOISE_FILTER_SELECTED_COUNT == EDGE_RESULT_V5_REF_BINS,
                "absolute reference bins must match the HT20 mask");
 _Static_assert(NOISE_FILTER_NULL_DROP_DB == EDGE_RESULT_V5_ATTEN_DB,
@@ -141,6 +150,7 @@ static void reset_score_filter(edge_result_link_state_t *link)
     link->score_filter_history_count = 0U;
     link->score_filter_history_next = 0U;
     link->score_filter_baseline_version = 0U;
+    link->ke_count = 0U;
     memset(link->score_filter_history, 0, sizeof(link->score_filter_history));
 }
 
@@ -600,6 +610,51 @@ static float median_inplace(float *values, uint8_t count)
     return 0.5f * (values[count / 2U - 1U] + values[count / 2U]);
 }
 
+/* One sample per window. Later syncs in the same make_result only read it. */
+static void note_knife_edge_window(edge_result_link_state_t *link)
+{
+    float window_bins[EDGE_RESULT_V5_REF_BINS];
+    float blocked;
+    float p_now;
+    float recent[3];
+    uint8_t n;
+    if (link == NULL || link->ke_noted) {
+        return;
+    }
+    link->ke_noted = true;
+    link->ke_last_valid = false;
+    link->ke_last_p = NAN;
+    if (!link->cap_locked || link->boot_unverified) {
+        return;
+    }
+    mean_bins(link, window_bins);
+    blocked = formula_flex_blocked_fraction(window_bins, link->cap_ref_bins,
+                                            EDGE_RESULT_V5_REF_BINS);
+    if (!finite_float(blocked)) {
+        return;
+    }
+    p_now = 100.0f * (1.0f - blocked);
+    if (link->ke_count < 3U) {
+        link->ke_hist[link->ke_count++] = p_now;
+    } else {
+        link->ke_hist[0] = link->ke_hist[1];
+        link->ke_hist[1] = link->ke_hist[2];
+        link->ke_hist[2] = p_now;
+    }
+    n = link->ke_count;
+    memcpy(recent, link->ke_hist, (size_t)n * sizeof(recent[0]));
+    link->ke_last_p = median_inplace(recent, n);
+    link->ke_last_valid = finite_float(link->ke_last_p);
+}
+
+/* Occupancy may not publish a blocked hall while this link's Fresnel path
+ * is still open. Unlocked or invalid knife-edge stays fail-closed. */
+static bool knife_edge_path_open(const edge_result_link_state_t *link)
+{
+    return link != NULL && link->cap_locked && link->ke_last_valid &&
+           link->ke_last_p >= FORMULA_FLEX_KE_BLOCKED_PCT;
+}
+
 static bool profile_window_clean(const edge_result_v5_t *result)
 {
     return result != NULL && result->sample_count > 0U && result->invalid_count == 0U &&
@@ -643,8 +698,10 @@ static bool lock_capacity_bins(edge_result_link_state_t *link, const float *bins
     }
     link->cap_base = base;
     link->cap_locked = true;
-    link->width_score = base;
+    /* Just locked against the empty spectrum: the path is fully open. */
+    link->width_score = 100.0f;
     link->width_valid = true;
+    link->ke_count = 0U;
     return true;
 }
 
@@ -664,10 +721,12 @@ static void apply_capacity(edge_result_link_state_t *link, const float *bins)
                                                    FORMULA_FLEX_NULL_ALPHA);
     link->static_change_index = (uint8_t)(sci * 255.0f + 0.5f);
     link->n_null = nulls > 255U ? 255U : (uint8_t)nulls;
-    const float score = formula_flex_capacity_score(link->cap_base, sci, link->n_null,
-                                                    EDGE_RESULT_V5_REF_BINS);
-    if (finite_float(score) && score >= 0.0f) {
-        link->width_score = score;
+    /* Width is the fraction of this link's Fresnel path still open versus
+     * its own empty reference, not a sum of bin power. */
+    const float blocked = formula_flex_blocked_fraction(bins, link->cap_ref_bins,
+                                                        EDGE_RESULT_V5_REF_BINS);
+    if (finite_float(blocked)) {
+        link->width_score = 100.0f * (1.0f - blocked);
         link->width_valid = true;
     }
 }
@@ -778,6 +837,34 @@ static void calibration_finish_window(edge_result_link_state_t *link,
     }
 }
 
+/* sequence_gap <= max(1, 3% of the window) and no hole longer than 100 ms. */
+static bool gap_is_mild(uint32_t sequence_gap, uint32_t sample_count,
+                        uint32_t invalid_count, uint32_t queue_drop_count,
+                        uint64_t max_gap_us)
+{
+    uint32_t total;
+    float scaled;
+    uint32_t allowance;
+    if (sequence_gap == 0U || invalid_count != 0U || queue_drop_count != 0U ||
+        max_gap_us > 100000ULL) {
+        return false;
+    }
+    total = saturating_add_u32(sample_count, sequence_gap);
+    scaled = 0.03f * (float)total;
+    allowance = scaled < 1.0f ? 1U : (uint32_t)scaled;
+    return sequence_gap <= allowance;
+}
+
+static bool link_window_mild(const edge_result_link_state_t *link)
+{
+    if (link == NULL) {
+        return false;
+    }
+    return gap_is_mild(link->window_sequence_gap, link->window_sample_count,
+                       link->window_invalid_count, link->window_queue_drop_count,
+                       link->window_max_gap_us);
+}
+
 static void reset_window(edge_result_link_state_t *link, uint64_t next_start_us)
 {
     if (link == NULL) {
@@ -831,17 +918,18 @@ static void reset_window(edge_result_link_state_t *link, uint64_t next_start_us)
         }
     } else if (link->window_sequence_gap > 0U) {
         link->consecutive_severe_windows = 0U;
-        /* A bounded gap is still an invalid learning window. Preserve prior
-         * clean bootstrap evidence, and pause an active rebase so gap time
-         * cannot count as environmental persistence. */
-        if (!link->baseline_ready) {
-            copy_text(link->baseline_update_reason,
-                      sizeof(link->baseline_update_reason),
-                      "bootstrap_paused_sequence_gap");
-        } else if (link->rebase_candidate_count > 0U ||
-                   link->baseline_state == EDGE_RESULT_BASELINE_SHIFT_CANDIDATE ||
-                   link->baseline_state == EDGE_RESULT_BASELINE_REBASE_PENDING) {
-            pause_rebase_candidate(link);
+        /* A heavier bounded gap still cannot train. A mild hole was scored
+         * and must not pause or dirty the rebase candidate. */
+        if (!link_window_mild(link)) {
+            if (!link->baseline_ready) {
+                copy_text(link->baseline_update_reason,
+                          sizeof(link->baseline_update_reason),
+                          "bootstrap_paused_sequence_gap");
+            } else if (link->rebase_candidate_count > 0U ||
+                       link->baseline_state == EDGE_RESULT_BASELINE_SHIFT_CANDIDATE ||
+                       link->baseline_state == EDGE_RESULT_BASELINE_REBASE_PENDING) {
+                pause_rebase_candidate(link);
+            }
         }
     } else {
         link->consecutive_severe_windows = 0U;
@@ -855,6 +943,7 @@ static void reset_window(edge_result_link_state_t *link, uint64_t next_start_us)
     link->window_invalid_count = pending_invalid_count;
     link->pending_invalid_count = 0U;
     link->window_sequence_gap = 0U;
+    link->window_max_gap_us = 0U;
     link->window_queue_drop_count = pending_queue_drop_count;
     link->pending_queue_drop_count = 0U;
     link->baseline_window_eligible = link->window_invalid_count == 0U &&
@@ -873,6 +962,7 @@ static void reset_window(edge_result_link_state_t *link, uint64_t next_start_us)
     link->doppler_count = 0U;
     memset(link->window_bin_sum, 0, sizeof(link->window_bin_sum));
     memset(link->window_bin_count, 0, sizeof(link->window_bin_count));
+    link->ke_noted = false;
 }
 
 static void note_boot_compare(edge_result_link_state_t *link, const edge_result_v5_t *result)
@@ -1035,11 +1125,14 @@ static void sync_baseline_metadata(edge_result_v5_t *result,
     note_boot_compare(link, result);
     update_static_profile(link, result);
     if (link->cap_locked && result->score_valid && !link->boot_unverified) {
-        const float dyn = formula_flex_dynamic_passability(&result->features, link);
-        if (finite_float(dyn)) {
-            result->local_passability_score = dyn;
-            result->formula_score = dyn;
-            result->filtered_passability_score = dyn;
+        /* Passability is the fraction of this link's Fresnel path open right
+         * now, including static objects and people. Width, updated only while
+         * the hall is still, is the fraction still open after static objects. */
+        note_knife_edge_window(link);
+        if (link->ke_last_valid) {
+            result->local_passability_score = link->ke_last_p;
+            result->formula_score = link->ke_last_p;
+            result->filtered_passability_score = link->ke_last_p;
             result->filtered_passability_valid = true;
         } else {
             hold_static_score(link, result);
@@ -1081,6 +1174,32 @@ static void sync_baseline_metadata(edge_result_v5_t *result,
               sizeof(result->baseline_update_reason),
               link->baseline_update_reason);
     apply_ai_penalty(result);
+}
+
+/* A few missing packets in a 1 s window are still a score. Learning stays
+ * closed: callers keep the sequence_gap == 0 gates. */
+static bool mild_sequence_gap(const edge_result_v5_t *result,
+                              const edge_result_link_state_t *link)
+{
+    if (result == NULL || link == NULL) {
+        return false;
+    }
+    return gap_is_mild(result->sequence_gap, result->sample_count,
+                       result->invalid_count, result->queue_drop_count,
+                       link->window_max_gap_us);
+}
+
+/* Wire contract: UNKNOWN never carries a score. Enforced once on every
+ * emitted result so a path that forgets it degrades the score instead of
+ * making the encoder reject (and silently drop) the whole window. */
+static edge_result_v5_t enforce_wire_invariants(edge_result_v5_t result)
+{
+    if (result.state == EDGE_RESULT_STATE_UNKNOWN && result.score_valid) {
+        result.score_valid = false;
+        result.filtered_passability_valid = false;
+        result.uncertainty_score = 100.0f;
+    }
+    return result;
 }
 
 static edge_result_v5_t make_result(edge_result_pipeline_t *pipeline,
@@ -1177,6 +1296,15 @@ static edge_result_v5_t make_result(edge_result_pipeline_t *pipeline,
             copy_text(result.model_hash, sizeof(result.model_hash), tiny_ai_gate_model_hash());
         }
     }
+    if (link->settle_until_us != 0U && result.window_end_us <= link->settle_until_us) {
+        copy_text(result.transition_state, sizeof(result.transition_state), "BOOT_SETTLE");
+        result.state = EDGE_RESULT_STATE_UNKNOWN;
+        result.reason_code = EDGE_RESULT_REASON_WARMING_UP;
+        result.score_valid = false;
+        result.uncertainty_score = 100.0f;
+        sync_baseline_metadata(&result, link);
+        return result;
+    }
     copy_text(result.transition_state, sizeof(result.transition_state), "STABLE");
     result.occupancy_evidence_valid = false;
     result.blocking_evidence_valid = false;
@@ -1226,8 +1354,9 @@ static edge_result_v5_t make_result(edge_result_pipeline_t *pipeline,
         result.queue_drop_count == 0U &&
         result.sequence_gap == 0U && link->baseline_window_eligible &&
         finite_float(result.features.temporal_motion);
+    const bool mild_gap = mild_sequence_gap(&result, link);
     if (stale || result.sample_count == 0U || result.invalid_count > 0U || result.queue_drop_count > 0U ||
-        result.sequence_gap > 0U || !link->baseline_ready) {
+        (result.sequence_gap > 0U && !mild_gap) || !link->baseline_ready) {
         if (stale) {
             result.state = EDGE_RESULT_STATE_UNKNOWN;
             result.reason_code = EDGE_RESULT_REASON_STALE;
@@ -1364,6 +1493,7 @@ static edge_result_v5_t make_result(edge_result_pipeline_t *pipeline,
     result.blocking_evidence_valid = true;
     result.local_passability_score = result.formula_score;
     result.score_valid = true;
+    note_knife_edge_window(link);
     /* Freeze OCCUPIED only when amplitude motion AND this link's spectrum
      * look like walking. Spectrum-typical-empty is a baseline error. */
     const float rebase_trigger_z = fmaxf(0.50f, 0.50f * shift_z);
@@ -1373,6 +1503,15 @@ static edge_result_v5_t make_result(edge_result_pipeline_t *pipeline,
         finite_float(result.features.temporal_motion) &&
         result.features.temporal_motion >= occupancy_z &&
         doppler_walking;
+    bool corroborated = independent_blocking_signal;
+    bool occupied_memory = link->occupancy_memory_windows > 0U ||
+                           link->occupied_windows > 0U;
+    if (mild_gap) {
+        /* Scored at mild_gap_publish. This window must not pause, extend, or
+         * clear a rebase candidate, and must not move occupancy, recovery,
+         * stuck-low, shift, static-block, or calibration counters. */
+        goto mild_gap_publish;
+    }
     if (independent_blocking_signal) {
         if (link->occupied_start_us == 0U) {
             link->occupied_start_us = result.window_start_us;
@@ -1397,9 +1536,9 @@ static edge_result_v5_t make_result(edge_result_pipeline_t *pipeline,
                result.formula_score >= EDGE_RESULT_V5_STUCK_SCORE_LIMIT) {
         link->stuck_low_score_windows = 0U;
     }
-    const bool corroborated = independent_blocking_signal;
-    const bool occupied_memory = link->occupancy_memory_windows > 0U ||
-                                 link->occupied_windows > 0U;
+    corroborated = independent_blocking_signal;
+    occupied_memory = link->occupancy_memory_windows > 0U ||
+                      link->occupied_windows > 0U;
     if (baseline_delta >= rebase_trigger_z && (rebase_candidate_shift || level_shift)) {
         if (link->shift_candidate_start_us == 0U) {
             link->shift_candidate_start_us = result.window_start_us;
@@ -1549,8 +1688,7 @@ static edge_result_v5_t make_result(edge_result_pipeline_t *pipeline,
                         /* A reduced W_cap is a static object. Rebase must not
                          * learn that spectrum as a new empty corridor. */
                         const bool cap_hold = link->cap_locked && link->width_valid &&
-                            link->cap_base > 0.0f &&
-                            link->width_score < link->cap_base * (1.0f - FORMULA_FLEX_SCI_HOLD);
+                            link->width_score < 100.0f * (1.0f - FORMULA_FLEX_SCI_HOLD);
                         const bool rebase_ready =
                             candidate_elapsed_us >= required_elapsed_us &&
                             link->rebase_candidate_count >= required_candidate_count &&
@@ -1572,7 +1710,7 @@ static edge_result_v5_t make_result(edge_result_pipeline_t *pipeline,
         result.local_passability_score = result.formula_score;
         if (link->baseline_state == EDGE_RESULT_BASELINE_OCCUPIED_OR_BLOCKED &&
             normalized_level >= occupancy_z && result.blocking_evidence >=
-                blocking_gate) {
+                blocking_gate && !knife_edge_path_open(link)) {
             if (!publish_filtered_score(link, &result, corroborated, occupied_memory)) {
                 result.score_valid = false;
                 result.state = EDGE_RESULT_STATE_UNKNOWN;
@@ -1582,7 +1720,9 @@ static edge_result_v5_t make_result(edge_result_pipeline_t *pipeline,
                 result.reason_code = EDGE_RESULT_REASON_BLOCKED;
             }
         } else if (emit_held_passability(link, &result)) {
-            result.state = EDGE_RESULT_STATE_UNKNOWN;
+            /* Held score during a transition is DEGRADED with full
+             * uncertainty, as on the transport-hold path. UNKNOWN with a
+             * score is rejected by the encoder and dropped the window. */
             result.reason_code = EDGE_RESULT_REASON_ENVIRONMENT_SHIFT;
         } else {
             result.score_valid = false;
@@ -1661,6 +1801,7 @@ static edge_result_v5_t make_result(edge_result_pipeline_t *pipeline,
                   sizeof(link->baseline_update_reason),
                   "candidate_below_rebase_trigger");
     }
+mild_gap_publish:
     if (pipeline->config.tiny_ai != NULL) {
         const edge_result_ai_output_t ai = pipeline->config.tiny_ai(
             &result.features, result.formula_score, link, pipeline->config.hook_context);
@@ -1740,25 +1881,34 @@ static edge_result_v5_t make_result(edge_result_pipeline_t *pipeline,
     } else {
         const float blocking_gate = 100.0f *
             (1.0f - fminf((link->baseline_confidence + link->temporal_noise_confidence) / 200.0f, 1.0f));
-        if (result.blocking_evidence >= blocking_gate && link->occupied_windows > 0U) {
+        if (!knife_edge_path_open(link) &&
+            result.blocking_evidence >= blocking_gate && link->occupied_windows > 0U) {
             result.state = EDGE_RESULT_STATE_BLOCKED;
             result.reason_code = EDGE_RESULT_REASON_BLOCKED;
-        } else if (link->occupied_windows > 0U) {
+        } else if (!knife_edge_path_open(link) && link->occupied_windows > 0U) {
             result.state = EDGE_RESULT_STATE_DEGRADED;
             result.reason_code = EDGE_RESULT_REASON_QUALITY_LOW;
+        } else if (link->occupied_windows > 0U) {
+            /* Motion on an open Fresnel path. 108 is the existing occupancy
+             * code; QUALITY_LOW would say the path itself is bad. */
+            result.state = EDGE_RESULT_STATE_PASSABLE;
+            result.reason_code = EDGE_RESULT_REASON_PERSISTENT_OCCUPANCY;
         } else {
             result.state = EDGE_RESULT_STATE_PASSABLE;
             result.reason_code = EDGE_RESULT_REASON_NONE;
         }
     }
-    note_clean_barrier(link, &result, hf_ratio, corr_lag1);
-    calibration_finish_window(link, &result,
-                              result.doppler_valid &&
-                                  !motion_disturbs(result.doppler_valid,
-                                                   doppler_is_walking(link, &result),
-                                                   hf_ratio, corr_lag1) &&
-                                  !deep_attenuation(result.features.common_amplitude,
-                                                    reference_level(link)));
+    if (!mild_gap) {
+        note_clean_barrier(link, &result, hf_ratio, corr_lag1);
+        calibration_finish_window(link, &result,
+                                  result.sequence_gap == 0U &&
+                                      result.doppler_valid &&
+                                      !motion_disturbs(result.doppler_valid,
+                                                       doppler_is_walking(link, &result),
+                                                       hf_ratio, corr_lag1) &&
+                                      !deep_attenuation(result.features.common_amplitude,
+                                                        reference_level(link)));
+    }
     if (result.state == EDGE_RESULT_STATE_PASSABLE && result.quality_score > 0.0f &&
         link->baseline_window_eligible && link->temporal_noise_confidence > 0.0f &&
         link->baseline_state == EDGE_RESULT_BASELINE_STABLE &&
@@ -1788,6 +1938,15 @@ static edge_result_v5_t make_result(edge_result_pipeline_t *pipeline,
         link->temporal_noise_last_update_us = result.window_end_us;
         if (result.doppler_valid && finite_float(result.doppler_ratio)) {
             learn_doppler_ratio_scale(link, result.doppler_ratio, alpha);
+        }
+    }
+    if (mild_gap) {
+        /* Informational only: do not change state because a few packets dropped. */
+        const float keep = 1.0f - 3.0f * result.packet_loss_ratio;
+        result.quality_score *= keep > 0.0f ? keep : 0.0f;
+        if (result.reason_code == EDGE_RESULT_REASON_NONE ||
+            result.reason_code == EDGE_RESULT_REASON_MODEL_NOT_READY) {
+            result.reason_code = EDGE_RESULT_REASON_SEQUENCE_GAP;
         }
     }
     sync_baseline_metadata(&result, link);
@@ -1839,14 +1998,35 @@ static void update_link(edge_result_pipeline_t *pipeline,
     link->last_timestamp_us = record->timestamp_us;
     link->last_rx_timestamp_us = (uint32_t)(record->timestamp_us > UINT32_MAX
                                                ? UINT32_MAX : record->timestamp_us);
+    if (pipeline->config.boot_settle_us > 0U) {
+        if (link->settle_until_us == 0U) {
+            link->settle_until_us = record->timestamp_us + pipeline->config.boot_settle_us;
+        }
+        if (record->timestamp_us < link->settle_until_us) {
+            /* Settling frames feed nothing that learns (formula, Doppler, AI
+             * noise reference). They count as invalid so the one window that
+             * straddles the boundary is scored only on settled frames and
+             * cannot train. Raw CSI is still forwarded for collection. */
+            ++link->window_invalid_count;
+            link->window_last_timestamp_us = record->timestamp_us;
+            link->baseline_window_eligible = false;
+            link->previous_amplitude_valid = false;
+#if defined(CONFIG_WIEVAC_RAW_CSI_UDP) && CONFIG_WIEVAC_RAW_CSI_UDP
+            wievac_raw_csi_hook(record);
+#endif
+            return;
+        }
+    }
     float amplitude = 0.0f;
     float spread = 0.0f;
     noise_filter_input_t filter_input = {
         .csi = record->csi,
         .csi_length = record->csi_length,
         .first_word_invalid = record->first_word_invalid,
+        .gain_scale = record->gain_scale,
     };
-    noise_filter_output_t filter_output = {0};
+    noise_filter_output_t filter_output;
+    memset(&filter_output, 0, sizeof(filter_output));
     if (!noise_filter_process(&filter_input, &filter_output)) {
         ++link->invalid_total;
         ++link->window_invalid_count;
@@ -1858,12 +2038,18 @@ static void update_link(edge_result_pipeline_t *pipeline,
     spread = filter_output.robust_spread;
     const float delta = link->previous_amplitude_valid ? amplitude - link->previous_amplitude : 0.0f;
     const float motion = fabsf(delta);
-    if (link->previous_amplitude_valid && link->window_last_timestamp_us > 0U &&
+    if (link->window_last_timestamp_us > 0U &&
         record->timestamp_us > link->window_last_timestamp_us) {
         const uint64_t interval = record->timestamp_us - link->window_last_timestamp_us;
-        link->window_sum_interval_us += interval;
-        link->window_sum_interval_sq_us += (double)interval * (double)interval;
-        ++link->window_interval_count;
+        if (interval > link->window_max_gap_us) {
+            link->window_max_gap_us = interval;
+        }
+        /* Jitter still ignores a frame that broke amplitude continuity. */
+        if (link->previous_amplitude_valid) {
+            link->window_sum_interval_us += interval;
+            link->window_sum_interval_sq_us += (double)interval * (double)interval;
+            ++link->window_interval_count;
+        }
     }
     link->window_last_timestamp_us = record->timestamp_us;
     link->previous_amplitude = amplitude;
@@ -1894,7 +2080,11 @@ static void update_link(edge_result_pipeline_t *pipeline,
         }
     }
     tiny_ai_gate_ingest(link->identity.link_id, record->timestamp_us,
-                        record->csi, record->csi_length);
+                        record->csi, record->csi_length,
+                        noise_filter_gain_scale(record->gain_scale));
+#if defined(CONFIG_WIEVAC_RAW_CSI_UDP) && CONFIG_WIEVAC_RAW_CSI_UDP
+    wievac_raw_csi_hook(record);
+#endif
 }
 
 void edge_result_pipeline_config_defaults(edge_result_pipeline_config_t *config)
@@ -2332,7 +2522,7 @@ bool edge_result_pipeline_process_one(edge_result_pipeline_t *pipeline,
                        record.timestamp_us - prior_start >= pipeline->config.window_duration_us;
     if (close) {
         const uint64_t boundary = prior_start + pipeline->config.window_duration_us;
-        *result = make_result(pipeline, link, boundary);
+        *result = enforce_wire_invariants(make_result(pipeline, link, boundary));
         reset_window(link, boundary);
         /* The boundary-crossing record belongs to the new window. */
         update_link(pipeline, link, &record);
@@ -2358,7 +2548,7 @@ bool edge_result_pipeline_flush_link(edge_result_pipeline_t *pipeline,
     if (flush_end_us <= link->window_start_us && flush_end_us < UINT64_MAX) {
         flush_end_us = link->window_start_us + 1U;
     }
-    *result = make_result(pipeline, link, flush_end_us);
+    *result = enforce_wire_invariants(make_result(pipeline, link, flush_end_us));
     const uint64_t next_start_us = link->window_last_timestamp_us < UINT64_MAX
                                        ? link->window_last_timestamp_us + 1U
                                        : link->window_last_timestamp_us;

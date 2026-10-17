@@ -89,6 +89,11 @@ bool noise_filter_validate(const noise_filter_input_t *input)
            (input->csi_length & 1U) == 0U && !input->first_word_invalid;
 }
 
+float noise_filter_gain_scale(float gain_scale)
+{
+    return isfinite((double)gain_scale) && gain_scale > 0.0f ? gain_scale : 1.0f;
+}
+
 bool noise_filter_process(const noise_filter_input_t *input,
                           noise_filter_output_t *output)
 {
@@ -101,13 +106,14 @@ bool noise_filter_process(const noise_filter_input_t *input,
     }
 
     const uint16_t pairs = (uint16_t)(input->csi_length / 2U);
+    const float gain = noise_filter_gain_scale(input->gain_scale);
     float magnitudes[NOISE_FILTER_MAX_CSI_BYTES / 2U];
     float total = 0.0f;
     for (uint16_t index = 0U; index < pairs; ++index) {
         const int8_t imaginary = (int8_t)input->csi[index * 2U];
         const int8_t real = (int8_t)input->csi[index * 2U + 1U];
-        const float magnitude = sqrtf((float)real * (float)real +
-                                      (float)imaginary * (float)imaginary);
+        const float magnitude = gain * sqrtf((float)real * (float)real +
+                                             (float)imaginary * (float)imaginary);
         if (!isfinite((double)magnitude)) {
             return false;
         }

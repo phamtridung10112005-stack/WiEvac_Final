@@ -116,7 +116,13 @@ class EdgeResultV5CContractTests(unittest.TestCase):
         self.assertIn("result.sequence_gap == 0U", bootstrap_gate)
         self.assertIn("link->baseline_window_eligible", bootstrap_gate)
         self.assertNotIn("EDGE_RESULT_V5_BOOTSTRAP_MAX_LOSS_RATIO", bootstrap_gate)
-        self.assertIn("result.sequence_gap > 0U || !link->baseline_ready", make_result)
+        # A severe gap still takes the fail-closed branch. A mild gap (at most
+        # 3% and no hole longer than 100 ms) is scored and cannot train.
+        self.assertIn("(result.sequence_gap > 0U && !mild_gap) || !link->baseline_ready", make_result)
+        profile = self.source.split("static bool profile_window_clean", 1)[1].split(
+            "static bool profile_motion", 1
+        )[0]
+        self.assertIn("result->sequence_gap == 0U", profile)
         self.assertIn("EDGE_RESULT_REASON_SEQUENCE_GAP", make_result)
         self.assertNotIn("bootstrap_bounded_loss", make_result)
 

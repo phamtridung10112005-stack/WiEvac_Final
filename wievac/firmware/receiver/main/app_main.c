@@ -18,6 +18,7 @@
 #include "esp_now.h"
 #include "esp_random.h"
 #include "esp_system.h"
+#include "esp_heap_caps.h"
 #include "esp_timer.h"
 #include "esp_wifi.h"
 #include "freertos/FreeRTOS.h"
@@ -31,9 +32,13 @@
 #include "driver/gpio.h"
 #include "driver/uart.h"
 #include "edge_result_v5_pipeline.h"
+#include "formula_flex.h"
 #include "dfplayer_mini.h"
 #include <stdio.h>
 #include "noise_filter.h"
+#if CONFIG_WIEVAC_RAW_CSI_UDP
+#include "esp_crc.h"
+#endif
 
 #if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(5, 0, 0) || \
     ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 5, 0)
@@ -82,6 +87,10 @@ static uint32_t s_wievac_rx_id = CONFIG_WIEVAC_RX_ID;
 #define WIEVAC_GAIN_STATS_CAPACITY       64U
 #define WIEVAC_GAIN_STATS_MIN_SAMPLES    16U
 #define WIEVAC_GAIN_TRAINING_SAMPLES     200U
+/* Twice the regression minimum, so s is stable before the pipeline starts.
+ * 1000 frames is ~10 s at 100 Hz if AGC never steps. */
+#define WIEVAC_GAIN_RESPONSE_EVENTS      60U
+#define WIEVAC_GAIN_RESPONSE_FRAMES      1000U
 #define WIEVAC_INVALID_CSI_RETRAIN_DEBOUNCE 5U
 #define WIEVAC_MAX_CLIPPED_IQ_RATIO      0.20f
 #define WIEVAC_MAX_ZERO_IQ_RATIO         0.60f
@@ -166,6 +175,9 @@ typedef struct {
 
 typedef struct {
     uint16_t length;
+#if CONFIG_WIEVAC_RAW_CSI_UDP
+    uint16_t dest_port; /* 0 keeps the WIV5 port */
+#endif
     uint8_t bytes[V4_MAX_PACKET_SIZE];
 } udp_packet_t;
 
@@ -304,6 +316,33 @@ static uint8_t g_first_csi_payload[4];
 static uint32_t g_dsp_reset_generation;
 static uint32_t g_wifi_reconnect_count;
 static struct sockaddr_in g_pi_address;
+#if CONFIG_WIEVAC_RAW_CSI_UDP
+#define WRAW_MAX_FRAMES                  4U
+#define WRAW_BATCH_US                    50000ULL
+#define WRAW_UDP_HEADROOM                8U
+#define WRAW_QUEUE_DEPTH                 16U
+/* Runtime id (NVS / lab MAC / sdkconfig), the same id that names the link. */
+#define WRAW_PORT                        ((uint16_t)(CONFIG_WIEVAC_RAW_CSI_UDP_PORT_BASE + WIEVAC_RX_ID))
+
+typedef struct {
+    uint32_t link_id;
+    uint32_t boot_id;
+    uint32_t tx_sequence;
+    uint64_t timestamp_us;
+    int8_t rssi_dbm;
+    uint16_t csi_length;
+    float gain_scale;
+    float library_gain;
+    float gain_response_s;
+    uint8_t csi[EDGE_RESULT_V5_MAX_CSI_BYTES];
+} raw_csi_frame_t;
+
+static QueueHandle_t g_raw_csi_queue;
+static uint32_t g_raw_csi_sent;
+static uint32_t g_raw_csi_dropped;
+static uint32_t g_raw_datagram_seq;
+static bool g_raw_skip_logged;
+#endif
 static dsp_state_t g_dsp_state;
 static csi_record_t g_drain_record;
 #if CONFIG_WIEVAC_EDGE_RESULT_V6_ACTIVE
@@ -312,6 +351,15 @@ static bool g_v6_pipeline_ready;
 static uint32_t g_v6_tx_boot_id;
 static bool s_v6_gain_forced;
 static uint32_t s_v6_gain_records;
+static bool s_v6_gain_baseline_logged;
+static formula_flex_gain_response_t s_v6_gain_resp;
+static float s_v6_gain_response_s;
+static float s_v6_library_gain = 1.0f;
+static bool s_v6_gain_resp_have_prev;
+static float s_v6_gain_resp_prev_g;
+static float s_v6_gain_resp_prev_a;
+static uint32_t s_v6_gain_resp_prev_seq;
+static uint32_t s_v6_gain_resp_seen;
 #endif
 
 static void drain_csi_queue(void);
@@ -701,6 +749,7 @@ static void v6_pipeline_start_for_pair(const pair_state_t *pair)
     config.formula_version = "formula-flex-v5.4-atten-exp";
     config.model_version = "NOT_READY";
     config.feature_schema_version = "8";
+    config.boot_settle_us = (uint64_t)CONFIG_WIEVAC_BOOT_SETTLE_S * 1000000ULL;
     if (!edge_result_pipeline_init(&g_v6_pipeline, &config) ||
         !edge_result_pipeline_register_link(&g_v6_pipeline, WIEVAC_LINK_ID,
                                             WIEVAC_TX_ID, WIEVAC_RX_ID, pair->tx_mac)) {
@@ -726,6 +775,96 @@ static void v6_pipeline_start_for_pair(const pair_state_t *pair)
     }
     ESP_LOGI(TAG, "edge_result_v6 active protocol=5 schema=8 link=link-%" PRIu32 " node=rx-%" PRIu32,
              WIEVAC_LINK_ID, WIEVAC_RX_ID);
+}
+
+/* Same 12 HT20 tones as noise_filter. Median of the raw magnitudes. */
+static float v6_sensing_median(const csi_record_t *record)
+{
+    static const uint8_t tones[12] = {
+        12U, 14U, 16U, 18U, 20U, 24U, 28U, 36U, 40U, 44U, 48U, 50U
+    };
+    float mags[12];
+    uint16_t n = 0U;
+    uint16_t i;
+    const uint16_t pairs = record->length / 2U;
+    for (i = 0U; i < 12U; ++i) {
+        int8_t imag;
+        int8_t real;
+        float mag;
+        if ((uint16_t)tones[i] >= pairs) {
+            continue;
+        }
+        imag = (int8_t)record->csi[tones[i] * 2U];
+        real = (int8_t)record->csi[tones[i] * 2U + 1U];
+        mag = sqrtf((float)real * (float)real + (float)imag * (float)imag);
+        if (mag > 0.0f && mag == mag) {
+            mags[n++] = mag;
+        }
+    }
+    if (n == 0U) {
+        return 0.0f;
+    }
+    for (i = 1U; i < n; ++i) {
+        const float value = mags[i];
+        uint16_t j = i;
+        while (j > 0U && mags[j - 1U] > value) {
+            mags[j] = mags[j - 1U];
+            --j;
+        }
+        mags[j] = value;
+    }
+    if ((n & 1U) != 0U) {
+        return mags[n / 2U];
+    }
+    return 0.5f * (mags[n / 2U - 1U] + mags[n / 2U]);
+}
+
+static bool v6_library_gain(const csi_record_t *record, float *gain)
+{
+    uint8_t agc_gain = 0U;
+    int8_t fft_gain = 0;
+    float compensation = 1.0f;
+    esp_csi_gain_ctrl_get_rx_gain(&record->rx_ctrl, &agc_gain, &fft_gain);
+    if (esp_csi_gain_ctrl_get_gain_compensation(&compensation, agc_gain, fft_gain) != ESP_OK ||
+        !(compensation > 0.0f) || compensation != compensation) {
+        return false;
+    }
+    *gain = compensation;
+    return true;
+}
+
+/* Learn s = d(raw dB) / d(library dB) before any baseline window. */
+static bool v6_gain_response_observe(const csi_record_t *record)
+{
+    float gain = 1.0f;
+    float amplitude;
+    if (s_v6_gain_resp_seen < UINT32_MAX) {
+        ++s_v6_gain_resp_seen;
+    }
+    amplitude = v6_sensing_median(record);
+    if (!v6_library_gain(record, &gain) || !(amplitude > 0.0f)) {
+        s_v6_gain_resp_have_prev = false;
+    } else {
+        if (s_v6_gain_resp_have_prev &&
+            record->tx_sequence == s_v6_gain_resp_prev_seq + 1U) {
+            const float x_db = 20.0f * log10f(gain / s_v6_gain_resp_prev_g);
+            const float y_db = 20.0f * log10f(amplitude / s_v6_gain_resp_prev_a);
+            formula_flex_gain_response_add(&s_v6_gain_resp, x_db, y_db);
+        }
+        s_v6_gain_resp_prev_g = gain;
+        s_v6_gain_resp_prev_a = amplitude;
+        s_v6_gain_resp_prev_seq = record->tx_sequence;
+        s_v6_gain_resp_have_prev = true;
+    }
+    if (s_v6_gain_resp.events < WIEVAC_GAIN_RESPONSE_EVENTS &&
+        s_v6_gain_resp_seen < WIEVAC_GAIN_RESPONSE_FRAMES) {
+        return false;
+    }
+    s_v6_gain_response_s = formula_flex_gain_response_s(&s_v6_gain_resp);
+    ESP_LOGI(TAG, "gain_response s=%.3f events=%u frames=%u",
+             (double)s_v6_gain_response_s, (unsigned)s_v6_gain_resp.events,
+             (unsigned)s_v6_gain_resp.frames);
+    return true;
 }
 
 static bool v6_measurement_gain_ready(const csi_record_t *record)
@@ -764,6 +903,7 @@ static bool v6_measurement_gain_ready(const csi_record_t *record)
         }
         return false;
     }
+#if CONFIG_WIEVAC_FORCE_RX_GAIN
     if (esp_csi_gain_ctrl_set_rx_force_gain(baseline_agc, baseline_fft) != ESP_OK) {
         if ((s_v6_gain_records % 100U) == 0U) {
             ESP_LOGW(TAG, "gain_lock force failed agc=%u fft=%d after %u packets, retry",
@@ -773,9 +913,50 @@ static bool v6_measurement_gain_ready(const csi_record_t *record)
         return false;
     }
     s_v6_gain_forced = true;
+    s_v6_gain_response_s = 0.0f;
+    s_v6_library_gain = 1.0f;
     ESP_LOGI(TAG, "gain_lock forced agc=%u fft=%d packets=%u",
              (unsigned)baseline_agc, (int)baseline_fft, (unsigned)s_v6_gain_records);
     return true;
+#else
+    /* AGC stays automatic so the STA keeps the Pi AP. CSI bytes stay raw. */
+    if (!s_v6_gain_baseline_logged) {
+        s_v6_gain_baseline_logged = true;
+        ESP_LOGI(TAG, "gain_lock software agc=%u fft=%d packets=%u",
+                 (unsigned)baseline_agc, (int)baseline_fft, (unsigned)s_v6_gain_records);
+    }
+    if (!v6_gain_response_observe(record)) {
+        return false;
+    }
+    s_v6_gain_forced = true;
+    return true;
+#endif
+}
+
+/* AGC runs free so Wi-Fi keeps working. Float magnitudes are scaled by g^s,
+ * where s is this node's measured CSI response. s = 0 leaves them raw.
+ * The int8 bytes stay raw: scaling them in place clipped strong links at 127. */
+static bool v6_gain_scale(const csi_record_t *record, float *scale)
+{
+    *scale = 1.0f;
+#if CONFIG_WIEVAC_FORCE_RX_GAIN
+    (void)record;
+    s_v6_library_gain = 1.0f;
+    return true;
+#else
+    float compensation = 1.0f;
+    float applied;
+    if (!v6_library_gain(record, &compensation)) {
+        return false;
+    }
+    s_v6_library_gain = compensation;
+    applied = powf(compensation, s_v6_gain_response_s);
+    if (!(applied > 0.0f) || applied != applied) {
+        return false;
+    }
+    *scale = applied;
+    return true;
+#endif
 }
 
 static void v6_submit_and_emit(const csi_record_t *record)
@@ -805,6 +986,10 @@ static void v6_submit_and_emit(const csi_record_t *record)
     }
     input.csi_length = record->length;
     memcpy(input.csi, record->csi, input.csi_length);
+    if (!v6_gain_scale(record, &input.gain_scale)) {
+        __atomic_add_fetch(&g_gain_compensation_failures, 1U, __ATOMIC_RELAXED);
+        return;
+    }
     input.first_word_invalid = record->first_word_invalid;
     input.rssi_dbm = record->rx_ctrl.rssi;
     input.noise_floor_dbm = record->rx_ctrl.noise_floor;
@@ -1647,6 +1832,12 @@ static void dsp_reset(dsp_state_t *state, uint64_t now_us)
 #if CONFIG_WIEVAC_EDGE_RESULT_V6_ACTIVE
     s_v6_gain_forced = false;
     s_v6_gain_records = 0U;
+    s_v6_gain_baseline_logged = false;
+    formula_flex_gain_response_reset(&s_v6_gain_resp);
+    s_v6_gain_response_s = 0.0f;
+    s_v6_library_gain = 1.0f;
+    s_v6_gain_resp_have_prev = false;
+    s_v6_gain_resp_seen = 0U;
 #endif
     noise_filter_reset();
     __atomic_add_fetch(&g_gain_epoch_changes, 1U, __ATOMIC_RELAXED);
@@ -1731,6 +1922,186 @@ static bool enqueue_udp(const uint8_t *packet, uint16_t length)
     }
     return true;
 }
+
+#if CONFIG_WIEVAC_RAW_CSI_UDP
+static void wraw_u16(uint8_t *dst, uint16_t value)
+{
+    dst[0] = (uint8_t)value;
+    dst[1] = (uint8_t)(value >> 8);
+}
+
+static void wraw_u32(uint8_t *dst, uint32_t value)
+{
+    dst[0] = (uint8_t)value;
+    dst[1] = (uint8_t)(value >> 8);
+    dst[2] = (uint8_t)(value >> 16);
+    dst[3] = (uint8_t)(value >> 24);
+}
+
+static void wraw_u64(uint8_t *dst, uint64_t value)
+{
+    wraw_u32(dst, (uint32_t)value);
+    wraw_u32(dst + 4U, (uint32_t)(value >> 32));
+}
+
+/* WRAW never calls enqueue_udp, so a full queue cannot count as a WIV5 drop. */
+static bool enqueue_wraw(const uint8_t *packet, uint16_t length)
+{
+    udp_packet_t datagram = {.length = length, .dest_port = WRAW_PORT};
+    if (length > V4_MAX_PACKET_SIZE || g_udp_queue == NULL) {
+        return false;
+    }
+    if (uxQueueSpacesAvailable(g_udp_queue) < WRAW_UDP_HEADROOM) {
+        return false;
+    }
+    memcpy(datagram.bytes, packet, length);
+    return xQueueSend(g_udp_queue, &datagram, 0) == pdTRUE;
+}
+
+static void raw_csi_send(const raw_csi_frame_t *frames, uint8_t count)
+{
+    uint8_t packet[V4_MAX_PACKET_SIZE];
+    size_t offset = 24U;
+    uint8_t index;
+    uint32_t crc;
+    if (count == 0U || frames == NULL) {
+        return;
+    }
+    if (!is_gateway()) {
+        __atomic_add_fetch(&g_raw_csi_dropped, count, __ATOMIC_RELAXED);
+        return;
+    }
+    packet[0] = 'W';
+    packet[1] = 'R';
+    packet[2] = 'A';
+    packet[3] = 'W';
+    packet[4] = 3U; /* v3: f32 s after seq; frame carries applied scale and g */
+    packet[5] = count;
+    wraw_u16(packet + 6U, (uint16_t)WIEVAC_RX_ID);
+    wraw_u32(packet + 8U, frames[0].link_id);
+    wraw_u32(packet + 12U, frames[0].boot_id);
+    wraw_u32(packet + 16U, ++g_raw_datagram_seq);
+    {
+        uint32_t s_bits;
+        const float response_s = frames[0].gain_response_s;
+        memcpy(&s_bits, &response_s, sizeof(s_bits));
+        wraw_u32(packet + 20U, s_bits);
+    }
+    for (index = 0U; index < count; ++index) {
+        const raw_csi_frame_t *frame = &frames[index];
+        const size_t need = 24U + (size_t)frame->csi_length;
+        if (frame->csi_length > EDGE_RESULT_V5_MAX_CSI_BYTES || offset + need + 4U > sizeof(packet)) {
+            __atomic_add_fetch(&g_raw_csi_dropped, (uint32_t)(count - index), __ATOMIC_RELAXED);
+            break;
+        }
+        wraw_u32(packet + offset, frame->tx_sequence);
+        wraw_u64(packet + offset + 4U, frame->timestamp_us);
+        packet[offset + 12U] = (uint8_t)frame->rssi_dbm;
+        packet[offset + 13U] = 0U;
+        wraw_u16(packet + offset + 14U, frame->csi_length);
+        {
+            uint32_t scale_bits;
+            uint32_t gain_bits;
+            memcpy(&scale_bits, &frame->gain_scale, sizeof(scale_bits));
+            memcpy(&gain_bits, &frame->library_gain, sizeof(gain_bits));
+            wraw_u32(packet + offset + 16U, scale_bits);
+            wraw_u32(packet + offset + 20U, gain_bits);
+        }
+        memcpy(packet + offset + 24U, frame->csi, frame->csi_length);
+        offset += need;
+    }
+    if (offset == 24U) {
+        return;
+    }
+    packet[5] = index;
+    crc = esp_crc32_le(0U, packet, (uint32_t)offset);
+    wraw_u32(packet + offset, crc);
+    offset += 4U;
+    if (enqueue_wraw(packet, (uint16_t)offset)) {
+        __atomic_add_fetch(&g_raw_csi_sent, packet[5], __ATOMIC_RELAXED);
+        g_raw_skip_logged = false;
+    } else {
+        __atomic_add_fetch(&g_raw_csi_dropped, packet[5], __ATOMIC_RELAXED);
+    }
+}
+
+static void raw_csi_task(void *argument)
+{
+    raw_csi_frame_t batch[WRAW_MAX_FRAMES];
+    uint8_t count = 0U;
+    uint64_t batch_start_us = 0U;
+    (void)argument;
+    for (;;) {
+        raw_csi_frame_t frame;
+        TickType_t wait = pdMS_TO_TICKS(50);
+        if (count > 0U) {
+            const uint64_t now_us = (uint64_t)esp_timer_get_time();
+            const uint64_t elapsed = now_us - batch_start_us;
+            if (elapsed >= WRAW_BATCH_US) {
+                raw_csi_send(batch, count);
+                count = 0U;
+                continue;
+            }
+            wait = pdMS_TO_TICKS((WRAW_BATCH_US - elapsed) / 1000ULL + 1ULL);
+        }
+        if (xQueueReceive(g_raw_csi_queue, &frame, wait) != pdTRUE) {
+            if (count > 0U) {
+                raw_csi_send(batch, count);
+                count = 0U;
+            }
+            continue;
+        }
+        if (count > 0U && (frame.link_id != batch[0].link_id || frame.boot_id != batch[0].boot_id)) {
+            raw_csi_send(batch, count);
+            count = 0U;
+        }
+        if (count == 0U) {
+            batch_start_us = (uint64_t)esp_timer_get_time();
+        }
+        batch[count++] = frame;
+        if (count >= WRAW_MAX_FRAMES) {
+            raw_csi_send(batch, count);
+            count = 0U;
+        }
+    }
+}
+
+void wievac_raw_csi_hook(const edge_result_csi_record_t *record)
+{
+    raw_csi_frame_t frame = {0};
+    if (record == NULL || record->csi_length == 0U ||
+        record->csi_length > EDGE_RESULT_V5_MAX_CSI_BYTES || g_raw_csi_queue == NULL) {
+        return;
+    }
+    if (!is_gateway()) {
+        if (!g_raw_skip_logged) {
+            g_raw_skip_logged = true;
+            ESP_LOGW(TAG, "WRAW not sent: %s",
+                     g_force_relay_mode ? "relay/mesh mode, no direct Wi-Fi to Pi"
+                                        : "no direct Wi-Fi to Pi");
+        }
+        return;
+    }
+    frame.link_id = record->link_id;
+    frame.boot_id = record->boot_id;
+    frame.tx_sequence = record->tx_sequence;
+    frame.timestamp_us = record->timestamp_us;
+    frame.rssi_dbm = record->rssi_dbm;
+    frame.csi_length = record->csi_length;
+    frame.gain_scale = noise_filter_gain_scale(record->gain_scale);
+#if CONFIG_WIEVAC_EDGE_RESULT_V6_ACTIVE
+    frame.library_gain = s_v6_library_gain;
+    frame.gain_response_s = s_v6_gain_response_s;
+#else
+    frame.library_gain = 1.0f;
+    frame.gain_response_s = 0.0f;
+#endif
+    memcpy(frame.csi, record->csi, record->csi_length);
+    if (xQueueSend(g_raw_csi_queue, &frame, 0) != pdTRUE) {
+        __atomic_add_fetch(&g_raw_csi_dropped, 1U, __ATOMIC_RELAXED);
+    }
+}
+#endif
 
 static void enqueue_dynamic_frame(const csi_record_t *record, dsp_state_t *state,
                                   const float shape_bins[WIEVAC_SHAPE_BINS], uint8_t agc_gain,
@@ -2263,6 +2634,16 @@ static void log_receiver_status(const dsp_state_t *state)
              measurement_received, measurement_lost, measurement_sequence_gap,
              latest_measurement_sequence, measurement_boot_id, csi_sequence_gaps,
              measurement_duplicates, measurement_reorders);
+    /* Wi-Fi RX/TX buffers come from internal heap; NO_MEM and lost frames show up here first. */
+    ESP_LOGI(TAG, "heap internal_free=%u internal_min=%u internal_largest=%u",
+             (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT),
+             (unsigned)heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT),
+             (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
+#if CONFIG_WIEVAC_RAW_CSI_UDP
+    ESP_LOGI(TAG, "raw_csi_sent=%" PRIu32 " raw_csi_dropped=%" PRIu32,
+             __atomic_load_n(&g_raw_csi_sent, __ATOMIC_RELAXED),
+             __atomic_load_n(&g_raw_csi_dropped, __ATOMIC_RELAXED));
+#endif
 #if CONFIG_WIEVAC_EDGE_RESULT_V6_ACTIVE
     /* This is local serial telemetry only: keep the WIV5/schema-6 packet
      * contract unchanged while exposing the exact bootstrap gate progress. */
@@ -2304,6 +2685,11 @@ static void dsp_task(void *argument)
     dsp_reset(state, now_us);
     uint32_t reset_generation = __atomic_load_n(&g_dsp_reset_generation, __ATOMIC_ACQUIRE);
     csi_record_t record;
+    /* The 'C' / SET_ID= reader needs a driver; without one every read logs an error. */
+    if (!uart_is_driver_installed(UART_NUM_0) &&
+        uart_driver_install(UART_NUM_0, 256, 0, 0, NULL, 0) != ESP_OK) {
+        ESP_LOGW(TAG, "UART0 driver unavailable; serial calibration and SET_ID are off");
+    }
     for (;;) {
         const uint32_t current_generation = __atomic_load_n(&g_dsp_reset_generation, __ATOMIC_ACQUIRE);
         if (current_generation != reset_generation) {
@@ -2334,7 +2720,8 @@ static void dsp_task(void *argument)
             static char id_line[32];
             static int id_idx;
             uint8_t cal_byte = 0U;
-            if (uart_read_bytes(UART_NUM_0, &cal_byte, 1, 0) == 1) {
+            if (uart_is_driver_installed(UART_NUM_0) &&
+                uart_read_bytes(UART_NUM_0, &cal_byte, 1, 0) == 1) {
                 if ((cal_byte == 'C' || cal_byte == 'c') &&
                     edge_result_pipeline_begin_calibration(&g_v6_pipeline, WIEVAC_LINK_ID)) {
                     ESP_LOGI(TAG, "calibration started; keep the corridor empty for 8s");
@@ -2436,17 +2823,42 @@ static void udp_sender_task(void *argument)
         /* Wi-Fi association is only a local precondition.  Mark the Pi route
          * ready after a real UDP send attempt, and clear it on send failure. */
         if ((xEventGroupGetBits(g_network_events) & WIFI_CONNECTED_BIT) == 0U) {
+#if CONFIG_WIEVAC_RAW_CSI_UDP
+            if (datagram.dest_port != 0U) {
+                const uint32_t frames = datagram.length > 5U ? (uint32_t)datagram.bytes[5] : 1U;
+                __atomic_add_fetch(&g_raw_csi_dropped, frames, __ATOMIC_RELAXED);
+                continue;
+            }
+#endif
             xEventGroupClearBits(g_network_events, NETWORK_READY_BIT);
             __atomic_add_fetch(&g_udp_send_failures, 1U, __ATOMIC_RELAXED);
             __atomic_add_fetch(&g_udp_drops, 1U, __ATOMIC_RELAXED);
             continue;
         }
+#if CONFIG_WIEVAC_RAW_CSI_UDP
+        struct sockaddr_in destination = g_pi_address;
+        if (datagram.dest_port != 0U) {
+            destination.sin_port = htons(datagram.dest_port);
+        }
+        const int sent = sendto(socket_fd, datagram.bytes, datagram.length, 0,
+                                (struct sockaddr *)&destination, sizeof(destination));
+#else
         const int sent = sendto(socket_fd, datagram.bytes, datagram.length, 0,
                                 (struct sockaddr *)&g_pi_address, sizeof(g_pi_address));
+#endif
         if (sent != (int)datagram.length) {
-            xEventGroupClearBits(g_network_events, NETWORK_READY_BIT);
-            __atomic_add_fetch(&g_udp_send_failures, 1U, __ATOMIC_RELAXED);
-            __atomic_add_fetch(&g_udp_drops, 1U, __ATOMIC_RELAXED);
+#if CONFIG_WIEVAC_RAW_CSI_UDP
+            if (datagram.dest_port != 0U) {
+                /* A lost raw frame must not look like WIV5 loss or a dead Pi route. */
+                const uint32_t frames = datagram.length > 5U ? (uint32_t)datagram.bytes[5] : 1U;
+                __atomic_add_fetch(&g_raw_csi_dropped, frames, __ATOMIC_RELAXED);
+            } else
+#endif
+            {
+                xEventGroupClearBits(g_network_events, NETWORK_READY_BIT);
+                __atomic_add_fetch(&g_udp_send_failures, 1U, __ATOMIC_RELAXED);
+                __atomic_add_fetch(&g_udp_drops, 1U, __ATOMIC_RELAXED);
+            }
         } else {
             xEventGroupSetBits(g_network_events, NETWORK_READY_BIT);
         }
@@ -2680,8 +3092,14 @@ void app_main(void)
     g_control_queue = xQueueCreate(WIEVAC_CONTROL_QUEUE_DEPTH, sizeof(control_event_t));
     g_csi_queue = xQueueCreate(WIEVAC_CSI_QUEUE_DEPTH, sizeof(csi_record_t));
     g_udp_queue = xQueueCreate(WIEVAC_UDP_QUEUE_DEPTH, sizeof(udp_packet_t));
+#if CONFIG_WIEVAC_RAW_CSI_UDP
+    g_raw_csi_queue = xQueueCreate(WRAW_QUEUE_DEPTH, sizeof(raw_csi_frame_t));
+#endif
     ESP_ERROR_CHECK(g_network_events != NULL && g_control_queue != NULL &&
                     g_csi_queue != NULL && g_udp_queue != NULL ? ESP_OK : ESP_ERR_NO_MEM);
+#if CONFIG_WIEVAC_RAW_CSI_UDP
+    ESP_ERROR_CHECK(g_raw_csi_queue != NULL ? ESP_OK : ESP_ERR_NO_MEM);
+#endif
     memset(&g_pi_address, 0, sizeof(g_pi_address));
     g_pi_address.sin_family = AF_INET;
     g_pi_address.sin_port = htons(WIEVAC_PI_UDP_PORT);
@@ -2695,6 +3113,9 @@ void app_main(void)
     ESP_ERROR_CHECK(xTaskCreate(espnow_control_task, "wievac_ctrl", 4096U, NULL, 6U, NULL) == pdPASS ? ESP_OK : ESP_ERR_NO_MEM);
     ESP_ERROR_CHECK(xTaskCreate(dsp_task, "wievac_dsp", 8192U, NULL, 5U, NULL) == pdPASS ? ESP_OK : ESP_ERR_NO_MEM);
     ESP_ERROR_CHECK(xTaskCreate(udp_sender_task, "wievac_udp", 4096U, NULL, 4U, NULL) == pdPASS ? ESP_OK : ESP_ERR_NO_MEM);
+#if CONFIG_WIEVAC_RAW_CSI_UDP
+    ESP_ERROR_CHECK(xTaskCreate(raw_csi_task, "wievac_wraw", 8192U, NULL, 3U, NULL) == pdPASS ? ESP_OK : ESP_ERR_NO_MEM);
+#endif
     ESP_ERROR_CHECK(xTaskCreate(udp_downlink_listener_task, "wievac_cmd", 4096U, NULL, 4U, NULL) == pdPASS ? ESP_OK : ESP_ERR_NO_MEM);
     ESP_ERROR_CHECK(xTaskCreate(heartbeat_task, "wievac_hb", 4096U, NULL, 3U, NULL) == pdPASS ? ESP_OK : ESP_ERR_NO_MEM);
     ESP_ERROR_CHECK(xTaskCreate(node_watchdog_task, "wievac_wdog", 4096U, NULL, 3U, NULL) == pdPASS ? ESP_OK : ESP_ERR_NO_MEM);

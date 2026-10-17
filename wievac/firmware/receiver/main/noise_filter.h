@@ -12,6 +12,8 @@ typedef struct {
     const uint8_t *csi;
     uint16_t csi_length;
     bool first_word_invalid;
+    /* Multiplies every magnitude. 0 or non-finite means 1. */
+    float gain_scale;
 } noise_filter_input_t;
 
 /* HT20 data tones used for sensing: skip DC, pilots and OFDM guards.
@@ -60,6 +62,8 @@ typedef struct {
 } noise_filter_doppler_t;
 
 bool noise_filter_validate(const noise_filter_input_t *input);
+/* gain_scale as used by noise_filter_process: 1 unless finite and > 0. */
+float noise_filter_gain_scale(float gain_scale);
 bool noise_filter_process(const noise_filter_input_t *input,
                           noise_filter_output_t *output);
 void noise_filter_reset(void);

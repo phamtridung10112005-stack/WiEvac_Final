@@ -143,6 +143,9 @@ typedef struct {
     uint8_t bandwidth;
     uint8_t sig_mode;
     uint8_t htltf_layout;
+    /* AGC compensation applied to float magnitudes, never to the int8 bytes.
+     * 0 or non-finite means 1 (no compensation). */
+    float gain_scale;
 } edge_result_csi_record_t;
 
 typedef struct {
@@ -200,6 +203,10 @@ typedef struct {
     uint16_t baseline_min_samples;
     float max_ai_correction;
     float stale_after_ms;
+    /* Boot settle: for this long after a link's first frame nothing learns or
+     * scores (radio/AGC settling, and the person who powered the node is
+     * still walking away). Windows are UNKNOWN / WARMING_UP. 0 disables. */
+    uint64_t boot_settle_us;
     /* Link span in metres. 0 means unset: capacity uses d0 and gain 1.
      * The Pi topology JSON is the deployment value operators edit. */
     float nominal_distance_m;
@@ -228,6 +235,8 @@ typedef struct edge_result_link_state {
     uint32_t window_invalid_count;
     uint32_t pending_invalid_count;
     uint32_t window_sequence_gap;
+    /* Largest gap between consecutive frames inside this window. */
+    uint64_t window_max_gap_us;
     uint32_t window_queue_drop_count;
     uint32_t pending_queue_drop_count;
     uint32_t window_received_count;
@@ -241,6 +250,7 @@ typedef struct edge_result_link_state {
     float window_sum_rssi;
     float window_sum_noise;
     uint64_t window_last_timestamp_us;
+    uint64_t settle_until_us;
     uint64_t window_sum_interval_us;
     double window_sum_interval_sq_us;
     uint32_t window_interval_count;
@@ -349,8 +359,17 @@ typedef struct edge_result_link_state {
     uint64_t static_candidate_start_us;
     float static_latched_score;
     bool static_score_latched;
+    /* Percent (0..100) of this link's Fresnel path still open versus its own
+     * empty cap_ref_bins. Not a power sum. */
     float width_score;
     bool width_valid;
+    /* Last three knife-edge passability samples. The displayed % is their median. */
+    float ke_hist[3];
+    uint8_t ke_count;
+    /* This window, noted once before the published state. */
+    float ke_last_p;
+    bool ke_last_valid;
+    bool ke_noted;
     /* Boot capacity. cap_ref_bins stay fixed so a static object cannot be
      * rebased into a full-width corridor. */
     float nominal_distance_m;
@@ -438,7 +457,8 @@ typedef struct {
     uint8_t n_null;
     uint8_t static_flag;
     bool boot_unverified;
-    /* This link's own radio level at startup, reduced while a static object stays. */
+    /* Percent (0..100) of this link's empty Fresnel path still open. Wire
+     * value -1 means not valid. Schema 8 float, same slot as before. */
     float width_score;
     bool width_valid;
 } edge_result_v5_t;

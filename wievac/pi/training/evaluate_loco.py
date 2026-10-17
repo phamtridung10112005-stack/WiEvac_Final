@@ -386,7 +386,10 @@ def pack_blob(model: dict) -> bytes:
     rung = model["rung"]
     if rung not in (1, 2, 3):
         raise ValueError("rung 0 stays on the firmware MAD path and is not exported")
-    blob = b"TAI1" + struct.pack("<II", 1, rung) + _f32(model["threshold"])
+    # Rung 2 stores a log-likelihood threshold. Firmware rejects when loglik < threshold,
+    # while fit_rung's threshold is the 99th percentile of novelty = -loglik.
+    stored_threshold = -model["threshold"] if rung == 2 else model["threshold"]
+    blob = b"TAI1" + struct.pack("<II", 1, rung) + _f32(stored_threshold)
     if rung == 2:
         mu = [
             sum(model["means"][comp][index] * model["weights"][comp] for comp in range(len(model["weights"])))
@@ -462,6 +465,112 @@ def score_rung1_f32(blob: bytes, row: Iterable[float]) -> tuple[float, bool]:
     else:
         empty_score = div(threshold, add(threshold, acc))
     return empty_score, empty_like
+
+
+def score_rung2_f32(blob: bytes, row: Iterable[float]) -> tuple[float, bool]:
+    """Device GMM. Statement order matches score_rung2 in tiny_ai_gatekeeper.c."""
+    if blob[:4] != b"TAI1":
+        raise ValueError("bad blob")
+    threshold = struct.unpack_from("<f", blob, 12)[0]
+    offset = 16 + FEATURES * 4
+    components = struct.unpack_from("<I", blob, offset)[0]
+    offset += 4
+    values = [float(value) for value in row]
+    terms = []
+    for _component in range(components):
+        log_weight = struct.unpack_from("<f", blob, offset)[0]
+        offset += 4
+        means = struct.unpack_from("<" + "f" * FEATURES, blob, offset)
+        offset += FEATURES * 4
+        inv_var = struct.unpack_from("<" + "f" * FEATURES, blob, offset)
+        offset += FEATURES * 4
+        log_norm = struct.unpack_from("<f", blob, offset)[0]
+        offset += 4
+        dist = 0.0
+        for index in range(FEATURES):
+            delta = values[index] - means[index]
+            quad = delta * delta
+            quad = quad * inv_var[index]
+            dist = dist + quad
+        terms.append((log_weight + log_norm) - (dist * 0.5))
+    max_term = max(terms)
+    total = sum(math.exp(term - max_term) for term in terms)
+    loglik = max_term + math.log(total)
+    empty_like = not (loglik < threshold)
+    margin = loglik - threshold
+    denom = 1.0 + (margin if margin >= 0.0 else -margin)
+    return 0.5 + 0.5 * (margin / denom), empty_like
+
+
+def score_rung3_f32(blob: bytes, row: Iterable[float]) -> tuple[float, bool]:
+    """Device int8 autoencoder. Statement order matches score_rung3."""
+    if blob[:4] != b"TAI1":
+        raise ValueError("bad blob")
+    threshold = struct.unpack_from("<f", blob, 12)[0]
+    mu = struct.unpack_from("<" + "f" * FEATURES, blob, 16)
+    offset = 16 + FEATURES * 4
+    bottleneck = struct.unpack_from("<I", blob, offset)[0]
+    offset += 4
+    inv_std = struct.unpack_from("<" + "f" * FEATURES, blob, offset)
+    offset += FEATURES * 4
+    w1_scale, b1_scale, w2_scale, b2_scale = struct.unpack_from("<ffff", blob, offset)
+    offset += 16
+    values = [float(value) for value in row]
+    xstd = [(values[index] - mu[index]) * inv_std[index] for index in range(FEATURES)]
+    hidden = []
+    for _unit in range(bottleneck):
+        bias = struct.unpack_from("<b", blob, offset)[0]
+        offset += 1
+        acc = bias * b1_scale
+        for index in range(FEATURES):
+            weight = struct.unpack_from("<b", blob, offset)[0] * w1_scale
+            offset += 1
+            acc = acc + weight * xstd[index]
+        hidden.append(acc)
+    mse = 0.0
+    for index in range(FEATURES):
+        bias = struct.unpack_from("<b", blob, offset)[0]
+        offset += 1
+        acc = bias * b2_scale
+        for unit in range(bottleneck):
+            weight = struct.unpack_from("<b", blob, offset)[0] * w2_scale
+            offset += 1
+            acc = acc + weight * hidden[unit]
+        err = acc - xstd[index]
+        mse = mse + err * err
+    mse = mse / FEATURES
+    empty_like = not (mse > threshold)
+    if not threshold > 0.0:
+        empty_score = 0.0 if mse > 0.0 else 1.0
+    else:
+        empty_score = threshold / (threshold + mse)
+    return empty_score, empty_like
+
+
+DEPLOY_MAX_FPR = 0.05
+DEPLOY_NON_INFERIORITY = 0.01
+DEPLOY_RULE = (
+    "non-inferiority: simplest rung 1-3 with FPR at the deployed threshold <= 0.05 on every "
+    "test corridor and TPR@FPR1% >= rung0 - 0.01 on every test corridor. Changed on 2026-10-17 "
+    "from 'beat rung 0 by +0.05' because rung 0 reached the ceiling (TPR@1% 0.997) and rung 0 "
+    "(42-feature MAD) cannot run on the RX; only rungs 1-3 are firmware-deployable."
+)
+
+
+def choose_deploy_rung(tpr01: list[list[float]], fpr_at: list[list[float]]) -> int:
+    """Simplest firmware-deployable rung (1-3) that is not worse than rung 0.
+
+    Rung 0 is the baseline. It is never exported because the RX cannot run it.
+    Returns 0 when no rung 1-3 qualifies.
+    """
+    folds = len(tpr01[0])
+    for rung in (1, 2, 3):
+        if any(value > DEPLOY_MAX_FPR for value in fpr_at[rung]):
+            continue
+        if any(tpr01[rung][fold] < tpr01[0][fold] - DEPLOY_NON_INFERIORITY for fold in range(folds)):
+            continue
+        return rung
+    return 0
 
 
 def refit_selected(corpus: dict[str, dict[str, list[list[float]]]], rung: int) -> dict | None:

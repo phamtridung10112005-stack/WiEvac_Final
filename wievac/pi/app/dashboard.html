@@ -596,10 +596,10 @@
       <div class="chart-wrap empty"><canvas class="chart" data-chart aria-label="Biểu đồ passability"></canvas></div>
       <div class="chart-empty">Chưa có lịch sử điểm — sparkline sẽ hiện khi RX bắt đầu gửi</div>
       <div class="capacity" data-capacity>
-        <div class="cap-head"><span>Dung lượng tối đa</span><b data-cap-value>--</b></div>
+        <div class="cap-head"><span>Độ rộng còn lại (vật cản tĩnh)</span><b data-cap-value>--</b></div>
         <div class="bar" aria-hidden="true"><span data-cap-bar></span></div>
         <p class="cap-drop" data-cap-drop></p>
-        <b class="narrow-tag hidden" data-narrow>THU HẸP DIỆN TÍCH</b>
+        <b class="narrow-tag hidden" data-narrow>HẸP</b>
       </div>
       <div class="capacity">
         <div class="cap-head"><span>Lưu thông tức thời</span><b data-dyn-value>--%</b></div>
@@ -792,37 +792,13 @@
       const dynBar = root.querySelector("[data-dyn-bar]");
       const live = view.hasPacket && !view.stale && view.viewState !== "UNSTABLE";
       const widthRaw = finite(v?.w_cap) ? Number(v.w_cap) : (finite(v?.width_score) ? Number(v.width_score) : null);
-      const width = live && widthRaw !== null && widthRaw >= 0 ? widthRaw : null;
-      let dropPct = 0;
-      let base = null;
-      const linkKey = root.dataset.linkId;
-      if (!displayState[linkKey]) displayState[linkKey] = { stable: null, pending: null, count: 0, score: null };
-      const heldCap = displayState[linkKey];
-      if (width !== null) {
-        const sent = finite(v?.cap_base) ? Number(v.cap_base) : (finite(v?.w_base) ? Number(v.w_base) : null);
-        if (sent !== null && sent > 0) {
-          base = sent;
-          heldCap.capBase = sent;
-        } else {
-          const sci = finite(v?.static_change_index) ? Math.min(1, Math.max(0, Number(v.static_change_index) / 255)) : 0;
-          const nullFrac = finite(v?.n_null) ? Math.min(1, Math.max(0, Number(v.n_null) / 12)) : 0;
-          const rawChanged = Math.min(1, Math.max(sci, nullFrac));
-          const changed = Math.min(0.90, rawChanged);
-          if ((1 - rawChanged) > 0.05) {
-            base = width / (1 - changed);
-            heldCap.capBase = base;
-          } else if (finite(heldCap.capBase) && heldCap.capBase > 0) {
-            base = heldCap.capBase;
-          }
-        }
-        dropPct = base > 0 ? Math.max(0, (1 - width / base) * 100) : 0;
-      }
-      if (capValue) capValue.textContent = width === null ? "--" : Math.round(width) + " điểm";
-      if (capBar) capBar.style.width = width === null || !(base > 0) ? "0%" : Math.max(0, Math.min(100, width / base * 100)) + "%";
+      const width = live && widthRaw !== null && widthRaw >= 0 && widthRaw <= 100.5 ? widthRaw : null;
+      if (capValue) capValue.textContent = width === null ? "--" : Math.round(width) + "%";
+      if (capBar) capBar.style.width = width === null ? "0%" : Math.max(0, Math.min(100, width)) + "%";
       if (capDrop) {
-        capDrop.textContent = width === null || !(dropPct > 0.5) ? "" : Math.round(width) + " / " + Math.round(base) + " điểm (-" + dropPct.toFixed(1) + "% vật cản tĩnh)";
+        capDrop.textContent = width !== null && width < 95 ? "-" + (100 - width).toFixed(0) + "% do vật cản tĩnh" : "";
       }
-      if (narrow) narrow.classList.toggle("hidden", !(width !== null && dropPct > 50));
+      if (narrow) narrow.classList.toggle("hidden", !(width !== null && width < 50));
       const dynPct = live && finite(view.score) && view.viewState !== "UNKNOWN" && view.viewState !== "STALE" ? Number(view.score) : null;
       if (dynValue) dynValue.textContent = dynPct === null ? "--%" : round(dynPct) + "%";
       if (dynBar) dynBar.style.width = dynPct === null ? "0%" : Math.max(0, Math.min(100, dynPct)) + "%";

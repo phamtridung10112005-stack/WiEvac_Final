@@ -1,0 +1,147 @@
+{
+  "drops": {
+    "nonfinite": 0,
+    "warmup": 283,
+    "coverage": 7,
+    "poor_session": 0,
+    "disturbance": 0,
+    "balance": 76
+  },
+  "poor_sessions": [],
+  "disturbance_sessions": [],
+  "summary": [
+    {
+      "corridor": "corridor-A",
+      "role": "train",
+      "empty": 753,
+      "occupied": 0,
+      "excluded": 0,
+      "sessions": 2,
+      "clean_minutes": 12.55
+    },
+    {
+      "corridor": "corridor-B",
+      "role": "train",
+      "empty": 753,
+      "occupied": 0,
+      "excluded": 0,
+      "sessions": 2,
+      "clean_minutes": 13.816666666666666
+    },
+    {
+      "corridor": "corridor-C",
+      "role": "test",
+      "empty": 910,
+      "occupied": 1154,
+      "excluded": 84,
+      "sessions": 2,
+      "clean_minutes": 34.4
+    }
+  ],
+  "warnings": [
+    "clean minutes corridor-A=12.55 < 20 (consecutive vectors overlap; this is not 20 independent minutes)",
+    "clean minutes corridor-B=13.82 < 20 (consecutive vectors overlap; this is not 20 independent minutes)"
+  ],
+  "selected": 2,
+  "deploy_rule": "non-inferiority: simplest rung 1-3 with FPR at the deployed threshold <= 0.05 on every test corridor and TPR@FPR1% >= rung0 - 0.01 on every test corridor. Changed on 2026-10-17 from 'beat rung 0 by +0.05' because rung 0 reached the ceiling (TPR@1% 0.997) and rung 0 (42-feature MAD) cannot run on the RX; only rungs 1-3 are firmware-deployable.",
+  "rungs": [
+    {
+      "rung": 0,
+      "adjust": 56.874314995109074,
+      "threshold": 1927.929866196284,
+      "oof": [
+        {
+          "corridor": "corridor-A",
+          "fpr": 0.0
+        },
+        {
+          "corridor": "corridor-B",
+          "fpr": 0.0
+        }
+      ],
+      "test": [
+        {
+          "auroc": 0.9994286476088903,
+          "tpr01": 0.9974003466204506,
+          "tpr05": 1.0,
+          "fpr_at": 0.012087912087912088,
+          "tpr_at": 1.0
+        }
+      ]
+    },
+    {
+      "rung": 1,
+      "adjust": 16.955834895906207,
+      "threshold": 1082.595396392766,
+      "oof": [
+        {
+          "corridor": "corridor-A",
+          "fpr": 0.0
+        },
+        {
+          "corridor": "corridor-B",
+          "fpr": 0.01593625498007968
+        }
+      ],
+      "test": [
+        {
+          "auroc": 0.9973336888414878,
+          "tpr01": 0.9540727902946274,
+          "tpr05": 1.0,
+          "fpr_at": 0.03296703296703297,
+          "tpr_at": 1.0
+        }
+      ]
+    },
+    {
+      "rung": 2,
+      "adjust": 161.94255599768005,
+      "threshold": 228.94678866542063,
+      "oof": [
+        {
+          "corridor": "corridor-A",
+          "fpr": 0.0
+        },
+        {
+          "corridor": "corridor-B",
+          "fpr": 0.03718459495351926
+        }
+      ],
+      "test": [
+        {
+          "auroc": 0.9994343611328014,
+          "tpr01": 0.9974003466204506,
+          "tpr05": 1.0,
+          "fpr_at": 0.01868131868131868,
+          "tpr_at": 1.0
+        }
+      ]
+    },
+    {
+      "rung": 3,
+      "adjust": 211.718963840597,
+      "threshold": 52.21323273457136,
+      "oof": [
+        {
+          "corridor": "corridor-A",
+          "fpr": 0.0
+        },
+        {
+          "corridor": "corridor-B",
+          "fpr": 0.00796812749003984
+        }
+      ],
+      "test": [
+        {
+          "auroc": 0.9962300264726608,
+          "tpr01": 0.8639514731369151,
+          "tpr05": 1.0,
+          "fpr_at": 0.013186813186813187,
+          "tpr_at": 0.9982668977469671
+        }
+      ]
+    }
+  ],
+  "parity": 1.0,
+  "sha256": "94010e7704686062d936f09bde53917735bc5a5af1196c6484d9af11abfd8358"
+}

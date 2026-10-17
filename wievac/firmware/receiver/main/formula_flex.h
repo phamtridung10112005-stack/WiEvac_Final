@@ -66,9 +66,48 @@ float formula_flex_capacity_base(float power, float distance_m);
 float formula_flex_capacity_score(float base, float sci, uint16_t n_null,
                                   uint16_t n_total);
 
-/* People moving through the link. Static attenuation stays in W_cap. */
+/* People moving through the link. Static attenuation stays in W_cap.
+ * Kept for metadata and older tests. Displayed scores use the knife-edge. */
 float formula_flex_dynamic_passability(const edge_result_features_t *features,
                                        const edge_result_link_state_t *link);
+
+/* RTI link noise is about 1 dB (RSSI std ~0.97 dB). A tone inside this
+ * band counts as an open path so an empty hall reads near 100%. */
+#define FORMULA_FLEX_KE_DEADBAND_DB 1.0f
+
+/* Fraction (0..1) of the link's first Fresnel zone blocked, from one tone's
+ * attenuation in dB (ITU-R P.526 knife-edge, closed-form inverse).
+ * A person occluding the 2.4 GHz ray is about +10 dB (Januszkiewicz, Sensors
+ * 2018). b is the blocked fraction of THIS link's Fresnel path (about 0.8 m
+ * across at the middle of a 5 m link), not a fraction of corridor width. */
+float formula_flex_knife_edge_blocked(float attenuation_db);
+
+/* Mean blocked fraction over tones: A_k = 20·log10(ref_k / now_k) − deadband,
+ * clamped at 0 (a stronger tone counts as 0 dB). Skips NaN / ≤0 bins.
+ * Returns NAN if fewer than 4 usable bins. */
+float formula_flex_blocked_fraction(const float *now, const float *ref, uint16_t count);
+
+/* Knife-edge: below ~5 dB the obstacle edge stays outside the clear
+ * Fresnel core (v < ~0), i.e. ≤30% of the zone blocked → path open. */
+#define FORMULA_FLEX_KE_BLOCKED_PCT 70.0f
+
+/* One AGC step is a fraction of a dB; a person on the link is ~10 dB.
+ * 3 dB drops the step from the regression without eating a real AGC step.
+ * 30 events is enough for a one-parameter slope to be tested. */
+#define FORMULA_FLEX_GAIN_RESP_MIN_EVENTS 30U
+#define FORMULA_FLEX_GAIN_RESP_OUTLIER_DB 3.0f
+
+/* Through-origin regression of raw CSI steps on library gain steps.
+ * a ∝ g^(-s). s = 1 is full compensation, s = 0 is none. */
+typedef struct {
+    double sxx, sxy, syy;
+    uint32_t events;
+    uint32_t frames;
+} formula_flex_gain_response_t;
+
+void formula_flex_gain_response_reset(formula_flex_gain_response_t *st);
+void formula_flex_gain_response_add(formula_flex_gain_response_t *st, float x_db, float y_db);
+float formula_flex_gain_response_s(const formula_flex_gain_response_t *st);
 
 #ifdef __cplusplus
 }

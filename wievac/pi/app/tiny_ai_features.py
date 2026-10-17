@@ -19,6 +19,7 @@ LONG_N = 240
 SHORT_CAP = 48
 EMIT_US = 1_000_000
 SHORT_SPAN = 38
+NOISE_INIT_N = 31  # median of the first 31 short-window variances (C: TINY_AI_NOISE_INIT_N)
 FRESH_US = 5_000_000
 # HT20 FFT index, DC at 32. Same geometry as noise_filter.
 TONE_INDEX = tuple(list(range(6, 32)) + list(range(33, 59)))
@@ -191,16 +192,26 @@ def _column(rows: list[list[float]], band: int) -> list[float]:
 
 
 def compute_features(short_rows: list[list[float]], long_rows: list[list[float]],
-                     noise: list[float], noise_ready: list[bool]) -> list[float]:
+                     noise: list[float], noise_ready: list[bool],
+                     noise_init: list[list[float]]) -> list[float] | None:
+    """None while the noise reference is still being initialised: it is the
+    median of the first NOISE_INIT_N short-window variances (C: same rule)."""
     variances = []
     for band in range(BANDS):
         _mean, variance = _mean_var(_column(short_rows, band))
         variances.append(variance)
-        if not noise_ready[band]:
-            noise[band] = variance if variance > f32(1e-6) else f32(1e-6)
+    if len(noise_init) < NOISE_INIT_N:
+        noise_init.append(list(variances))
+        if len(noise_init) < NOISE_INIT_N:
+            return None
+        for band in range(BANDS):
+            median = sorted(row[band] for row in noise_init)[NOISE_INIT_N // 2]
+            noise[band] = median if median > f32(1e-6) else f32(1e-6)
             noise_ready[band] = True
-        elif not variance > mul(f32(2), noise[band]):
-            noise[band] = add(mul(f32(0.95), noise[band]), mul(f32(0.05), variance))
+    else:
+        for band in range(BANDS):
+            if not variances[band] > mul(f32(2), noise[band]):
+                noise[band] = add(mul(f32(0.95), noise[band]), mul(f32(0.05), variances[band]))
     out = []
     for band in range(BANDS):
         out.append(div(variances[band], noise[band]))
@@ -230,6 +241,7 @@ class Extractor:
         self.long_open: list | None = None
         self.noise = [f32(0)] * BANDS
         self.noise_ready = [False] * BANDS
+        self.noise_init: list[list[float]] = []
         self.features: list[float] | None = None
         self.feature_ts = 0
         self.last_emit_ts: int | None = None
@@ -323,7 +335,10 @@ class Extractor:
             keys.append(self.short_open[0])
         if len(short_rows) < 8 or keys[-1] - keys[0] < SHORT_SPAN:
             return None
-        features = compute_features(short_rows, long_rows, self.noise, self.noise_ready)
+        features = compute_features(short_rows, long_rows, self.noise, self.noise_ready, self.noise_init)
+        self.last_emit_ts = timestamp_us
+        if features is None:
+            return None
         self.features = features
         self.feature_ts = timestamp_us
         self.last_emit_ts = timestamp_us
@@ -337,7 +352,7 @@ def _self_check() -> None:
     extractor = Extractor()
     timestamp = 1_000_000
     emitted = None
-    for index in range(256):
+    for index in range(560):
         amplitudes = [1.0 + 0.01 * (index % 5)] * TONES
         emitted = extractor.push(timestamp, amplitudes) or emitted
         timestamp += 125_000

@@ -25,8 +25,9 @@ typedef struct {
 } tiny_ai_gate_status_t;
 
 void tiny_ai_gate_reset(void);
+/* gain_scale multiplies each amplitude (float32), as collect_empty_corridor_dataset does. */
 void tiny_ai_gate_ingest(uint32_t link_id, uint64_t timestamp_us,
-                         const uint8_t *csi, uint16_t csi_length);
+                         const uint8_t *csi, uint16_t csi_length, float gain_scale);
 void tiny_ai_gate_status(uint64_t now_us, tiny_ai_gate_status_t *status);
 /* True when a new baseline / STATIC_CHANGE is allowed. */
 bool tiny_ai_gate_allows_baseline(uint64_t now_us);

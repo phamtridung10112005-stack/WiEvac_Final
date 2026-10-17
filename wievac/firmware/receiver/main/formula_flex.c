@@ -192,6 +192,118 @@ float formula_flex_capacity_score(float base, float sci, uint16_t n_null,
     return base * (1.0f - changed);
 }
 
+float formula_flex_knife_edge_blocked(float attenuation_db)
+{
+    float y;
+    float v;
+    float fresnel;
+    /* ITU-R P.526: J(v) = 6.9 + 20·log10(sqrt((v-0.1)^2+1) + v - 0.1) dB
+     * for v > -0.78, else 0. Inverse: y = 10^((J-6.9)/20),
+     * v = 0.1 + (y^2 - 1) / (2y). Fresnel fraction f = 0.5 + v/(2√2).
+     * f0 at v = -0.7805 is 0.2241, so 0 dB maps to 0 and a filled zone to 1. */
+    if (!isfinite((double)attenuation_db) || attenuation_db <= 0.0f) {
+        return 0.0f;
+    }
+    y = powf(10.0f, (attenuation_db - 6.9f) / 20.0f);
+    if (!(y > 0.0f) || !isfinite((double)y)) {
+        return 0.0f;
+    }
+    v = 0.1f + (y * y - 1.0f) / (2.0f * y);
+    if (v < -0.7805f) {
+        v = -0.7805f;
+    }
+    fresnel = 0.5f + v / (2.0f * sqrtf(2.0f));
+    return clampf_local((fresnel - 0.2241f) / (1.0f - 0.2241f), 0.0f, 1.0f);
+}
+
+float formula_flex_blocked_fraction(const float *now, const float *ref, uint16_t count)
+{
+    float sum = 0.0f;
+    uint16_t used = 0U;
+    uint16_t i;
+    if (now == NULL || ref == NULL) {
+        return NAN;
+    }
+    for (i = 0U; i < count; ++i) {
+        float ratio;
+        float atten;
+        if (!isfinite((double)now[i]) || !isfinite((double)ref[i]) ||
+            now[i] <= 0.0f || ref[i] <= 0.0f) {
+            continue;
+        }
+        ratio = ref[i] / now[i];
+        if (!(ratio > 0.0f) || !isfinite((double)ratio)) {
+            continue;
+        }
+        atten = 20.0f * log10f(ratio) - FORMULA_FLEX_KE_DEADBAND_DB;
+        if (atten < 0.0f) {
+            atten = 0.0f;
+        }
+        sum += formula_flex_knife_edge_blocked(atten);
+        ++used;
+    }
+    if (used < 4U) {
+        return NAN;
+    }
+    return sum / (float)used;
+}
+
+void formula_flex_gain_response_reset(formula_flex_gain_response_t *st)
+{
+    if (st == NULL) {
+        return;
+    }
+    memset(st, 0, sizeof(*st));
+}
+
+void formula_flex_gain_response_add(formula_flex_gain_response_t *st, float x_db, float y_db)
+{
+    if (st == NULL || !isfinite((double)x_db) || !isfinite((double)y_db)) {
+        return;
+    }
+    if (st->frames < UINT32_MAX) {
+        ++st->frames;
+    }
+    if (fabsf(y_db) > FORMULA_FLEX_GAIN_RESP_OUTLIER_DB) {
+        return;
+    }
+    /* 1e-4 dB is below any AGC step, so x == 0 means g did not change. */
+    if (fabsf(x_db) < 1.0e-4f) {
+        return;
+    }
+    if (st->events < UINT32_MAX) {
+        ++st->events;
+    }
+    st->sxx += (double)x_db * (double)x_db;
+    st->sxy += (double)x_db * (double)y_db;
+    st->syy += (double)y_db * (double)y_db;
+}
+
+float formula_flex_gain_response_s(const formula_flex_gain_response_t *st)
+{
+    double s;
+    double rss;
+    double se;
+    if (st == NULL || st->events < FORMULA_FLEX_GAIN_RESP_MIN_EVENTS || !(st->sxx > 0.0)) {
+        return 0.0f;
+    }
+    s = -st->sxy / st->sxx;
+    rss = st->syy + 2.0 * s * st->sxy + s * s * st->sxx;
+    if (rss < 0.0) {
+        rss = 0.0;
+    }
+    se = sqrt(rss / (double)(st->events - 1U) / st->sxx);
+    if (!isfinite(se) || fabs(s) < 2.0 * se) {
+        return 0.0f;
+    }
+    if (s > 1.0) {
+        s = 1.0;
+    } else if (s < -1.0) {
+        s = -1.0;
+    }
+    return (float)s;
+}
+
 float formula_flex_dynamic_passability(const edge_result_features_t *features,
                                        const edge_result_link_state_t *link)
 {

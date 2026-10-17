@@ -585,6 +585,17 @@ static void wifi_init(void)
     ESP_ERROR_CHECK(esp_wifi_set_channel(WIEVAC_WIFI_CHANNEL, WIFI_SECOND_CHAN_NONE));
 }
 
+static void log_status(void);
+
+static void status_log_task(void *argument)
+{
+    (void)argument;
+    for (;;) {
+        vTaskDelay(pdMS_TO_TICKS(WIEVAC_LOG_INTERVAL_MS));
+        log_status();
+    }
+}
+
 static void log_status(void)
 {
     uint32_t requested;
@@ -758,9 +769,13 @@ void app_main(void)
              " channel=%u bandwidth=HT20 mcs=0 phy_rate=%u measurement_hz=%u",
              s_boot_id, WIEVAC_LINK_ID, WIEVAC_WIFI_CHANNEL,
              (unsigned)WIEVAC_ESPNOW_RATE, WIEVAC_MEASUREMENT_HZ);
+    /* log_status() prints ~1.6 KB at 115200 baud (~145 ms). Inside this loop it
+     * stopped the 100 Hz stream every 10 s, which reset the RX 30 s feature
+     * window and invalidated Doppler. Log from a lower-priority task instead. */
+    ESP_ERROR_CHECK(xTaskCreate(status_log_task, "tx_status", 4096U, NULL, 1U, NULL) == pdPASS ? ESP_OK : ESP_ERR_NO_MEM);
+    vTaskPrioritySet(NULL, 5U);
     TickType_t wake = xTaskGetTickCount();
     int64_t last_hello_us = 0;
-    int64_t last_log_us = 0;
     const TickType_t period = (configTICK_RATE_HZ / WIEVAC_MEASUREMENT_HZ) > 0U
                                   ? (configTICK_RATE_HZ / WIEVAC_MEASUREMENT_HZ) : 1U;
     for (;;) {
@@ -777,10 +792,6 @@ void app_main(void)
         const uint32_t sequence = ++s_measurement_sequence;
         const uint64_t timestamp_us = (uint64_t)esp_timer_get_time();
         send_packet(V4_MSG_MEASUREMENT, BROADCAST_MAC, 0U, sequence, timestamp_us);
-        if (now_us - last_log_us >= (int64_t)WIEVAC_LOG_INTERVAL_MS * 1000) {
-            log_status();
-            last_log_us = now_us;
-        }
         if (xTaskDelayUntil(&wake, period) == pdFALSE) {
             wake = xTaskGetTickCount();
         }

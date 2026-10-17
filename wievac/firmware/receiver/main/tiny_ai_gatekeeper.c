@@ -502,7 +502,7 @@ bool tiny_ai_gate_boot_is_quiet(uint64_t now_us)
 }
 
 void tiny_ai_gate_ingest(uint32_t link_id, uint64_t timestamp_us,
-                         const uint8_t *csi, uint16_t csi_length)
+                         const uint8_t *csi, uint16_t csi_length, float gain_scale)
 {
 #if TINY_AI_MODEL_PRESENT
     float amplitudes[TINY_AI_TONES];
@@ -517,12 +517,19 @@ void tiny_ai_gate_ingest(uint32_t link_id, uint64_t timestamp_us,
     if (!tiny_ai_amplitudes_from_csi(csi, csi_length, amplitudes)) {
         return;
     }
+    if (gain_scale != 1.0f) {
+        uint32_t tone;
+        for (tone = 0U; tone < TINY_AI_TONES; ++tone) {
+            amplitudes[tone] = amplitudes[tone] * gain_scale;
+        }
+    }
     (void)tiny_ai_extractor_push(&s_extractor, timestamp_us, amplitudes, NULL);
 #else
     (void)link_id;
     (void)timestamp_us;
     (void)csi;
     (void)csi_length;
+    (void)gain_scale;
 #endif
 }
 

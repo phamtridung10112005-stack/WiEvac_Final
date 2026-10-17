@@ -28,6 +28,43 @@ config WIEVAC_PI_UDP_PORT
     range 1 65535
     default 8888
 
+config WIEVAC_FORCE_RX_GAIN
+    bool "Force the PHY RX gain after training (breaks the Wi-Fi uplink)"
+    default n
+    help
+        Off by default. Forcing AGC/FFT gain makes the radio drop most frames,
+        so the node loses the Pi AP within seconds. When off, AGC stays
+        automatic and CSI bytes reach the pipeline raw (no in-place gain
+        scaling, which clipped strong links).
+
+config WIEVAC_BOOT_SETTLE_S
+    int "Seconds to wait after power-on before computing"
+    range 0 600
+    default 120
+    help
+        Right after power-on the radio/AGC is still settling and the person
+        who plugged the node in is still nearby. For this many seconds the RX
+        learns nothing and publishes UNKNOWN / warming_up; the formula and the
+        Tiny-AI noise reference start from the first settled frame. Leave the
+        corridor empty during and for about a minute after this period.
+
+config WIEVAC_RAW_CSI_UDP
+    bool "Send raw CSI to the Pi (opt-in)"
+    default n
+    help
+        Off by default. When enabled, unfiltered CSI frames are batched and
+        sent as WRAW datagrams to port (base + RX id). WIV5 on the Pi port
+        is unchanged.
+
+config WIEVAC_RAW_CSI_UDP_PORT_BASE
+    int "Raw CSI UDP port base"
+    depends on WIEVAC_RAW_CSI_UDP
+    range 1 65471
+    default 8890
+    help
+        Destination port is this base plus CONFIG_WIEVAC_RX_ID.
+        8890 sends RX-1 to 8891 and RX-2 to 8892.
+
 config WIEVAC_EXPECTED_TX_MAC
     string "Expected transmitter Wi-Fi MAC (optional closed-lab fallback)"
     default ""

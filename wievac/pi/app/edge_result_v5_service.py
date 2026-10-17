@@ -18,7 +18,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Mapping, Optional, Tuple
 
-from .edge_result_v5 import EdgeResultV5, compensate_width
+from .edge_result_v5 import EdgeResultV5
 from .edge_result_v5_runtime import EdgeResultV5Api, EdgeResultV5Ingestor, EdgeResultRecorder, IngestDecision, jsonl_stem
 
 
@@ -790,7 +790,7 @@ class EdgeResultV5Service:
         return decision
 
     def _annotate_capacity(self, payload: Mapping[str, Any]) -> dict[str, Any]:
-        """Attach topology distance and the evacuation flow F_eff = W_cap * P_dyn."""
+        """Width is already a percent of this link. Flow is the live passability."""
         data = dict(payload)
         links = data.get("links")
         if not isinstance(links, dict):
@@ -808,21 +808,28 @@ class EdgeResultV5Service:
                 row["w_cap"] = None
                 row["p_dyn"] = None
                 row["effective_flow"] = None
+                row["cap_base"] = None
+                row["w_base"] = None
                 continue
-            compensated = compensate_width(row.get("width_score"), distance)
-            row["width_score"] = compensated
-            row["w_cap"] = compensated
+            raw_width = row.get("width_score")
+            # Firmware before the knife-edge score sent a power sum, often >> 100.
+            if isinstance(raw_width, bool) or not isinstance(raw_width, (int, float)):
+                w_cap = None
+            else:
+                width = float(raw_width)
+                w_cap = None if width != width or width < 0.0 or width > 100.5 else width
+            row["width_score"] = w_cap
+            row["w_cap"] = w_cap
             p_dyn = row.get("p_dyn")
             if p_dyn is None:
                 p_dyn = row.get("local_passability_score")
             row["p_dyn"] = p_dyn
-            if compensated is not None and isinstance(p_dyn, (int, float)):
-                row["effective_flow"] = float(compensated) * float(p_dyn) / 100.0
-            else:
+            if isinstance(p_dyn, bool) or not isinstance(p_dyn, (int, float)):
                 row["effective_flow"] = None
-            base = self._locked_cap_base(str(link_id), compensated, row)
-            row["cap_base"] = base
-            row["w_base"] = base
+            else:
+                row["effective_flow"] = float(p_dyn)
+            row["cap_base"] = 100.0 if w_cap is not None else None
+            row["w_base"] = 100.0 if w_cap is not None else None
         return data
 
     def _locked_cap_base(self, link_id: str, width: Any, row: Mapping[str, Any]) -> Optional[float]:
