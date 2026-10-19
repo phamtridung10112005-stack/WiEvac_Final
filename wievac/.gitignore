@@ -5,7 +5,4 @@ config/local/*.sdkconfig
 firmware/*/build/
 __pycache__/
 
-# Field datasets (large, kept on disk and on the Pi only).
-data/datasets/
-data/datasets_*/
 firmware/receiver/sdkconfig.old
