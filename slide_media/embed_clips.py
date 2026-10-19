@@ -14,7 +14,7 @@ from pptx import Presentation
 
 HERE = Path(__file__).resolve().parent
 # slide number (1-based, as shown in the deck) -> clip file in this folder
-CLIPS = {8: "clip_dinh_vi_slide8.mp4"}
+CLIPS = {3: "clip_demo_app_2_dien_thoai.mp4", 7: "clip_dinh_vi.mp4", 12: "clip_csi_nguoi_di_qua.mp4"}
 
 
 def largest_picture(slide):
