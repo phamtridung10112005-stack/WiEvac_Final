@@ -10,6 +10,7 @@ import unittest
 from pathlib import Path
 
 from wievac.pi.app.edge_result_v5 import EdgeResultState, EdgeResultV5
+from wievac.pi.app.edge_result_v5_dashboard import dashboard_source_bundle
 from wievac.pi.app.edge_result_v5_runtime import EdgeResultV5Ingestor
 from wievac.pi.app.edge_result_v5_service import EdgeResultV5Service, V5ServiceConfig
 
@@ -155,6 +156,47 @@ class BootSettleTests(unittest.TestCase):
         self.assertTrue(any(row[4] == "1" for row in rows))
 
 
+
+class AiConfidenceTests(unittest.TestCase):
+    """The AI deduction follows how sure the AI is, not a flat 15 points."""
+
+    def _seqs(self) -> dict[str, list[float]]:
+        with tempfile.TemporaryDirectory() as directory:
+            exe = Path(directory) / "aiconf.exe"
+            compile_host([WIEVAC / "tests" / "ai_confidence_host_main.c", MAIN / "tiny_ai_gatekeeper.c",
+                          MAIN / "tiny_ai_features.c"], exe)
+            out = subprocess.run([str(exe)], capture_output=True, text=True, check=True).stdout
+        seqs = {}
+        for line in out.splitlines():
+            parts = line.split()
+            if parts[0] == "SEQ":
+                seqs[parts[1]] = [float(value) for value in parts[2:]]
+            elif parts[0] == "PENALTY":
+                seqs["penalty"] = [float(parts[1])]
+        return seqs
+
+    def test_deduction_scales_with_sustained_evidence(self) -> None:
+        seqs = self._seqs()
+        penalty = seqs["penalty"][0]
+        self.assertEqual(penalty, 15.0)
+        # One-second blip: a few points, below the DEGRADED flag (0.5), gone in 2 s.
+        self.assertAlmostEqual(seqs["blip"][0], 0.35, places=3)
+        self.assertLess(seqs["blip"][0] * penalty, 6.0)
+        self.assertEqual(seqs["blip"][2], 0.0)
+        # Sustained evidence builds up: 2 s crosses the flag, 6 s is near full.
+        sustained = seqs["sustained"]
+        self.assertGreaterEqual(sustained[1], 0.5)
+        self.assertGreater(sustained[5], 0.9)
+        # Slow out: still high one second after the evidence stops, cleared within 5 s.
+        self.assertGreater(sustained[8], 0.75)
+        self.assertEqual(sustained[13], 0.0)
+        # Weak evidence never deducts more than its own level.
+        self.assertLessEqual(max(seqs["weak"]), 0.2 + 1e-6)
+        # On/off flicker stays bounded instead of toggling 0 <-> 15 points.
+        flicker = seqs["flicker"]
+        self.assertLess(max(flicker) - min(flicker[2:]), 0.4)
+
+
 class MildGapPipelineTests(unittest.TestCase):
     def test_mild_gap_scores_and_does_not_learn(self) -> None:
         sources = [
@@ -202,6 +244,8 @@ class MildGapPipelineTests(unittest.TestCase):
             self.assertGreaterEqual(int(row["version"]), 4, result.stdout)
             self.assertEqual(row["pause"], "0", result.stdout)
             self.assertEqual(row["dirty"], "0", result.stdout)
+        # A new empty baseline needs 30 s of quiet: 25 s is not enough.
+        self.assertEqual(rebases["short"]["version"], "3", result.stdout)
         heavy = rebases["heavy"]
         self.assertEqual(heavy["version"], "3", result.stdout)
         self.assertGreater(int(heavy["pause"]), 0, result.stdout)
@@ -276,15 +320,17 @@ class KnifeEdgePiTests(unittest.TestCase):
 
 
 class KnifeEdgeDashboardTests(unittest.TestCase):
-    def test_width_label_is_percent(self) -> None:
-        html = (WIEVAC / "pi" / "app" / "dashboard.html").read_text(encoding="utf-8")
-        self.assertIn("Độ rộng còn lại (vật cản tĩnh)", html)
-        self.assertIn('Math.round(width) + "%"', html)
-        self.assertIn('"-" + (100 - width).toFixed(0) + "% do vật cản tĩnh"', html)
+    def test_width_label_is_percent_with_metres(self) -> None:
+        html = dashboard_source_bundle()
+        self.assertIn("Độ rộng còn lại", html)
+        self.assertIn("do vật cản tĩnh", html)
         self.assertIn(">HẸP<", html)
         self.assertNotIn("capBase", html)
         self.assertNotIn("Dung lượng tối đa", html)
-        self.assertIn("Lưu thông tức thời", html)
+        self.assertIn("Lưu thông (%)", html)
+        self.assertIn("metresOf", html)
+        self.assertIn("Độ rộng hành lang (m)", html)
+        self.assertNotIn('Math.round(width) + "%"', html)
 
 
 

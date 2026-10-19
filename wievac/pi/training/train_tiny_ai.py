@@ -446,10 +446,25 @@ def parity_ratio(model: dict, rows: list[list[float]]) -> float:
     return same / len(rows)
 
 
+def evidence_span(model: dict) -> float | None:
+    """Novelty distance from a typical empty window to the threshold.
+
+    The RX scales the AI deduction by (novelty - threshold) / span, so the
+    deduction is full once a window is as far beyond the threshold as the
+    threshold is beyond a typical empty window. Train data only."""
+    threshold = model.get("threshold")
+    median = model.get("median_novelty")
+    if threshold is None or median is None:
+        return None
+    span = float(threshold) - float(median)
+    return span if span > 0.0 else None
+
+
 def write_artifact(model: dict, header_path: Path, meta_path: Path, ladder: dict) -> str:
     blob = pack_blob(model)
     digest = hashlib.sha256(blob).hexdigest()
     version = f"tiny-ai-rung{model['rung']}-v1"
+    span = evidence_span(model)
     body = []
     for start in range(0, len(blob), 12):
         chunk = ", ".join(f"0x{byte:02x}" for byte in blob[start:start + 12])
@@ -462,6 +477,7 @@ def write_artifact(model: dict, header_path: Path, meta_path: Path, ladder: dict
         f"#define TINY_AI_MODEL_RUNG {model['rung']}",
         f'#define TINY_AI_MODEL_VERSION "{version}"',
         f'#define TINY_AI_MODEL_HASH "{digest}"',
+        *( [f"#define TINY_AI_EVIDENCE_SPAN {span:.6g}f"] if span else [] ),
         f"static const unsigned tiny_ai_weight_blob_len = {len(blob)}U;",
         "static const unsigned char tiny_ai_weight_blob[] = {",
         *body,
@@ -478,6 +494,7 @@ def write_artifact(model: dict, header_path: Path, meta_path: Path, ladder: dict
         "sha256": digest,
         "threshold": model["threshold"],
         "threshold_adjust": model.get("adjust"),
+        "evidence_span": span,
         "loco_selected": ladder.get("selected"),
         "deploy_rule": DEPLOY_RULE,
         "corridors": ladder.get("corridors", []),

@@ -49,6 +49,15 @@ class CompactPiRunnerTests(unittest.TestCase):
         self.assertNotIn("run_pi_v4.py", source)
         self.assertNotIn("pi_v5_ai_core.py", source)
 
+    def test_static_mime_types_cover_dashboard_assets(self) -> None:
+        source = _source()
+        self.assertIn('".css": "text/css; charset=utf-8"', source)
+        self.assertIn('".js": "text/javascript; charset=utf-8"', source)
+        self.assertIn('".woff2": "font/woff2"', source)
+        self.assertIn('".json": "application/json"', source)
+        self.assertIn('".txt": "text/plain; charset=utf-8"', source)
+        self.assertIn('".." in relative.split("/")', source)
+
     def test_compact_startup_wrappers_target_compact_runner(self) -> None:
         for name in ("startup_pi_v5_compact.ps1", "startup_pi_v5_compact.sh"):
             source = (ROOT / "scripts" / name).read_text(encoding="utf-8")

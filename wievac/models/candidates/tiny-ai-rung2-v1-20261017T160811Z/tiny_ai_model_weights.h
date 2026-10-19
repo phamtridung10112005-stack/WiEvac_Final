@@ -5,6 +5,7 @@
 #define TINY_AI_MODEL_RUNG 2
 #define TINY_AI_MODEL_VERSION "tiny-ai-rung2-v1"
 #define TINY_AI_MODEL_HASH "94010e7704686062d936f09bde53917735bc5a5af1196c6484d9af11abfd8358"
+#define TINY_AI_EVIDENCE_SPAN 228.135f
 static const unsigned tiny_ai_weight_blob_len = 1564U;
 static const unsigned char tiny_ai_weight_blob[] = {
     0x54, 0x41, 0x49, 0x31, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,

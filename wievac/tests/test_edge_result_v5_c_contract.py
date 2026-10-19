@@ -83,7 +83,8 @@ class EdgeResultV5CContractTests(unittest.TestCase):
         )[0]
         self.assertIn("publish_filtered_score", score_section)
         self.assertIn("reset_score_filter(link)", self.source)
-        self.assertIn("emit_held_passability(link, &result)", self.source)
+        self.assertIn("emit_held_passability(link, &result, EDGE_RESULT_V5_SHIFT_HOLD_WINDOWS)", self.source)
+        self.assertIn("EDGE_RESULT_V5_SHIFT_HOLD_WINDOWS 60U", self.source)
 
     def test_fresh_clean_ready_baseline_is_not_stale_from_model_history(self):
         make_result = self.source.split("static edge_result_v5_t make_result", 1)[1].split(
@@ -263,7 +264,7 @@ class EdgeResultV5CContractTests(unittest.TestCase):
 
     def test_gated_score_and_dual_hypothesis_baseline_are_present(self):
         self.assertIn("EDGE_RESULT_V5_BOOTSTRAP_QUIET_WINDOWS 12U", self.source)
-        self.assertIn("EDGE_RESULT_V5_REBASE_QUIET_WINDOWS 12U", self.source)
+        self.assertIn("EDGE_RESULT_V5_REBASE_QUIET_DEFAULT_S 30U", self.source)
         self.assertIn("EDGE_RESULT_V5_STUCK_LOW_WINDOWS 12U", self.source)
         self.assertIn("EDGE_RESULT_V5_OCCUPANCY_MEMORY_WINDOWS 25U", self.source)
         self.assertIn("occupancy_memory_windows", self.header)

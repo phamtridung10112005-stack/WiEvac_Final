@@ -238,7 +238,7 @@ class TinyAiGateTests(unittest.TestCase):
         else:
             self.assertIn("#define TINY_AI_MODEL_PRESENT 0", header)
         self.assertIn("tiny_ai_gate_allows_baseline", pipeline)
-        self.assertIn("local_passability_score - TINY_AI_SCORE_PENALTY", pipeline)
+        self.assertIn("TINY_AI_SCORE_PENALTY * link->ai_confidence", pipeline)
         cc = find_cc()
         if cc is None:
             self.fail("host C compiler not found")

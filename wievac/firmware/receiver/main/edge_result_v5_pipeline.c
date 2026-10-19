@@ -47,7 +47,17 @@ _Static_assert(NOISE_FILTER_NULL_DROP_DB == EDGE_RESULT_V5_ATTEN_DB,
 #define EDGE_RESULT_V5_OCCUPANCY_MEMORY_WINDOWS 25U
 #define EDGE_RESULT_V5_STUCK_LOW_WINDOWS 12U
 #define EDGE_RESULT_V5_STUCK_SCORE_LIMIT 35.0f
-#define EDGE_RESULT_V5_REBASE_QUIET_WINDOWS 12U
+#define EDGE_RESULT_V5_REBASE_QUIET_DEFAULT_S 30U
+/* During an environment shift the last measured score is held (DEGRADED,
+ * full uncertainty) while the new environment is confirmed; after this the
+ * result is honestly UNKNOWN. Transport faults keep the short hold. */
+#define EDGE_RESULT_V5_SHIFT_HOLD_WINDOWS 60U
+/* AI flag hysteresis on the confidence (tiny_ai_confidence_step). */
+#define EDGE_RESULT_V5_AI_FLAG_ON 0.5f
+#define EDGE_RESULT_V5_AI_FLAG_OFF 0.1f
+/* Below this the AI is treated as having no person evidence (rebase). */
+#define EDGE_RESULT_V5_AI_QUIET 0.05f
+#define EDGE_RESULT_V5_RELEASE_WINDOWS 5U
 #define EDGE_RESULT_V5_REBASE_DIRTY_RATIO 0.20f
 #define EDGE_RESULT_V5_BOOTSTRAP_QUIET_WINDOWS 12U
 /* This classifies a transport fault as severe for bounded cancellation. It
@@ -78,31 +88,97 @@ static bool finite_float(float value)
     return isfinite((double)value) != 0;
 }
 
-/* AI may only lower a score or force DEGRADED. NOT_READY returns immediately. */
-static void apply_ai_penalty(edge_result_v5_t *result)
+/* AI may only lower a score or force DEGRADED; NOT_READY does nothing.
+ * Runs once per emitted window. The deduction is TINY_AI_SCORE_PENALTY times
+ * a confidence that follows the per-window evidence up quickly and decays
+ * slowly, so a one-window blip costs a few points and a sustained detection
+ * the full amount. */
+static void apply_ai_confidence(edge_result_link_state_t *link, edge_result_v5_t *result)
 {
     tiny_ai_gate_status_t gate;
-    float lowered;
-    if (result == NULL || !result->score_valid) {
+    float confidence;
+    float evidence;
+    if (link == NULL || result == NULL) {
         return;
     }
     tiny_ai_gate_status(result->window_end_us, &gate);
-    if (!gate.ready || !gate.attested || gate.empty_like) {
+    if (!gate.ready) {
+        link->ai_confidence = 0.0f;
+        link->ai_flag = false;
         return;
     }
-    lowered = result->local_passability_score - TINY_AI_SCORE_PENALTY;
-    if (lowered < result->local_passability_score) {
+    evidence = gate.attested && finite_float(gate.evidence) ? gate.evidence : 0.0f;
+    confidence = tiny_ai_confidence_step(link->ai_confidence, evidence);
+    link->ai_confidence = confidence;
+    link->ai_flag = link->ai_flag ? link->ai_confidence > EDGE_RESULT_V5_AI_FLAG_OFF
+                                  : link->ai_confidence >= EDGE_RESULT_V5_AI_FLAG_ON;
+    if (!result->score_valid) {
+        return;
+    }
+    const float penalty = TINY_AI_SCORE_PENALTY * link->ai_confidence;
+    if (penalty > 0.0f) {
+        const float lowered = result->local_passability_score - penalty;
         result->local_passability_score = lowered > 0.0f ? lowered : 0.0f;
+        if (result->filtered_passability_valid &&
+            result->local_passability_score < result->filtered_passability_score) {
+            result->filtered_passability_score = result->local_passability_score;
+        }
+        result->ai_correction = -penalty;
     }
-    if (result->filtered_passability_valid &&
-        result->local_passability_score < result->filtered_passability_score) {
-        result->filtered_passability_score = result->local_passability_score;
-    }
-    if (result->state == EDGE_RESULT_STATE_PASSABLE) {
+    if (link->ai_flag && result->state == EDGE_RESULT_STATE_PASSABLE) {
         result->state = EDGE_RESULT_STATE_DEGRADED;
         result->reason_code = EDGE_RESULT_REASON_FORMULA_AI_DISAGREEMENT;
         result->disagreement = true;
     }
+}
+
+static bool release_holdable(edge_result_reason_t reason)
+{
+    /* Transport/quality DEGRADED is not a person and must not be held. */
+    return reason != EDGE_RESULT_REASON_SEQUENCE_GAP &&
+           reason != EDGE_RESULT_REASON_PACKET_LOSS &&
+           reason != EDGE_RESULT_REASON_QUALITY_LOW &&
+           reason != EDGE_RESULT_REASON_INVALID_CSI &&
+           reason != EDGE_RESULT_REASON_QUEUE_DROP &&
+           reason != EDGE_RESULT_REASON_STALE;
+}
+
+/* Fast in, slow out: entering DEGRADED/BLOCKED is immediate, leaving it
+ * needs EDGE_RESULT_V5_RELEASE_WINDOWS clear windows in a row. UNKNOWN is
+ * never replaced by a held state. */
+static void apply_release_hold(edge_result_link_state_t *link, edge_result_v5_t *result)
+{
+    if (link == NULL || result == NULL || !result->score_valid ||
+        result->state == EDGE_RESULT_STATE_UNKNOWN) {
+        return;
+    }
+    if (result->state == EDGE_RESULT_STATE_DEGRADED || result->state == EDGE_RESULT_STATE_BLOCKED) {
+        if (release_holdable(result->reason_code)) {
+            link->release_hold_state = result->state;
+            link->release_hold_reason = result->reason_code;
+            link->release_clear_windows = 0U;
+        }
+        return;
+    }
+    if (link->release_hold_state == EDGE_RESULT_STATE_PASSABLE) {
+        return;
+    }
+    if (++link->release_clear_windows < EDGE_RESULT_V5_RELEASE_WINDOWS) {
+        /* Clearing: shown as DEGRADED (a blocked crowd thins out, it does
+         * not jump straight to open), with the reason that raised it. */
+        result->state = EDGE_RESULT_STATE_DEGRADED;
+        result->reason_code = link->release_hold_reason;
+        return;
+    }
+    link->release_hold_state = EDGE_RESULT_STATE_PASSABLE;
+    link->release_clear_windows = 0U;
+}
+
+static edge_result_v5_t finalize_result(edge_result_link_state_t *link, edge_result_v5_t result)
+{
+    apply_ai_confidence(link, &result);
+    apply_release_hold(link, &result);
+    return result;
 }
 
 static uint32_t saturating_add_u32(uint32_t left, uint32_t right)
@@ -235,12 +311,13 @@ static float filter_passability_score(edge_result_link_state_t *link,
     return link->last_local_passability_score;
 }
 
-static bool emit_held_passability(edge_result_link_state_t *link, edge_result_v5_t *result)
+static bool emit_held_passability(edge_result_link_state_t *link, edge_result_v5_t *result,
+                                  uint16_t max_windows)
 {
     if (link == NULL || result == NULL || !link->last_local_passability_valid) {
         return false;
     }
-    if (link->score_filter_hold_windows >= EDGE_RESULT_V5_SCORE_FILTER_HOLD_WINDOWS) {
+    if (link->score_filter_hold_windows >= max_windows) {
         return false;
     }
     ++link->score_filter_hold_windows;
@@ -1173,7 +1250,6 @@ static void sync_baseline_metadata(edge_result_v5_t *result,
     copy_text(result->baseline_update_reason,
               sizeof(result->baseline_update_reason),
               link->baseline_update_reason);
-    apply_ai_penalty(result);
 }
 
 /* A few missing packets in a 1 s window are still a score. Learning stays
@@ -1417,7 +1493,8 @@ static edge_result_v5_t make_result(edge_result_pipeline_t *pipeline,
             sync_baseline_metadata(&result, link);
             return result;
         }
-        if (link->baseline_ready && emit_held_passability(link, &result)) {
+        if (link->baseline_ready &&
+            emit_held_passability(link, &result, EDGE_RESULT_V5_SCORE_FILTER_HOLD_WINDOWS)) {
             sync_baseline_metadata(&result, link);
             return result;
         }
@@ -1584,6 +1661,13 @@ static edge_result_v5_t make_result(edge_result_pipeline_t *pipeline,
                     copy_text(link->baseline_update_reason,
                               sizeof(link->baseline_update_reason),
                               "candidate_cancelled_contradictory_evidence");
+                } else if (doppler_walking) {
+                    /* Someone is walking: a new empty baseline needs an
+                     * unbroken person-free stretch, so start over. */
+                    clear_rebase_candidate(link);
+                    copy_text(link->baseline_update_reason,
+                              sizeof(link->baseline_update_reason),
+                              "candidate_reset_motion");
                 } else if (!clean_input) {
                     pause_rebase_candidate(link);
                     if (link->rebase_candidate_pause_windows >
@@ -1616,11 +1700,24 @@ static edge_result_v5_t make_result(edge_result_pipeline_t *pipeline,
                     const float candidate_motion_mean = prior_count == 0U ? 0.0f :
                         link->rebase_candidate_sum_motion /
                         (float)link->rebase_candidate_windows;
+                    const uint32_t quiet_windows = pipeline->config.rebase_quiet_s > 0U
+                        ? (uint32_t)((uint64_t)pipeline->config.rebase_quiet_s * 1000000ULL /
+                                     (pipeline->config.window_duration_us > 0U
+                                          ? pipeline->config.window_duration_us : 1000000U))
+                        : EDGE_RESULT_V5_REBASE_QUIET_DEFAULT_S;
                     const uint64_t required_elapsed_us =
-                        (uint64_t)pipeline->config.window_duration_us *
-                        (uint64_t)EDGE_RESULT_V5_REBASE_QUIET_WINDOWS;
-                    const uint16_t required_candidate_count = EDGE_RESULT_V5_REBASE_QUIET_WINDOWS > 3U
-                        ? (uint16_t)(EDGE_RESULT_V5_REBASE_QUIET_WINDOWS - 2U) : 3U;
+                        (uint64_t)pipeline->config.window_duration_us * (uint64_t)quiet_windows;
+                    const uint16_t required_candidate_count = quiet_windows > 3U
+                        ? (uint16_t)((quiet_windows > 34U ? 34U : quiet_windows) - 2U) : 3U; /* sample buffer holds 32; elapsed time carries longer quiet periods */
+                    /* No person: the AI (when present) must show no evidence
+                     * in every candidate window, not only at promotion. */
+                    const bool ai_quiet = !tiny_ai_gate_model_ready() ||
+                        (link->ai_confidence < EDGE_RESULT_V5_AI_QUIET &&
+                         tiny_ai_gate_allows_baseline(result.window_end_us));
+                    /* A forced rebase of a stuck low score needs the AI to
+                     * vouch for an empty corridor; without a model, never. */
+                    const bool stuck_allowed = tiny_ai_gate_model_ready() &&
+                        link->stuck_low_score_windows >= EDGE_RESULT_V5_STUCK_LOW_WINDOWS;
                     const float candidate_spread_limit = envelope;
                     const float candidate_motion_limit = 0.75f * occupancy_z;
                     /* New-environment evidence is a quiet, stable amplitude
@@ -1635,18 +1732,15 @@ static edge_result_v5_t make_result(edge_result_pipeline_t *pipeline,
                              candidate_spread_limit) &&
                         candidate_motion_mean <= candidate_motion_limit &&
                         occupancy_motion <= candidate_motion_limit &&
-                        (link->occupancy_memory_windows == 0U ||
-                         link->stuck_low_score_windows >= EDGE_RESULT_V5_STUCK_LOW_WINDOWS);
+                        ai_quiet &&
+                        (link->occupancy_memory_windows == 0U || stuck_allowed);
                     if (!candidate_environment_evidence) {
-                        pause_rebase_candidate(link);
-                        if (link->rebase_candidate_pause_windows >
-                            EDGE_RESULT_V5_LIGHT_PAUSE_TOLERANCE) {
-                            clear_rebase_candidate(link);
-                            link->baseline_state = EDGE_RESULT_BASELINE_STABLE;
-                            copy_text(link->baseline_update_reason,
-                                      sizeof(link->baseline_update_reason),
-                                      "candidate_cancelled_repeated_quality_window");
-                        }
+                        /* Motion, occupancy or AI evidence: restart the quiet
+                         * count instead of pausing it. */
+                        clear_rebase_candidate(link);
+                        copy_text(link->baseline_update_reason,
+                                  sizeof(link->baseline_update_reason),
+                                  "candidate_reset_not_quiet");
                     } else {
                         link->rebase_candidate_pause_windows = 0U;
                         if (link->rebase_candidate_start_us == 0U) {
@@ -1673,9 +1767,7 @@ static edge_result_v5_t make_result(edge_result_pipeline_t *pipeline,
                             (uint32_t)link->rebase_candidate_dirty_windows;
                         const float dirty_ratio = observed == 0U ? 0.0f :
                             (float)link->rebase_candidate_dirty_windows / (float)observed;
-                        const bool stuck_force =
-                            link->stuck_low_score_windows >= EDGE_RESULT_V5_STUCK_LOW_WINDOWS &&
-                            !doppler_walking;
+                        const bool stuck_force = stuck_allowed && !doppler_walking;
                         float shape_bins[EDGE_RESULT_V5_REF_BINS];
                         mean_bins(link, shape_bins);
                         const float shape_sci = link->absolute_ref_valid
@@ -1719,7 +1811,7 @@ static edge_result_v5_t make_result(edge_result_pipeline_t *pipeline,
                 result.state = EDGE_RESULT_STATE_BLOCKED;
                 result.reason_code = EDGE_RESULT_REASON_BLOCKED;
             }
-        } else if (emit_held_passability(link, &result)) {
+        } else if (emit_held_passability(link, &result, EDGE_RESULT_V5_SHIFT_HOLD_WINDOWS)) {
             /* Held score during a transition is DEGRADED with full
              * uncertainty, as on the transport-hold path. UNKNOWN with a
              * score is rejected by the encoder and dropped the window. */
@@ -2097,6 +2189,7 @@ void edge_result_pipeline_config_defaults(edge_result_pipeline_config_t *config)
     config->queue_capacity = EDGE_RESULT_V5_MAX_QUEUE;
     config->baseline_min_samples = 8U;
     config->max_ai_correction = 10.0f;
+    config->rebase_quiet_s = EDGE_RESULT_V5_REBASE_QUIET_DEFAULT_S;
     config->stale_after_ms = 2000.0f;
     config->corridor_id = k_default_corridor;
     config->session_id = k_default_session;
@@ -2522,7 +2615,7 @@ bool edge_result_pipeline_process_one(edge_result_pipeline_t *pipeline,
                        record.timestamp_us - prior_start >= pipeline->config.window_duration_us;
     if (close) {
         const uint64_t boundary = prior_start + pipeline->config.window_duration_us;
-        *result = enforce_wire_invariants(make_result(pipeline, link, boundary));
+        *result = enforce_wire_invariants(finalize_result(link, make_result(pipeline, link, boundary)));
         reset_window(link, boundary);
         /* The boundary-crossing record belongs to the new window. */
         update_link(pipeline, link, &record);
@@ -2548,7 +2641,7 @@ bool edge_result_pipeline_flush_link(edge_result_pipeline_t *pipeline,
     if (flush_end_us <= link->window_start_us && flush_end_us < UINT64_MAX) {
         flush_end_us = link->window_start_us + 1U;
     }
-    *result = enforce_wire_invariants(make_result(pipeline, link, flush_end_us));
+    *result = enforce_wire_invariants(finalize_result(link, make_result(pipeline, link, flush_end_us)));
     const uint64_t next_start_us = link->window_last_timestamp_us < UINT64_MAX
                                        ? link->window_last_timestamp_us + 1U
                                        : link->window_last_timestamp_us;

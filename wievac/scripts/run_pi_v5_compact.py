@@ -29,6 +29,11 @@ _STATIC_TYPES = {
     ".svg": "image/svg+xml",
     ".ico": "image/x-icon",
     ".webp": "image/webp",
+    ".css": "text/css; charset=utf-8",
+    ".js": "text/javascript; charset=utf-8",
+    ".woff2": "font/woff2",
+    ".json": "application/json",
+    ".txt": "text/plain; charset=utf-8",
 }
 if str(ROOT.parent) not in sys.path:
     sys.path.insert(0, str(ROOT.parent))
@@ -517,6 +522,18 @@ class CompactPiRuntime:
             def do_POST(self) -> None:  # noqa: N802
                 path = self._request_path()
                 with runtime._lock:
+                    if path.startswith("/api/v5/nodes/") and path.endswith("/sync-width"):
+                        link_id = unquote(path[len("/api/v5/nodes/"):-len("/sync-width")]).strip()
+                        if not link_id or "/" in link_id:
+                            self._send_json({"error": "not_found"}, status=404)
+                            return
+                        try:
+                            if int(self.headers.get("Content-Length", "0") or 0) > 0:
+                                self._read_json()
+                            self._send_json(runtime.service.sync_node_width(link_id))
+                        except (ValueError, json.JSONDecodeError) as exc:
+                            self._node_error(str(exc) or "invalid_payload")
+                        return
                     if path == "/api/v5/guidance":
                         try:
                             payload = self._read_json()

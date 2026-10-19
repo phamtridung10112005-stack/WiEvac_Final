@@ -321,6 +321,8 @@ def fit_rung(rung: int, rows: list[list[float]]) -> dict | None:
         return None
     scores = [novelty(model, row) for row in rows]
     model["threshold"] = _quantile(scores, 0.99)
+    # Typical empty novelty; the firmware evidence span is threshold - this.
+    model["median_novelty"] = _quantile(scores, 0.5)
     return model
 
 

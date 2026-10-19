@@ -48,6 +48,15 @@ config WIEVAC_BOOT_SETTLE_S
         Tiny-AI noise reference start from the first settled frame. Leave the
         corridor empty during and for about a minute after this period.
 
+config WIEVAC_REBASE_QUIET_S
+    int "Seconds of quiet, person-free corridor before learning a new baseline"
+    range 12 600
+    default 30
+    help
+        A new empty-corridor baseline is learned only after this many seconds
+        in a row with no motion, no occupancy and (with a model) no AI
+        evidence. Any such window restarts the count.
+
 config WIEVAC_RAW_CSI_UDP
     bool "Send raw CSI to the Pi (opt-in)"
     default n

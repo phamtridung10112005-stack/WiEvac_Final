@@ -18,8 +18,10 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Mapping, Optional, Tuple
 
+from .corridor_width import apply_points, parse_nominal_width, stored_width
 from .edge_result_v5 import EdgeResultV5
 from .edge_result_v5_runtime import EdgeResultV5Api, EdgeResultV5Ingestor, EdgeResultRecorder, IngestDecision, jsonl_stem
+from .guidance_sync import status_for_links, sync_nominal_width
 
 
 IDENTITY_FIELDS = ("device_id", "node_id", "tx_id", "rx_id", "corridor_id")
@@ -223,7 +225,7 @@ class EdgeResultV5Service:
             "tx_id": str(item.get("tx_id") or ""),
             "firmware_supported": _firmware_supported(rx_id),
             "nominal_distance_m": _optional_meters(item.get("nominal_distance_m")),
-            "nominal_width_m": _optional_meters(item.get("nominal_width_m")),
+            "nominal_width_m": stored_width(item.get("nominal_width_m")),
             "occupied_width_m": _optional_meters(item.get("occupied_width_m")),
         }
 
@@ -356,13 +358,18 @@ class EdgeResultV5Service:
             existing = [int(row.get("sort_order") or 0) for row in links if isinstance(row, Mapping)]
             sort_order = (max(existing) + 1) if existing else len(links) + 1
         item["sort_order"] = sort_order
+        if "nominal_width_m" in payload:
+            item["nominal_width_m"] = parse_nominal_width(payload.get("nominal_width_m"))
         try:
             self.ingest.upsert_identity(link_id, _identity_from(item))
         except RuntimeError as exc:
             raise ValueError(str(exc)) from exc
         links.append(item)
         self._persist_topology()
-        return {"node": self._catalog_entry(item, len(links) - 1), "catalog": self.catalog()}
+        result = {"node": self._catalog_entry(item, len(links) - 1), "catalog": self.catalog()}
+        if item.get("nominal_width_m") is not None:
+            result["guidance_sync"] = self._sync_width(link_id, stored_width(item.get("nominal_width_m")))
+        return result
 
     def patch_node(self, link_id: str, payload: Mapping[str, Any]) -> dict[str, Any]:
         if not isinstance(payload, Mapping):
@@ -377,6 +384,9 @@ class EdgeResultV5Service:
                 raise ValueError("not_found")
             item = {"link_id": key, **dict(ident)}
             self._ensure_links().append(item)
+        width_value: Optional[float] = None
+        if "nominal_width_m" in payload:
+            width_value = parse_nominal_width(payload.get("nominal_width_m"))
         for field in payload:
             if field not in _PATCHABLE_FIELDS:
                 continue
@@ -397,14 +407,37 @@ class EdgeResultV5Service:
                 if not corridor:
                     raise ValueError("topology_identity_incomplete")
                 item["corridor_id"] = corridor
-            elif field in ("nominal_distance_m", "nominal_width_m", "occupied_width_m"):
+            elif field == "nominal_width_m":
+                item[field] = width_value
+            elif field in ("nominal_distance_m", "occupied_width_m"):
                 item[field] = _optional_meters(payload.get(field))
         if any(item.get(name) in (None, "") for name in IDENTITY_FIELDS):
             raise ValueError("topology_identity_incomplete")
         self.ingest.upsert_identity(key, _identity_from(item))
         self._persist_topology()
         index = next((i for i, row in enumerate(self._ensure_links()) if isinstance(row, Mapping) and str(row.get("link_id")) == key), 0)
-        return {"node": self._catalog_entry(item, index), "catalog": self.catalog()}
+        result = {"node": self._catalog_entry(item, index), "catalog": self.catalog()}
+        if "nominal_width_m" in payload:
+            result["guidance_sync"] = self._sync_width(key, width_value)
+        return result
+
+    def sync_node_width(self, link_id: str) -> dict[str, Any]:
+        key = str(link_id or "").strip()
+        item = self._find_link(key)
+        if item is None:
+            raise ValueError("not_found")
+        index = next((i for i, row in enumerate(self._ensure_links()) if isinstance(row, Mapping) and str(row.get("link_id")) == key), 0)
+        width_m = stored_width(item.get("nominal_width_m"))
+        return {"node": self._catalog_entry(item, index), "guidance_sync": self._sync_width(key, width_m)}
+
+    def _entered_widths(self) -> dict[str, Optional[float]]:
+        return {link_id: stored_width(meta.get("nominal_width_m")) for link_id, meta in self.catalog().items()}
+
+    def _sync_width(self, link_id: str, width_m: Optional[float]) -> dict[str, Any]:
+        try:
+            return sync_nominal_width(link_id, width_m, self._entered_widths())
+        except Exception:
+            return {"state": "MAP_UNAVAILABLE", "edges": [], "map_width_m": None, "reason": "mqtt_unavailable"}
 
     def delete_node(self, link_id: str) -> dict[str, Any]:
         key = str(link_id or "").strip()
@@ -796,13 +829,24 @@ class EdgeResultV5Service:
         if not isinstance(links, dict):
             return data
         catalog = self.catalog()
+        widths = {link_id: stored_width(meta.get("nominal_width_m")) for link_id, meta in catalog.items()}
+        try:
+            syncs = status_for_links(widths)
+        except Exception:
+            syncs = {}
         for link_id, row in links.items():
             if not isinstance(row, dict):
                 continue
             meta = catalog.get(str(link_id), {})
             distance = meta.get("nominal_distance_m")
+            width_m = widths.get(str(link_id))
             row["nominal_distance_m"] = distance
-            row["nominal_width_m"] = meta.get("nominal_width_m")
+            row["nominal_width_m"] = width_m
+            row["guidance_sync"] = syncs.get(str(link_id)) or (
+                {"state": "NO_WIDTH", "edges": [], "map_width_m": None}
+                if width_m is None
+                else {"state": "MAP_UNAVAILABLE", "edges": [], "map_width_m": None}
+            )
             if row.get("stale") or row.get("state") == "STALE":
                 row["width_score"] = None
                 row["w_cap"] = None
@@ -810,6 +854,7 @@ class EdgeResultV5Service:
                 row["effective_flow"] = None
                 row["cap_base"] = None
                 row["w_base"] = None
+                apply_points(row, width_m)
                 continue
             raw_width = row.get("width_score")
             # Firmware before the knife-edge score sent a power sum, often >> 100.
@@ -830,6 +875,7 @@ class EdgeResultV5Service:
                 row["effective_flow"] = float(p_dyn)
             row["cap_base"] = 100.0 if w_cap is not None else None
             row["w_base"] = 100.0 if w_cap is not None else None
+            apply_points(row, width_m)
         return data
 
     def _locked_cap_base(self, link_id: str, width: Any, row: Mapping[str, Any]) -> Optional[float]:

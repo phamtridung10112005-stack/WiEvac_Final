@@ -15,6 +15,8 @@
 extern "C" {
 #endif
 
+/* Upper bound of the AI deduction from passability. The actual deduction scales
+ * with the evidence below and builds up over consecutive windows. */
 #define TINY_AI_SCORE_PENALTY 15.0f
 
 typedef struct {
@@ -22,6 +24,10 @@ typedef struct {
     bool attested;
     bool empty_like;
     float empty_score;
+    /* 0 at the empty-corridor threshold, 1 once the novelty is one empty-spread
+     * (TINY_AI_EVIDENCE_SPAN) beyond it. This is distance from the empty model,
+     * not a calibrated probability of a person. */
+    float evidence;
 } tiny_ai_gate_status_t;
 
 void tiny_ai_gate_reset(void);
@@ -34,6 +40,16 @@ bool tiny_ai_gate_allows_baseline(uint64_t now_us);
 /* True when boot does not look dynamically occupied. */
 bool tiny_ai_gate_boot_is_quiet(uint64_t now_us);
 bool tiny_ai_gate_score_features(const float features[42], float *empty_score, bool *empty_like);
+/* Same scoring, plus the evidence defined above. */
+bool tiny_ai_gate_evidence_features(const float features[42], float *evidence, bool *empty_like);
+
+/* Confidence follows evidence up by TINY_AI_CONFIDENCE_RISE of the gap per
+ * window and falls by at most TINY_AI_CONFIDENCE_FALL per window (a person
+ * does not vanish in a second). */
+#define TINY_AI_CONFIDENCE_RISE 0.35f
+#define TINY_AI_CONFIDENCE_FALL 0.20f
+float tiny_ai_confidence_step(float confidence, float evidence);
+bool tiny_ai_gate_model_ready(void);
 const char *tiny_ai_gate_model_version(void);
 const char *tiny_ai_gate_model_hash(void);
 

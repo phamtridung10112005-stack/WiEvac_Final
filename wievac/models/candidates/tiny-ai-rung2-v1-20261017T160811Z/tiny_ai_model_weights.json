@@ -20,5 +20,6 @@
   "test_corridors": [
     "corridor-C"
   ],
-  "note": "Empty-class novelty only. IMPLEMENTED_PENDING_FIELD_TEST. AI may only lower a score or block rebase."
+  "note": "Empty-class novelty only. IMPLEMENTED_PENDING_FIELD_TEST. AI may only lower a score or block rebase.",
+  "evidence_span": 228.13494873582232
 }

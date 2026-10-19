@@ -100,7 +100,7 @@ int main(int argc, char **argv)
         }
         while (edge_result_pipeline_process_one(&pipeline, &result)) {
             const edge_result_link_state_t *link = edge_result_pipeline_link(&pipeline, 3U);
-            printf("W %" PRIu64 " %u %d %d %.2f %u %.4f %d %d %d %.2f %d %d %s\n",
+            printf("W %" PRIu64 " %u %d %d %.2f %u %.4f %d %d %d %.2f %d %d %s %.3f\n",
                    result.window_end_us, (unsigned)last_label,
                    (int)result.state, result.score_valid ? 1 : 0,
                    result.score_valid ? (double)result.local_passability_score : -1.0,
@@ -108,7 +108,8 @@ int main(int argc, char **argv)
                    link->baseline_ready ? 1 : 0, (int)link->baseline_state,
                    link->cap_locked ? 1 : 0, (double)link->width_score,
                    (int)result.reason_code, (int)result.model_state,
-                   result.transition_state[0] ? result.transition_state : "-");
+                   result.transition_state[0] ? result.transition_state : "-",
+                   (double)result.ai_correction);
         }
     }
     return 0;

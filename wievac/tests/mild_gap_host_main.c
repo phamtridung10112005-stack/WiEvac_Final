@@ -171,8 +171,11 @@ int main(void)
     run_case("mild2", 2U, 20000ULL);
     run_case("loss5", 5U, 0ULL);
     run_case("gap200", 1U, 190000ULL);
-    run_rebase("clean", 24, 0, -1);
-    run_rebase("mixed", 24, 3, -1);
+    /* Longer than the 30 s person-free rebase requirement. */
+    /* 25 quiet windows are not enough under the 30 s rule. */
+    run_rebase("short", 25, 0, -1);
+    run_rebase("clean", 40, 0, -1);
+    run_rebase("mixed", 40, 3, -1);
     run_rebase("heavy", 7, 0, 6);
     return 0;
 }

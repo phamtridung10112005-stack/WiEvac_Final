@@ -750,6 +750,7 @@ static void v6_pipeline_start_for_pair(const pair_state_t *pair)
     config.model_version = "NOT_READY";
     config.feature_schema_version = "8";
     config.boot_settle_us = (uint64_t)CONFIG_WIEVAC_BOOT_SETTLE_S * 1000000ULL;
+    config.rebase_quiet_s = (uint16_t)CONFIG_WIEVAC_REBASE_QUIET_S;
     if (!edge_result_pipeline_init(&g_v6_pipeline, &config) ||
         !edge_result_pipeline_register_link(&g_v6_pipeline, WIEVAC_LINK_ID,
                                             WIEVAC_TX_ID, WIEVAC_RX_ID, pair->tx_mac)) {

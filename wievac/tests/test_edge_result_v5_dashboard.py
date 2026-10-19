@@ -1,11 +1,11 @@
 import unittest
 
-from wievac.pi.app.edge_result_v5_dashboard import dashboard_routes, render_dashboard_html
+from wievac.pi.app.edge_result_v5_dashboard import dashboard_routes, dashboard_source_bundle
 
 
 class EdgeResultV5DashboardTests(unittest.TestCase):
     def setUp(self):
-        self.html = render_dashboard_html()
+        self.html = dashboard_source_bundle()
 
     def test_dynamic_cards_and_metrics(self):
         self.assertIn("function ensureCards", self.html)
@@ -27,13 +27,13 @@ class EdgeResultV5DashboardTests(unittest.TestCase):
         self.assertNotIn("liveRefresh", self.html)
         self.assertNotIn("liveUpdate", self.html)
         for label in (
-            "CHƯA NHẬN PACKET",
-            "ĐANG HỌC DỮ LIỆU",
-            "TRỐNG/PASSABLE",
-            "DEGRADED/CROWDED",
-            "KHÓ ĐI QUA",
-            "DỮ LIỆU KHÔNG ỔN ĐỊNH",
-            "MẤT KẾT NỐI",
+            "Chưa nhận dữ liệu",
+            "Chưa xác định",
+            "An toàn",
+            "Giảm lưu thông",
+            "Bị chặn",
+            "Không ổn định",
+            "Mất kết nối",
         ):
             self.assertIn(label, self.html)
         self.assertIn("CSI gap trung bình", self.html)
@@ -73,7 +73,7 @@ class EdgeResultV5DashboardTests(unittest.TestCase):
 
     def test_utf8_and_no_mojibake(self):
         self.assertIn('charset="utf-8"', self.html)
-        for label in ("ĐANG CHẠY", "Cập nhật gần nhất", "CSI gap trung bình", "Chi tiết kỹ thuật"):
+        for label in ("Hoạt động bình thường", "Cập nhật gần nhất", "CSI gap trung bình", "Chỉ số kỹ thuật"):
             self.assertIn(label, self.html)
         for fragment in ("\u00c3\u0192", "\u00c4\u0090ang", "\u00c3\u00a1\u00c2\u00bb"):
             self.assertNotIn(fragment, self.html)
@@ -82,13 +82,28 @@ class EdgeResultV5DashboardTests(unittest.TestCase):
         self.assertNotIn("/api/v5/route", self.html)
 
     def test_enterprise_shell_has_wall_and_manage(self):
-        self.assertIn("Tường", self.html)
+        self.assertIn("Tổng quan", self.html)
         self.assertIn("Quản lý", self.html)
         self.assertIn("Thêm node", self.html)
-        self.assertIn("Cần chú ý", self.html)
-        self.assertIn("/static/utehy-logo.png", self.html)
-        self.assertIn("TRƯỜNG ĐẠI HỌC SƯ PHẠM KỸ THUẬT HƯNG YÊN", self.html)
+        self.assertIn("Tổng năng lực thoát", self.html)
+        self.assertIn("/static/utehy-emblem.png", self.html)
+        self.assertIn("TRƯỜNG ĐẠI HỌC CÔNG NGHỆ KỸ THUẬT HƯNG YÊN", self.html)
         self.assertIn("Đội thực hiện", self.html)
+
+    def test_percent_headline_with_metres(self):
+        # Percent is the headline; metres come from the operator width (1000 points == 1 m).
+        self.assertIn("export function livePercent", self.html)
+        self.assertIn("export function metresOf", self.html)
+        self.assertIn('"≈ "', self.html)
+        self.assertIn('unit.textContent = "%"', self.html)
+        self.assertIn("data-width-input", self.html)
+        self.assertIn("Độ rộng hành lang (m)", self.html)
+        self.assertIn("Chưa nhập độ rộng", self.html)
+        self.assertIn("/sync-width", self.html)
+        self.assertNotIn('round(view.score) + "%"', self.html)
+        self.assertNotIn('Math.round(width) + "%"', self.html)
+        self.assertNotIn('round(dynPct) + "%"', self.html)
+        self.assertNotIn('"<small>%</small>"', self.html)
 
     def test_routes_preserve_overview_contract(self):
         routes = dashboard_routes()

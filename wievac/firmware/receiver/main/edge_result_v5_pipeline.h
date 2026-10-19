@@ -201,6 +201,9 @@ typedef struct {
     uint32_t window_duration_us;
     uint16_t queue_capacity;
     uint16_t baseline_min_samples;
+    /* A new empty baseline needs this many seconds of quiet, person-free
+     * windows in a row (motion or AI evidence restarts the count). */
+    uint16_t rebase_quiet_s;
     float max_ai_correction;
     float stale_after_ms;
     /* Boot settle: for this long after a link's first frame nothing learns or
@@ -322,6 +325,16 @@ typedef struct edge_result_link_state {
     uint16_t occupancy_memory_windows;
     uint16_t stuck_low_score_windows;
     uint16_t score_filter_hold_windows;
+    /* AI confidence 0..1 built up over windows (rise fast, fade slowly) and
+     * its hysteresis flag. */
+    float ai_confidence;
+    bool ai_flag;
+    /* Occupancy release: a person does not vanish within a second, so a
+     * DEGRADED/BLOCKED result returns to PASSABLE only after this many
+     * consecutive clear windows. */
+    edge_result_state_t release_hold_state;
+    edge_result_reason_t release_hold_reason;
+    uint16_t release_clear_windows;
     uint16_t score_corroborated_windows;
     uint16_t rebase_candidate_dirty_windows;
     /* Shadow Doppler buffer: last amplitudes in this window. Not on WIV5. */

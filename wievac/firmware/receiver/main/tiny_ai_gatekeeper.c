@@ -403,6 +403,26 @@ static bool score_rung3(const float features[42], float *novelty, bool *empty_li
 }
 #endif
 
+float tiny_ai_confidence_step(float confidence, float evidence)
+{
+    float next;
+    if (!(evidence >= 0.0f)) {
+        evidence = 0.0f;
+    }
+    if (evidence > 1.0f) {
+        evidence = 1.0f;
+    }
+    if (evidence > confidence) {
+        next = confidence + TINY_AI_CONFIDENCE_RISE * (evidence - confidence);
+    } else {
+        next = confidence - TINY_AI_CONFIDENCE_FALL;
+        if (next < evidence) {
+            next = evidence;
+        }
+    }
+    return next < 0.0f ? 0.0f : (next > 1.0f ? 1.0f : next);
+}
+
 void tiny_ai_gate_reset(void)
 {
     tiny_ai_extractor_init(&s_extractor);
@@ -427,6 +447,63 @@ const char *tiny_ai_gate_model_version(void)
 const char *tiny_ai_gate_model_hash(void)
 {
     return tiny_ai_gate_model_ready() ? TINY_AI_MODEL_HASH : "";
+}
+
+#if TINY_AI_MODEL_PRESENT
+static bool score_any(const float features[42], float *novelty, bool *empty_like, float *empty_score)
+{
+    uint32_t index;
+    for (index = 0; index < 42U; ++index) {
+        if (!finite_feature(features[index])) {
+            return false;
+        }
+    }
+    if (s_model.rung == 1U) {
+        return score_rung1(features, novelty, empty_like, empty_score);
+    }
+    if (s_model.rung == 2U) {
+        return score_rung2(features, novelty, empty_like, empty_score);
+    }
+    if (s_model.rung == 3U) {
+        return score_rung3(features, novelty, empty_like, empty_score);
+    }
+    return false;
+}
+#endif
+
+/* Header from train_tiny_ai.py; older headers have no span and fall back to a
+ * 0/1 evidence equal to the empty_like decision. */
+#ifndef TINY_AI_EVIDENCE_SPAN
+#define TINY_AI_EVIDENCE_SPAN 0.0f
+#endif
+
+bool tiny_ai_gate_evidence_features(const float features[42], float *evidence, bool *empty_like)
+{
+#if TINY_AI_MODEL_PRESENT
+    float novelty = 0.0f;
+    float empty_score = 0.0f;
+    float tau;
+    float value;
+    if (!tiny_ai_gate_model_ready() || features == NULL || evidence == NULL || empty_like == NULL ||
+        !score_any(features, &novelty, empty_like, &empty_score)) {
+        return false;
+    }
+    /* Rung 2 stores a log-likelihood threshold; its novelty is -loglik. */
+    tau = s_model.rung == 2U ? -s_model.threshold : s_model.threshold;
+    if (TINY_AI_EVIDENCE_SPAN > 0.0f) {
+        value = (novelty - tau) / TINY_AI_EVIDENCE_SPAN;
+        value = value < 0.0f ? 0.0f : (value > 1.0f ? 1.0f : value);
+    } else {
+        value = *empty_like ? 0.0f : 1.0f;
+    }
+    *evidence = value;
+    return finite_feature(value);
+#else
+    (void)features;
+    (void)evidence;
+    (void)empty_like;
+    return false;
+#endif
 }
 
 bool tiny_ai_gate_score_features(const float features[42], float *empty_score, bool *empty_like)
@@ -475,7 +552,8 @@ void tiny_ai_gate_status(uint64_t now_us, tiny_ai_gate_status_t *status)
     if (now_us < feature_ts || now_us - feature_ts > TINY_AI_FRESH_US) {
         return;
     }
-    if (!tiny_ai_gate_score_features(features, &status->empty_score, &status->empty_like)) {
+    if (!tiny_ai_gate_score_features(features, &status->empty_score, &status->empty_like) ||
+        !tiny_ai_gate_evidence_features(features, &status->evidence, &status->empty_like)) {
         return;
     }
     status->attested = true;

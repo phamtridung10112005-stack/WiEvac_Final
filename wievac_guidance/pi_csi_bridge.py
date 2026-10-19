@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Width is entered on the dashboard and published to building/config.
+# For one link and no stairs, flow_points/1000 == widthMeters * (1 - k).
+# This process publishes k only; it does not receive points.
 import json
 import time
 import urllib.request
@@ -15,8 +18,35 @@ MQTT_PORT = 1883
 TOPIC = "building/occupancy/input"
 CONFIG_FILE = os.path.join(os.path.dirname(__file__), "config.json")
 
+def compute_edge_values(links: dict, edge_map: dict[str, list[str]]) -> dict[str, float]:
+    """Bottleneck k per edge. BLOCKED is 1; UNKNOWN/NOT_READY are skipped."""
+    values = {}
+    for edge_id, link_ids in edge_map.items():
+        k_list = []
+        is_blocked = False
+        for link_id in link_ids:
+            info = links.get(link_id, {})
+            score = info.get("score")
+            state = info.get("state")
+            if state == "BLOCKED":
+                is_blocked = True
+                break
+            elif score is not None and state not in ("UNKNOWN", "NOT_READY"):
+                k = round(max(0.0, min(1.0, (100.0 - float(score)) / 100.0)), 3)
+                k_list.append(k)
+        if is_blocked:
+            values[edge_id] = 1.0
+        elif k_list:
+            values[edge_id] = max(k_list)
+    return values
+
+
 def load_edge_map():
-    """Load edge mapping from config.json, supporting comma-separated csiLinkId."""
+    """Load edge mapping from config.json, supporting comma-separated csiLinkId.
+
+    Assign a link by setting csiLinkId on the guidance-map edge. The hardcoded
+    map returned at the end is only a fallback when config has no csiLinkId.
+    """
     try:
         if os.path.exists(CONFIG_FILE):
             with open(CONFIG_FILE, "r", encoding="utf-8") as f:
@@ -75,30 +105,7 @@ def main():
                 if resp.status == 200:
                     data = json.loads(resp.read().decode('utf-8'))
                     links = data.get("links", {})
-                    values = {}
-                    
-                    # Bottleneck principle for multi-link corridors
-                    for edge_id, link_ids in edge_map.items():
-                        k_list = []
-                        is_blocked = False
-
-                        for link_id in link_ids:
-                            info = links.get(link_id, {})
-                            score = info.get("score")
-                            state = info.get("state")
-
-                            if state == "BLOCKED":
-                                is_blocked = True
-                                break
-                            elif score is not None and state not in ("UNKNOWN", "NOT_READY"):
-                                # score 0..100 -> k 0..1
-                                k = round(max(0.0, min(1.0, (100.0 - float(score)) / 100.0)), 3)
-                                k_list.append(k)
-
-                        if is_blocked:
-                            values[edge_id] = 1.0
-                        elif k_list:
-                            values[edge_id] = max(k_list)
+                    values = compute_edge_values(links, edge_map)
 
                     if values:
                         payload = json.dumps({"values": values})

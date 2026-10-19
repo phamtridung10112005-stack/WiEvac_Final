@@ -27,8 +27,8 @@
     "max_correction": 10.0
   },
   "links": [
-    {"link_id": "link-1", "device_id": "device-1", "node_id": "rx-1", "tx_id": "tx-1", "rx_id": "rx-1", "corridor_id": "corridor-01", "display_name": "Hành lang 1", "enabled": true, "sort_order": 1, "nominal_distance_m": 5.0, "nominal_width_m": 3.0},
-    {"link_id": "link-2", "device_id": "device-1", "node_id": "rx-2", "tx_id": "tx-1", "rx_id": "rx-2", "corridor_id": "corridor-01", "display_name": "Hành lang 2", "enabled": true, "sort_order": 2, "nominal_distance_m": 10.0, "nominal_width_m": 1.2}
+    {"link_id": "link-1", "device_id": "device-1", "node_id": "rx-1", "tx_id": "tx-1", "rx_id": "rx-1", "corridor_id": "corridor-01", "display_name": "Hành lang 1", "enabled": true, "sort_order": 1, "nominal_distance_m": 5.0, "nominal_width_m": null},
+    {"link_id": "link-2", "device_id": "device-1", "node_id": "rx-2", "tx_id": "tx-1", "rx_id": "rx-2", "corridor_id": "corridor-01", "display_name": "Hành lang 2", "enabled": true, "sort_order": 2, "nominal_distance_m": 10.0, "nominal_width_m": null}
   ],
   "compatibility": {
     "v5_feature_schema_version": "5",
