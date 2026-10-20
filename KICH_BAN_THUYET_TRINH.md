@@ -139,9 +139,9 @@ Chậm quá 20 giây ở một mốc thì áp dụng ngay mục "Nếu bị ch�
 
 *A (bạn) · 55 giây*
 
-**Thao tác:** Chỉ vùng xanh (giây trống), rồi đám chấm cam văng xa (giây có người).
+**Thao tác:** Chỉ lần lượt 3 ô bên trái; ở bước 2 chỉ sang hình: cụm xanh (lúc trống) rồi cụm cam (có người).
 
-> Tiny AI học thuộc hành lang lúc trống trông như thế nào. Hình bên phải là dữ liệu thật, mỗi chấm một giây: giây trống tụm trong vùng xanh, giây có người văng hẳn ra ngoài. Không cần dữ liệu đám đông, không cần gán nhãn. Khi môi trường sóng thay đổi, mỗi link tự học lại nền, nhưng chỉ khi AI xác nhận trống suốt 30 giây, nên không bao giờ học nhầm người vào nền. Nhờ vậy, sang hành lang mới hệ thống tự thích nghi, đúng chỗ học sâu làm không được. Thử ở một phòng chưa từng thấy, một người đi lại: 1.154 giây có người, AI bắt được hết; 910 giây trống, chỉ 17 giây báo nhầm.
+> Tiny AI làm 3 bước. Một: học hành lang lúc trống trông thế nào, không cần dữ liệu đám đông, không cần gán nhãn. Hai: mỗi giây so với lúc trống; khác xa là có người. Hình bên phải là dữ liệu thật, mỗi chấm một giây: giây trống tụm trong vùng xanh, giây có người nằm hẳn ra ngoài. Ba: khi môi trường sóng thay đổi, mỗi link tự học lại nền, nhưng chỉ khi AI xác nhận trống suốt 30 giây, nên không học nhầm người vào nền. Nhờ vậy, sang hành lang mới hệ thống tự thích nghi, đúng chỗ học sâu làm không được. Thử ở một phòng chưa từng thấy, một người đi lại: 1.154 giây có người, AI bắt được hết; 910 giây trống, chỉ 17 giây báo nhầm.
 
 **Câu nối sang slide 11** (nói trong lúc bấm chuyển):
 
