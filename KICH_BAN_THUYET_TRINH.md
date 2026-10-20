@@ -1,8 +1,8 @@
 # Kịch bản thuyết trình WiEvac (10 phút, kể cả demo)
 
-Deck: https://claude.ai/artifact/JeStEMJ2y2zoN6uug1sBYB (15 slide). Lời nói và câu nối dưới đây **trùng từng chữ** với ghi chú trong deck.
+Deck: https://claude.ai/artifact/JeStEMJ2y2zoN6uug1sBYB (16 slide). Lời nói và câu nối dưới đây **trùng từng chữ** với ghi chú trong deck.
 
-**Tổng thời gian dự kiến: 8:36**, đã tính cả 3 clip và thời gian bấm chuyển slide. Còn khoảng 1:24 dự phòng. **Không nói thêm câu nào ngoài kịch bản.**
+**Tổng thời gian dự kiến: 8:58**, đã tính cả 3 clip và thời gian bấm chuyển slide. Còn khoảng 1:02 dự phòng. **Không nói thêm câu nào ngoài kịch bản.**
 
 **Quy tắc câu nối:** câu nối được nói **trong lúc bấm sang slide sau**. Nói xong câu nối thì slide mới vừa hiện, nên không mất thêm thời gian.
 
@@ -20,16 +20,17 @@ Deck: https://claude.ai/artifact/JeStEMJ2y2zoN6uug1sBYB (15 slide). Lời nói v
 | 8 | Công thức ITU: tính % lưu thông, tự học lại nền | A (bạn) | 40 s | 4:17 |
 | 9 | Chỉ có công thức thì chưa đủ | A (bạn) | 30 s | 4:49 |
 | 10 | Học sâu trên CSI kém khi sang môi trường mới | A (bạn) | 35 s | 5:26 |
-| 11 | Chỉ học lúc trống, vá cả 3 lỗi của công thức | A (bạn) | 40 s | 6:08 |
-| 12 | Người bước vào → Bị chặn, đi ra → An toàn | A (bạn) | 35 s | 6:45 |
-| 13 | Đông thì đắt, D* Lite tự né trong 1,7 ms | B (bạn điều hướng) | 40 s | 7:27 |
-| 14 | Nhìn trước 15 giây, chia tải, chỉ dẫn tại chỗ | B (bạn điều hướng) | 35 s | 8:04 |
-| 15 | WiEvac trả lời đủ 4 câu hỏi | A (bạn) | 30 s | 8:36 |
+| 11 | Chỉ học lúc trống, chạy ngay trên chip | A (bạn) | 35 s | 6:03 |
+| 12 | Tiny AI vá cả 3 lỗi của công thức | A (bạn) | 25 s | 6:30 |
+| 13 | Người bước vào → Bị chặn, đi ra → An toàn | A (bạn) | 35 s | 7:07 |
+| 14 | Đông thì đắt, D* Lite tự né trong 1,7 ms | B (bạn điều hướng) | 40 s | 7:49 |
+| 15 | Nhìn trước 15 giây, chia tải, chỉ dẫn tại chỗ | B (bạn điều hướng) | 35 s | 8:26 |
+| 16 | WiEvac trả lời đủ 4 câu hỏi | A (bạn) | 30 s | 8:58 |
 
 **Mốc kiểm tra khi tập:**
 - Hết slide 5: **2:31**.
-- Hết slide 12, bàn giao cho B: **6:45**.
-- Hết slide 15: **8:36**.
+- Hết slide 13, bàn giao cho B: **7:07**.
+- Hết slide 16: **8:58**.
 
 Chậm quá 20 giây ở một mốc thì áp dụng ngay mục "Nếu bị chậm".
 
@@ -147,19 +148,31 @@ Chậm quá 20 giây ở một mốc thì áp dụng ngay mục "Nếu bị ch�
 
 > *Vì thế nhóm chọn hướng khác: một Tiny AI chỉ cần học lúc trống, chạy ngay trên chip.*
 
-### Slide 11 · Chỉ học lúc trống, vá cả 3 lỗi của công thức
+### Slide 11 · Chỉ học lúc trống, chạy ngay trên chip
 
-*A (bạn) · 40 giây*
+*A (bạn) · 35 giây*
 
-**Thao tác:** Chỉ ô bên trái, ô bên phải, rồi lần lượt 3 cặp cột.
+**Thao tác:** Chỉ lần lượt ô 1, 2, 3.
 
-> Tiny AI học hành lang lúc trống trông thế nào; giây nào khác xa là có người. Không cần dữ liệu đám đông, không gán nhãn, nên sang hành lang mới vẫn dùng được. AI hạ điểm khi công thức nói an toàn mà AI thấy có người, và chỉ cho học lại nền khi AI xác nhận trống suốt 30 giây. Trên cùng dữ liệu thật, đúng 3 lỗi vừa rồi: báo nhầm an toàn giảm 89%, học nhầm người vào nền giảm 75%, nhảy trạng thái giảm 31%.
+> Tiny AI làm theo ba bước. Một: khi lắp đặt, AI chỉ ghi lại sóng của hành lang lúc trống, không cần dữ liệu đám đông, không gán nhãn. Hai: mỗi giây, AI đo sóng khác lúc trống bao nhiêu; khác xa là có người. Ba: AI phối hợp với công thức: công thức nói an toàn mà AI thấy có người thì hạ điểm; và chỉ cho học lại nền khi AI xác nhận trống suốt 30 giây. Mô hình chỉ 1,5 KB, chạy ngay trên ESP32-S3.
 
 **Câu nối sang slide 12** (nói trong lúc bấm chuyển):
 
+> *Kết quả trên cùng dữ liệu thật như sau.*
+
+### Slide 12 · Tiny AI vá cả 3 lỗi của công thức
+
+*A (bạn) · 25 giây*
+
+**Thao tác:** Chỉ lần lượt 3 cặp cột, từ trái sang phải.
+
+> Đúng 3 lỗi của công thức: báo nhầm an toàn khi có người giảm 89%, học nhầm người vào nền giảm 75%, nhảy trạng thái giảm 31%. Và vì chỉ cần học lúc trống, sang hành lang mới hệ thống vẫn dùng được.
+
+**Câu nối sang slide 13** (nói trong lúc bấm chuyển):
+
 > *Và đây là toàn bộ hệ thống chạy trên dữ liệu thật.*
 
-### Slide 12 · Người bước vào → Bị chặn, đi ra → An toàn
+### Slide 13 · Người bước vào → Bị chặn, đi ra → An toàn
 
 *A (bạn) · 35 giây*
 
@@ -167,31 +180,31 @@ Chậm quá 20 giây ở một mốc thì áp dụng ngay mục "Nếu bị ch�
 
 > Dữ liệu thu tối 17/10, chạy qua đúng firmware đang nạp trên chip. Phòng trống: an toàn. Người bước vào: sóng dao động mạnh, chuyển ngay sang bị chặn. Người đi ra: hồi lại an toàn.
 
-**Câu nối sang slide 13** (nói trong lúc bấm chuyển):
+**Câu nối sang slide 14** (nói trong lúc bấm chuyển):
 
 > *Biết chỗ nào đông rồi, câu cuối cùng là đi đường nào. Xin mời bạn [tên].*
 
-### Slide 13 · Đông thì đắt, D* Lite tự né trong 1,7 ms
+### Slide 14 · Đông thì đắt, D* Lite tự né trong 1,7 ms
 
 *B (bạn điều hướng) · 40 giây*
 
 > Cảm ơn bạn. Độ đông đo bằng CSI đi thẳng vào hàm chi phí BPR cải tiến: hành lang càng đông, chi phí đi qua càng đắt, theo bình phương; có khói thì cộng phạt; đầy hoặc có cháy thì không đi qua. Đường đi tìm bằng D* Lite: mỗi giây số đo thay đổi, thuật toán chỉ sửa phần thay đổi. Đo trên bản đồ thật 3 tầng, 41 hành lang: 1,7 mili giây mỗi lần, giảm 63% thời gian tính.
 
-**Câu nối sang slide 14** (nói trong lúc bấm chuyển):
+**Câu nối sang slide 15** (nói trong lúc bấm chuyển):
 
 > *Nhưng chọn đúng đường thôi chưa đủ, còn phải nhìn trước và chỉ dẫn tận nơi.*
 
-### Slide 14 · Nhìn trước 15 giây, chia tải, chỉ dẫn tại chỗ
+### Slide 15 · Nhìn trước 15 giây, chia tải, chỉ dẫn tại chỗ
 
 *B (bạn điều hướng) · 35 giây*
 
 > Hệ thống không chờ nghẽn rồi mới đổi đường: nó mô phỏng 20 kịch bản tương lai, lấy biên thận trọng P90, nhìn trước 15 giây để bẻ luồng sớm. Tại ngã rẽ, tải được chia tối đa hai tuyến theo độ rộng còn lại. Lệnh đi qua ESP-NOW tới bảng LED và loa tiếng Việt.
 
-**Câu nối sang slide 15** (nói trong lúc bấm chuyển):
+**Câu nối sang slide 16** (nói trong lúc bấm chuyển):
 
 > *Em xin trả lời lại cho bạn để kết luận.*
 
-### Slide 15 · WiEvac trả lời đủ 4 câu hỏi
+### Slide 16 · WiEvac trả lời đủ 4 câu hỏi
 
 *A (bạn) · 30 giây*
 
@@ -202,7 +215,7 @@ Chậm quá 20 giây ở một mốc thì áp dụng ngay mục "Nếu bị ch�
 1. **Slide 5:** bỏ câu "Bảng LED và loa nhận lệnh qua ESP-NOW. Ứng dụng Android dùng ARCore." Tiết kiệm khoảng 5 giây.
 2. **Slide 10:** bỏ câu Widar3.0. Tiết kiệm khoảng 5 giây.
 3. **Slide 6:** bỏ "ứng dụng tự căn thẳng, căn vuông". Tiết kiệm khoảng 3 giây.
-4. **Slide 14:** bỏ câu "Tại ngã rẽ…". Tiết kiệm khoảng 5 giây.
+4. **Slide 15:** bỏ câu "Tại ngã rẽ…". Tiết kiệm khoảng 5 giây.
 
 Không bao giờ bỏ câu nối: câu nối giữ cho bài liền mạch.
 
@@ -214,15 +227,15 @@ Thể lệ VEDC 2026 không công bố tỷ trọng điểm vòng bán kết. B�
 |---|---|---|
 | Mô hình hệ thống kỹ thuật | 20% | 4 (4 câu hỏi), 5 (phần cứng) |
 | Phần cứng & phần mềm | 25% | 5, 8 (công thức trên chip), 11 (Tiny AI trên chip) |
-| Demo & prototype hoạt động | 20% | 3 (app 2 điện thoại), 7 (định vị), 12 (CSI dữ liệu thật) |
-| Tính ứng dụng & mở rộng | 20% | 2, 10, 15 |
+| Demo & prototype hoạt động | 20% | 3 (app 2 điện thoại), 7 (định vị), 13 (CSI dữ liệu thật) |
+| Tính ứng dụng & mở rộng | 20% | 2, 10, 16 |
 | Trình bày & phản biện | 15% | Kịch bản này + phần câu hỏi |
 
 **Nội dung thể lệ 2026 yêu cầu:**
 - mô hình hệ thống: slide 4;
 - nguyên lý hoạt động: slide 7, 8, 9, 11;
-- thuật toán: slide 11, 13, 14;
-- kế hoạch hoàn thiện: slide 15;
+- thuật toán: slide 11, 14, 15;
+- kế hoạch hoàn thiện: slide 16;
 - **bản vẽ mạch: còn thiếu**, cần ảnh hoặc sơ đồ mạch thật để chèn vào slide 5.
 
 ## Câu hỏi Hội đồng hay hỏi (trả lời dưới 30 giây)
@@ -230,7 +243,7 @@ Thể lệ VEDC 2026 không công bố tỷ trọng điểm vòng bán kết. B�
 **Một người mà % lưu thông xuống thấp vậy?**
 Người đứng chắn đúng đường truyền giữa hai node, và AI chắc chắn có người nên trừ thêm điểm. Trong sơ tán, báo mạnh tay an toàn hơn báo nhầm là an toàn.
 
-**Clip slide 12 có phải chạy thật không?**
+**Clip slide 13 có phải chạy thật không?**
 Đó là bản thu CSI thô thật tối 17/10, 100 gói mỗi giây, mã SHA-256 của file hiện ngay trên clip. Dữ liệu chạy qua chính mã nguồn firmware đang nạp trên chip. Nhãn có người/trống bấm tay lúc thu, độc lập với thuật toán.
 
 **Dùng mô hình AI gì?**
@@ -261,5 +274,5 @@ Toàn linh kiện phổ thông; một bộ phát phục vụ tới 10 bộ thu. 
 
 1. **Lần 1:** đọc to theo file này, bấm giờ, so với cột "Mốc cộng dồn".
 2. **Lần 2:** chỉ nhìn slide. Thuộc câu nối trước, vì câu nối là chỗ hay bị quên nhất.
-3. **Lần 3:** hai người tập cùng, có bàn giao ở slide 12 và trả lời lại ở slide 14, bấm đủ 3 clip.
+3. **Lần 3:** hai người tập cùng, có bàn giao ở slide 13 và trả lời lại ở slide 15, bấm đủ 3 clip.
 4. **Lần cuối:** tập trên đúng máy thi, kiểm tra 3 clip chạy được (nếu dùng PPTX thì nhúng clip bằng `slide_media/embed_clips.py`).
