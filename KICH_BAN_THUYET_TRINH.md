@@ -2,7 +2,7 @@
 
 Deck: https://claude.ai/artifact/JeStEMJ2y2zoN6uug1sBYB (15 slide). Lời nói và câu nối dưới đây **trùng từng chữ** với ghi chú trong deck.
 
-**Tổng thời gian dự kiến: 8:21**, đã tính cả 3 clip và thời gian bấm chuyển slide. Còn khoảng 1:39 dự phòng. **Không nói thêm câu nào ngoài kịch bản.**
+**Tổng thời gian dự kiến: 8:28**, đã tính cả 3 clip và thời gian bấm chuyển slide. Còn khoảng 1:32 dự phòng. **Không nói thêm câu nào ngoài kịch bản.**
 
 **Quy tắc câu nối:** câu nối được nói **trong lúc bấm sang slide sau**. Nói xong câu nối thì slide mới vừa hiện, nên không mất thêm thời gian.
 
@@ -19,17 +19,17 @@ Deck: https://claude.ai/artifact/JeStEMJ2y2zoN6uug1sBYB (15 slide). Lời nói v
 | 7 | Bắt node gần nhất, tự chuyển node khi di chuyển | A (bạn) | 30 s | 3:35 |
 | 8 | Suy hao do người chắn → % lưu thông | A (bạn) | 35 s | 4:12 |
 | 9 | Học sâu trên CSI kém khi sang môi trường mới | A (bạn) | 40 s | 4:54 |
-| 10 | Chỉ học lúc trống, vẫn nhận ra người ở nơi mới | A (bạn) | 40 s | 5:36 |
-| 11 | AI giảm mạnh các lỗi nguy hiểm | A (bạn) | 20 s | 5:58 |
-| 12 | Người bước vào → Bị chặn, đi ra → An toàn | A (bạn) | 35 s | 6:35 |
-| 13 | Đông thì đắt, D* Lite tự né trong 1,7 ms | B (bạn điều hướng) | 40 s | 7:17 |
-| 14 | Nhìn trước 15 giây, chia tải, chỉ dẫn tại chỗ | B (bạn điều hướng) | 35 s | 7:54 |
-| 15 | WiEvac trả lời đủ 4 câu hỏi | A (bạn) | 25 s | 8:21 |
+| 10 | Chỉ học lúc trống, vẫn nhận ra người ở nơi mới | A (bạn) | 47 s | 5:43 |
+| 11 | AI giảm mạnh các lỗi nguy hiểm | A (bạn) | 20 s | 6:05 |
+| 12 | Người bước vào → Bị chặn, đi ra → An toàn | A (bạn) | 35 s | 6:42 |
+| 13 | Đông thì đắt, D* Lite tự né trong 1,7 ms | B (bạn điều hướng) | 40 s | 7:24 |
+| 14 | Nhìn trước 15 giây, chia tải, chỉ dẫn tại chỗ | B (bạn điều hướng) | 35 s | 8:01 |
+| 15 | WiEvac trả lời đủ 4 câu hỏi | A (bạn) | 25 s | 8:28 |
 
 **Mốc kiểm tra khi tập:**
 - Hết slide 5: **2:31**.
-- Hết slide 12, bàn giao cho B: **6:35**.
-- Hết slide 15: **8:21**.
+- Hết slide 12, bàn giao cho B: **6:42**.
+- Hết slide 15: **8:28**.
 
 Chậm quá 20 giây ở một mốc thì áp dụng ngay mục "Nếu bị chậm".
 
@@ -133,15 +133,15 @@ Chậm quá 20 giây ở một mốc thì áp dụng ngay mục "Nếu bị ch�
 
 **Câu nối sang slide 10** (nói trong lúc bấm chuyển):
 
-> *Vì thế nhóm chọn hướng khác: một Tiny AI chạy ngay trên chip.*
+> *Vì thế nhóm chọn hướng khác: một Tiny AI tự học lại nền ở môi trường mới, chạy ngay trên chip.*
 
 ### Slide 10 · Chỉ học lúc trống, vẫn nhận ra người ở nơi mới
 
-*A (bạn) · 40 giây*
+*A (bạn) · 47 giây*
 
 **Thao tác:** Chỉ cột xanh (trống) bên trái ngưỡng, rồi cột cam (có người) bên phải.
 
-> Tiny AI là mô hình hỗn hợp Gauss, chỉ học hành lang lúc trống từ 42 đặc trưng mỗi giây, và đo xem hiện tại khác lúc trống bao nhiêu. Không cần dữ liệu đám đông, không cần gán nhãn; AI chỉ được hạ điểm, không bao giờ nâng lên an toàn. Thử ở một phòng chưa từng thấy, một người đi lại: 1.154 giây có người, AI bắt được hết; 910 giây trống, chỉ 17 giây báo nhầm.
+> Tiny AI chỉ học hành lang lúc trống, rồi đo xem hiện tại khác lúc trống bao nhiêu; không cần dữ liệu đám đông, không cần gán nhãn. Khi môi trường sóng thay đổi, mỗi link tự học lại nền, nhưng chỉ khi AI xác nhận trống suốt 30 giây, nên không bao giờ học nhầm người vào nền và không cần hiệu chuẩn lại bằng tay. AI chỉ được hạ điểm, không bao giờ nâng lên an toàn. Thử ở một phòng chưa từng thấy, một người đi lại: 1.154 giây có người, AI bắt được hết; 910 giây trống, chỉ 17 giây báo nhầm.
 
 **Câu nối sang slide 11** (nói trong lúc bấm chuyển):
 
@@ -236,6 +236,9 @@ Người đứng chắn đúng đường truyền giữa hai node, và AI chắc
 
 **Sao không dùng học sâu?**
 Như slide 9: học sâu trên CSI giảm mạnh khi đổi môi trường và phải thu, gán nhãn lại. Tiny AI chỉ cần hành lang trống, chạy được ngay trên ESP32-S3.
+
+**Môi trường thay đổi thì sao (dịch node, nhiễu, đổi phòng)?**
+Mỗi link tự phát hiện môi trường sóng đã đổi, giữ cảnh báo ở mức thận trọng, rồi tự học lại nền. Hệ thống chỉ học lại khi AI xác nhận phòng trống và ổn định suốt 30 giây, nên không học nhầm người vào nền. Vật cản tĩnh đã ghi nhận cũng không bị học thành nền. Không cần hiệu chuẩn lại bằng tay.
 
 **Thử ở bao nhiêu nơi?**
 Train ở 2 hành lang, kiểm tra ở một phòng chưa từng thấy, cộng thực địa 1 TX và 2 RX ngày 17–18/10. Đám đông và nhiều tầng là bước tiếp theo.
