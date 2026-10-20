@@ -2,7 +2,7 @@
 
 Deck: https://claude.ai/artifact/JeStEMJ2y2zoN6uug1sBYB (16 slide). Lời nói và câu nối dưới đây **trùng từng chữ** với ghi chú trong deck.
 
-**Tổng thời gian dự kiến: 8:58**, đã tính cả 3 clip và thời gian bấm chuyển slide. Còn khoảng 1:02 dự phòng. **Không nói thêm câu nào ngoài kịch bản.**
+**Tổng thời gian dự kiến: 9:03**, đã tính cả 3 clip và thời gian bấm chuyển slide. Còn khoảng 0:57 dự phòng. **Không nói thêm câu nào ngoài kịch bản.**
 
 **Quy tắc câu nối:** câu nối được nói **trong lúc bấm sang slide sau**. Nói xong câu nối thì slide mới vừa hiện, nên không mất thêm thời gian.
 
@@ -20,17 +20,17 @@ Deck: https://claude.ai/artifact/JeStEMJ2y2zoN6uug1sBYB (16 slide). Lời nói v
 | 8 | Công thức ITU: tính % lưu thông, tự học lại nền | A (bạn) | 40 s | 4:17 |
 | 9 | Chỉ có công thức thì chưa đủ | A (bạn) | 30 s | 4:49 |
 | 10 | Học sâu trên CSI kém khi sang môi trường mới | A (bạn) | 35 s | 5:26 |
-| 11 | Chỉ học lúc trống, chạy ngay trên chip | A (bạn) | 35 s | 6:03 |
-| 12 | Tiny AI vá cả 3 lỗi của công thức | A (bạn) | 25 s | 6:30 |
-| 13 | Người bước vào → Bị chặn, đi ra → An toàn | A (bạn) | 35 s | 7:07 |
-| 14 | Đông thì đắt, D* Lite tự né trong 1,7 ms | B (bạn điều hướng) | 40 s | 7:49 |
-| 15 | Nhìn trước 15 giây, chia tải, chỉ dẫn tại chỗ | B (bạn điều hướng) | 35 s | 8:26 |
-| 16 | WiEvac trả lời đủ 4 câu hỏi | A (bạn) | 30 s | 8:58 |
+| 11 | Học lúc trống một lần, chạy mỗi giây trên chip | A (bạn) | 40 s | 6:08 |
+| 12 | Tiny AI vá cả 3 lỗi của công thức | A (bạn) | 25 s | 6:35 |
+| 13 | Người bước vào → Bị chặn, đi ra → An toàn | A (bạn) | 35 s | 7:12 |
+| 14 | Đông thì đắt, D* Lite tự né trong 1,7 ms | B (bạn điều hướng) | 40 s | 7:54 |
+| 15 | Nhìn trước 15 giây, chia tải, chỉ dẫn tại chỗ | B (bạn điều hướng) | 35 s | 8:31 |
+| 16 | WiEvac trả lời đủ 4 câu hỏi | A (bạn) | 30 s | 9:03 |
 
 **Mốc kiểm tra khi tập:**
 - Hết slide 5: **2:31**.
-- Hết slide 13, bàn giao cho B: **7:07**.
-- Hết slide 16: **8:58**.
+- Hết slide 13, bàn giao cho B: **7:12**.
+- Hết slide 16: **9:03**.
 
 Chậm quá 20 giây ở một mốc thì áp dụng ngay mục "Nếu bị chậm".
 
@@ -148,13 +148,13 @@ Chậm quá 20 giây ở một mốc thì áp dụng ngay mục "Nếu bị ch�
 
 > *Vì thế nhóm chọn hướng khác: một Tiny AI chỉ cần học lúc trống, chạy ngay trên chip.*
 
-### Slide 11 · Chỉ học lúc trống, chạy ngay trên chip
+### Slide 11 · Học lúc trống một lần, chạy mỗi giây trên chip
 
-*A (bạn) · 35 giây*
+*A (bạn) · 40 giây*
 
-**Thao tác:** Chỉ lần lượt ô 1, 2, 3.
+**Thao tác:** Chỉ hàng trên (học) từ trái sang phải, rồi hàng dưới (chạy); ở hình các cụm, chỉ chấm cam nằm xa.
 
-> Tiny AI làm theo ba bước. Một: khi lắp đặt, AI chỉ ghi lại sóng của hành lang lúc trống, không cần dữ liệu đám đông, không gán nhãn. Hai: mỗi giây, AI đo sóng khác lúc trống bao nhiêu; khác xa là có người. Ba: AI phối hợp với công thức: công thức nói an toàn mà AI thấy có người thì hạ điểm; và chỉ cho học lại nền khi AI xác nhận trống suốt 30 giây. Mô hình chỉ 1,5 KB, chạy ngay trên ESP32-S3.
+> Tiny AI làm qua hai giai đoạn. Học, chỉ một lần khi lắp đặt: thu sóng của hành lang lúc trống, huấn luyện một mô hình hỗn hợp Gauss gồm 4 cụm mô tả sóng lúc trống trông thế nào, rồi nạp 1,5 KB xuống chip. Chạy, mỗi giây trên ESP32-S3: từ 52 sóng mang, chip tính 42 đặc trưng, rồi đo xem giây này cách các cụm lúc trống bao xa. Xa quá ngưỡng là có người, AI hạ điểm; trống suốt 30 giây, AI cho học lại nền.
 
 **Câu nối sang slide 12** (nói trong lúc bấm chuyển):
 
