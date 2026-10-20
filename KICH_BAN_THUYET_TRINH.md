@@ -2,7 +2,7 @@
 
 Deck: https://claude.ai/artifact/JeStEMJ2y2zoN6uug1sBYB (16 slide). Lời nói và câu nối dưới đây **trùng từng chữ** với ghi chú trong deck.
 
-**Tổng thời gian dự kiến: 9:03**, đã tính cả 3 clip và thời gian bấm chuyển slide. Còn khoảng 0:57 dự phòng. **Không nói thêm câu nào ngoài kịch bản.**
+**Tổng thời gian dự kiến: 9:10**, đã tính cả 3 clip và thời gian bấm chuyển slide. Còn khoảng 0:50 dự phòng. **Không nói thêm câu nào ngoài kịch bản.**
 
 **Quy tắc câu nối:** câu nối được nói **trong lúc bấm sang slide sau**. Nói xong câu nối thì slide mới vừa hiện, nên không mất thêm thời gian.
 
@@ -12,25 +12,25 @@ Deck: https://claude.ai/artifact/JeStEMJ2y2zoN6uug1sBYB (16 slide). Lời nói v
 |---|---|---|---|---|
 | 1 | WiEvac | A (bạn) | 16 s | 0:18 |
 | 2 | Khi cháy, mọi người dồn về một lối | A (bạn) | 30 s | 0:50 |
-| 3 | WiEvac khi tòa nhà có cháy | A (bạn) | 45 s | 1:37 |
-| 4 | Hệ thống trả lời 4 câu hỏi | A (bạn) | 25 s | 2:04 |
-| 5 | Linh kiện phổ thông, xử lý ngay trên chip | A (bạn) | 25 s | 2:31 |
-| 6 | Quét phòng → sơ đồ 2D → mô hình 3D | A (bạn) | 30 s | 3:03 |
-| 7 | Bắt node gần nhất, tự chuyển node khi di chuyển | A (bạn) | 30 s | 3:35 |
-| 8 | Công thức ITU: tính % lưu thông, tự học lại nền | A (bạn) | 40 s | 4:17 |
-| 9 | Chỉ có công thức thì chưa đủ | A (bạn) | 30 s | 4:49 |
-| 10 | Học sâu trên CSI kém khi sang môi trường mới | A (bạn) | 35 s | 5:26 |
-| 11 | Huấn luyện một lần, phòng mới không cần học lại | A (bạn) | 40 s | 6:08 |
-| 12 | Tiny AI vá cả 3 lỗi của công thức | A (bạn) | 25 s | 6:35 |
-| 13 | Người bước vào → Bị chặn, đi ra → An toàn | A (bạn) | 35 s | 7:12 |
-| 14 | Đông thì đắt, D* Lite tự né trong 1,7 ms | B (bạn điều hướng) | 40 s | 7:54 |
-| 15 | Nhìn trước 15 giây, chia tải, chỉ dẫn tại chỗ | B (bạn điều hướng) | 35 s | 8:31 |
-| 16 | WiEvac trả lời đủ 4 câu hỏi | A (bạn) | 30 s | 9:03 |
+| 3 | WiEvac khi tòa nhà có cháy | A (bạn) | 52 s | 1:44 |
+| 4 | Hệ thống trả lời 4 câu hỏi | A (bạn) | 25 s | 2:11 |
+| 5 | Linh kiện phổ thông, xử lý ngay trên chip | A (bạn) | 25 s | 2:38 |
+| 6 | Quét phòng → sơ đồ 2D → mô hình 3D | A (bạn) | 30 s | 3:10 |
+| 7 | Bắt node gần nhất, tự chuyển node khi di chuyển | A (bạn) | 30 s | 3:42 |
+| 8 | Công thức ITU: tính % lưu thông, tự học lại nền | A (bạn) | 40 s | 4:24 |
+| 9 | Chỉ có công thức thì chưa đủ | A (bạn) | 30 s | 4:56 |
+| 10 | Học sâu trên CSI kém khi sang môi trường mới | A (bạn) | 35 s | 5:33 |
+| 11 | Huấn luyện một lần, phòng mới không cần học lại | A (bạn) | 40 s | 6:15 |
+| 12 | Tiny AI vá cả 3 lỗi của công thức | A (bạn) | 25 s | 6:42 |
+| 13 | Người bước vào → Bị chặn, đi ra → An toàn | A (bạn) | 35 s | 7:19 |
+| 14 | Đông thì đắt, D* Lite tự né trong 1,7 ms | B (bạn điều hướng) | 40 s | 8:01 |
+| 15 | Nhìn trước 15 giây, chia tải, chỉ dẫn tại chỗ | B (bạn điều hướng) | 35 s | 8:38 |
+| 16 | WiEvac trả lời đủ 4 câu hỏi | A (bạn) | 30 s | 9:10 |
 
 **Mốc kiểm tra khi tập:**
-- Hết slide 5: **2:31**.
-- Hết slide 13, bàn giao cho B: **7:12**.
-- Hết slide 16: **9:03**.
+- Hết slide 5: **2:38**.
+- Hết slide 13, bàn giao cho B: **7:19**.
+- Hết slide 16: **9:10**.
 
 Chậm quá 20 giây ở một mốc thì áp dụng ngay mục "Nếu bị chậm".
 
@@ -60,11 +60,11 @@ Chậm quá 20 giây ở một mốc thì áp dụng ngay mục "Nếu bị ch�
 
 ### Slide 3 · WiEvac khi tòa nhà có cháy
 
-*A (bạn) · 45 giây*
+*A (bạn) · 52 giây*
 
-**Thao tác:** Bấm phát clip (41 giây). Câu 1 lúc cảnh báo hiện; câu 2 lúc bên trái báo cửa thoát 1 đông; câu 3 khi bên phải ra ngoài. Đợi clip chạy hết rồi mới nói câu nối.
+**Thao tác:** Bấm phát clip (51 giây). Câu 1 lúc cảnh báo hiện; câu 2 khi bên trái chỉ về cửa thoát 1; câu 3 khi hiện “Cửa thoát 1 đang đông người”; câu 4 khi bên phải ra ngoài. Đợi clip chạy hết rồi mới nói câu nối.
 
-> Khi có cháy, mọi điện thoại cài ứng dụng cùng nhận cảnh báo. Bên trái, người ở tầng 2 được chỉ xuống cầu thang; cửa thoát 1 đang đông nên ứng dụng chuyển sang cửa thoát 2. Bên phải, người ở tầng 1 được chỉ ra ngoài ngay.
+> Khi có cháy, mọi điện thoại cài ứng dụng cùng nhận cảnh báo. Bên trái, người ở tầng 2 lúc đầu được chỉ về cửa thoát 1, cửa gần hơn. Nhưng cửa thoát 1 đang đông, nên ứng dụng chuyển sang cửa thoát 2: xuống cầu thang rồi ra ngoài. Bên phải, người ở tầng 1 được chỉ ra ngoài ngay.
 
 **Câu nối sang slide 4** (nói trong lúc bấm chuyển):
 
