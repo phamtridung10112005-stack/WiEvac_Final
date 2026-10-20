@@ -17,10 +17,10 @@ Deck: https://claude.ai/artifact/JeStEMJ2y2zoN6uug1sBYB (15 slide). Lời nói v
 | 5 | Linh kiện phổ thông, xử lý ngay trên chip | A (bạn) | 25 s | 2:31 |
 | 6 | Quét phòng → sơ đồ 2D → mô hình 3D | A (bạn) | 30 s | 3:03 |
 | 7 | Bắt node gần nhất, tự chuyển node khi di chuyển | A (bạn) | 30 s | 3:35 |
-| 8 | Suy hao do người chắn → % lưu thông | A (bạn) | 35 s | 4:12 |
-| 9 | Học sâu trên CSI kém khi sang môi trường mới | A (bạn) | 40 s | 4:54 |
-| 10 | AI đứng gác bên cạnh công thức, làm 2 việc | A (bạn) | 45 s | 5:41 |
-| 11 | AI giảm mạnh các lỗi nguy hiểm | A (bạn) | 25 s | 6:08 |
+| 8 | Công thức ITU: tính % lưu thông, tự học lại nền | A (bạn) | 40 s | 4:17 |
+| 9 | Chỉ có công thức thì chưa đủ | A (bạn) | 30 s | 4:49 |
+| 10 | Học sâu trên CSI kém khi sang môi trường mới | A (bạn) | 35 s | 5:26 |
+| 11 | Chỉ học lúc trống, vá cả 3 lỗi của công thức | A (bạn) | 40 s | 6:08 |
 | 12 | Người bước vào → Bị chặn, đi ra → An toàn | A (bạn) | 35 s | 6:45 |
 | 13 | Đông thì đắt, D* Lite tự né trong 1,7 ms | B (bạn điều hướng) | 40 s | 7:27 |
 | 14 | Nhìn trước 15 giây, chia tải, chỉ dẫn tại chỗ | B (bạn điều hướng) | 35 s | 8:04 |
@@ -113,45 +113,47 @@ Chậm quá 20 giây ở một mốc thì áp dụng ngay mục "Nếu bị ch�
 
 > *Biết người ở đâu rồi, nhưng chỗ nào đang đông? Đây là phần trọng tâm.*
 
-### Slide 8 · Suy hao do người chắn → % lưu thông
+### Slide 8 · Công thức ITU: tính % lưu thông, tự học lại nền
 
-*A (bạn) · 35 giây*
+*A (bạn) · 40 giây*
 
-**Thao tác:** Nhấn giọng: “ITU-R P.526”.
+**Thao tác:** Nhấn giọng: “ITU-R P.526”. Chỉ ô ① rồi ô ②.
 
-> Mỗi cặp ESP32-S3 đo sóng Wi-Fi CSI trên 52 sóng mang, 100 lần mỗi giây. Người chắn đường truyền làm sóng suy hao. Công thức nhiễu xạ trong khuyến nghị ITU-R P.526 của Liên minh Viễn thông Quốc tế cho biết suy hao ứng với mức che khuất bao nhiêu; chip giải ngược công thức để ra phần trăm lưu thông.
+> Mỗi cặp ESP32-S3 đo sóng Wi-Fi CSI trên 52 sóng mang, 100 lần mỗi giây. Người chắn đường truyền làm sóng suy hao. Nhóm dùng công thức nhiễu xạ trong khuyến nghị ITU-R P.526 của Liên minh Viễn thông Quốc tế cho hai việc. Một: so suy hao với lúc trống, chip giải ngược công thức ra phần trăm lưu thông. Hai: khi dời node hay kê lại đồ, sóng lúc trống thay đổi, hệ thống tự học lại nền, không cần hiệu chuẩn tay.
 
 **Câu nối sang slide 9** (nói trong lúc bấm chuyển):
 
 > *Nhưng chỉ có công thức thì chưa đủ.*
 
-### Slide 9 · Học sâu trên CSI kém khi sang môi trường mới
+### Slide 9 · Chỉ có công thức thì chưa đủ
 
-*A (bạn) · 40 giây*
+*A (bạn) · 30 giây*
 
-> Chạy lại dữ liệu thật, công thức vẫn có 155 giây báo an toàn khi có người, nên cần thêm AI. Nhưng học sâu trên CSI kém khi đổi môi trường: CrossSense tại MobiCom 2018 chỉ còn khoảng 20% độ chính xác ở nơi mới; EI vẫn chỉ khoảng 75% dù có nhãn từ 22 cặp người và phòng; Widar3.0 phải thu 258 nghìn mẫu. Tức là mỗi lần đổi môi trường lại phải thu và gán nhãn từ đầu.
+**Thao tác:** Chỉ lần lượt 3 con số từ trái sang phải.
+
+> Chạy lại dữ liệu thật chỉ với công thức: 155 giây báo an toàn khi có người; 12 lần học nhầm người vào nền, vì người đứng yên thì sóng ổn định, công thức tưởng là trống; và trạng thái nhảy hơn 5 lần mỗi phút. Gốc rễ là công thức không phân biệt được sóng đổi vì có người hay vì môi trường đổi. Nên cần thêm AI.
 
 **Câu nối sang slide 10** (nói trong lúc bấm chuyển):
 
-> *Vì thế nhóm chọn hướng khác: một Tiny AI tự học lại nền ở môi trường mới, chạy ngay trên chip.*
+> *Nhưng AI loại nào?*
 
-### Slide 10 · AI đứng gác bên cạnh công thức, làm 2 việc
+### Slide 10 · Học sâu trên CSI kém khi sang môi trường mới
 
-*A (bạn) · 45 giây*
+*A (bạn) · 35 giây*
 
-**Thao tác:** Lướt dãy ô trên cùng (đường của công thức), rồi chỉ lần lượt ô 1 và ô 2.
-
-> Tiny AI không thay công thức mà đứng gác bên cạnh, chạy ngay trên chip. Nó học hành lang lúc trống trông thế nào; giây nào khác xa là có người. AI làm hai việc. Một, chặn báo nhầm: công thức nói an toàn nhưng AI thấy có người thì hạ điểm, đúng lỗi 155 giây vừa rồi. Hai, gác việc học lại nền: môi trường sóng đổi thì link tự học lại nền, nhưng chỉ khi AI xác nhận trống suốt 30 giây, nên không học nhầm người vào nền. Vì chỉ cần học lúc trống, không gán nhãn, sang hành lang mới vẫn dùng được, đúng chỗ học sâu làm không được.
+> Học sâu trên CSI kém khi đổi môi trường: CrossSense tại MobiCom 2018 chỉ còn khoảng 20% độ chính xác ở nơi mới; EI vẫn chỉ khoảng 75% dù có nhãn từ 22 cặp người và phòng; Widar3.0 phải thu 258 nghìn mẫu. Tức là mỗi lần đổi môi trường lại phải thu và gán nhãn từ đầu, trong khi hệ thống của nhóm phải tự học lại nền.
 
 **Câu nối sang slide 11** (nói trong lúc bấm chuyển):
 
-> *Hai việc đó giúp được bao nhiêu? So trên cùng dữ liệu thật.*
+> *Vì thế nhóm chọn hướng khác: một Tiny AI chỉ cần học lúc trống, chạy ngay trên chip.*
 
-### Slide 11 · AI giảm mạnh các lỗi nguy hiểm
+### Slide 11 · Chỉ học lúc trống, vá cả 3 lỗi của công thức
 
-*A (bạn) · 25 giây*
+*A (bạn) · 40 giây*
 
-> So với chỉ dùng công thức, trên cùng dữ liệu thật: báo nhầm an toàn khi có người giảm 89%, nhờ việc thứ nhất; học nhầm người thành nền giảm 75%, nhờ việc thứ hai; và nhảy trạng thái giảm 31%.
+**Thao tác:** Chỉ ô bên trái, ô bên phải, rồi lần lượt 3 cặp cột.
+
+> Tiny AI học hành lang lúc trống trông thế nào; giây nào khác xa là có người. Không cần dữ liệu đám đông, không gán nhãn, nên sang hành lang mới vẫn dùng được. AI hạ điểm khi công thức nói an toàn mà AI thấy có người, và chỉ cho học lại nền khi AI xác nhận trống suốt 30 giây. Trên cùng dữ liệu thật, đúng 3 lỗi vừa rồi: báo nhầm an toàn giảm 89%, học nhầm người vào nền giảm 75%, nhảy trạng thái giảm 31%.
 
 **Câu nối sang slide 12** (nói trong lúc bấm chuyển):
 
@@ -198,7 +200,7 @@ Chậm quá 20 giây ở một mốc thì áp dụng ngay mục "Nếu bị ch�
 ## Nếu bị chậm (cắt theo thứ tự)
 
 1. **Slide 5:** bỏ câu "Bảng LED và loa nhận lệnh qua ESP-NOW. Ứng dụng Android dùng ARCore." Tiết kiệm khoảng 5 giây.
-2. **Slide 9:** bỏ câu Widar3.0. Tiết kiệm khoảng 5 giây.
+2. **Slide 10:** bỏ câu Widar3.0. Tiết kiệm khoảng 5 giây.
 3. **Slide 6:** bỏ "ứng dụng tự căn thẳng, căn vuông". Tiết kiệm khoảng 3 giây.
 4. **Slide 14:** bỏ câu "Tại ngã rẽ…". Tiết kiệm khoảng 5 giây.
 
@@ -211,15 +213,15 @@ Thể lệ VEDC 2026 không công bố tỷ trọng điểm vòng bán kết. B�
 | Tiêu chí | Trọng số 2025 | Slide đáp ứng |
 |---|---|---|
 | Mô hình hệ thống kỹ thuật | 20% | 4 (4 câu hỏi), 5 (phần cứng) |
-| Phần cứng & phần mềm | 25% | 5, 8 (công thức trên chip), 10 (Tiny AI trên chip) |
+| Phần cứng & phần mềm | 25% | 5, 8 (công thức trên chip), 11 (Tiny AI trên chip) |
 | Demo & prototype hoạt động | 20% | 3 (app 2 điện thoại), 7 (định vị), 12 (CSI dữ liệu thật) |
-| Tính ứng dụng & mở rộng | 20% | 2, 9, 15 |
+| Tính ứng dụng & mở rộng | 20% | 2, 10, 15 |
 | Trình bày & phản biện | 15% | Kịch bản này + phần câu hỏi |
 
 **Nội dung thể lệ 2026 yêu cầu:**
 - mô hình hệ thống: slide 4;
-- nguyên lý hoạt động: slide 7, 8, 10;
-- thuật toán: slide 10, 13, 14;
+- nguyên lý hoạt động: slide 7, 8, 9, 11;
+- thuật toán: slide 11, 13, 14;
 - kế hoạch hoàn thiện: slide 15;
 - **bản vẽ mạch: còn thiếu**, cần ảnh hoặc sơ đồ mạch thật để chèn vào slide 5.
 
@@ -238,7 +240,7 @@ Mô hình hỗn hợp Gauss 4 thành phần. Nó học vùng dữ liệu lúc h�
 Ở phòng chưa từng thấy: bắt 1.154 trên 1.154 giây có người, báo nhầm 17 trên 910 giây trống. Nếu được hỏi chỉ số chuẩn: AUROC 0,9994, với điều kiện một phòng, một người đi lại.
 
 **Sao không dùng học sâu?**
-Như slide 9: học sâu trên CSI giảm mạnh khi đổi môi trường và phải thu, gán nhãn lại. Tiny AI chỉ cần hành lang trống, chạy được ngay trên ESP32-S3.
+Như slide 10: học sâu trên CSI giảm mạnh khi đổi môi trường và phải thu, gán nhãn lại. Tiny AI chỉ cần hành lang trống, chạy được ngay trên ESP32-S3.
 
 **Môi trường thay đổi thì sao (dịch node, nhiễu, đổi phòng)?**
 Mỗi link tự phát hiện môi trường sóng đã đổi, giữ cảnh báo ở mức thận trọng, rồi tự học lại nền. Hệ thống chỉ học lại khi AI xác nhận phòng trống và ổn định suốt 30 giây, nên không học nhầm người vào nền. Vật cản tĩnh đã ghi nhận cũng không bị học thành nền. Không cần hiệu chuẩn lại bằng tay.
