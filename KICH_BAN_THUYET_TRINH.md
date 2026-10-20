@@ -2,7 +2,7 @@
 
 Deck: https://claude.ai/artifact/JeStEMJ2y2zoN6uug1sBYB (15 slide). Lời nói và câu nối dưới đây **trùng từng chữ** với ghi chú trong deck.
 
-**Tổng thời gian dự kiến: 8:28**, đã tính cả 3 clip và thời gian bấm chuyển slide. Còn khoảng 1:32 dự phòng. **Không nói thêm câu nào ngoài kịch bản.**
+**Tổng thời gian dự kiến: 8:43**, đã tính cả 3 clip và thời gian bấm chuyển slide. Còn khoảng 1:17 dự phòng. **Không nói thêm câu nào ngoài kịch bản.**
 
 **Quy tắc câu nối:** câu nối được nói **trong lúc bấm sang slide sau**. Nói xong câu nối thì slide mới vừa hiện, nên không mất thêm thời gian.
 
@@ -19,17 +19,17 @@ Deck: https://claude.ai/artifact/JeStEMJ2y2zoN6uug1sBYB (15 slide). Lời nói v
 | 7 | Bắt node gần nhất, tự chuyển node khi di chuyển | A (bạn) | 30 s | 3:35 |
 | 8 | Suy hao do người chắn → % lưu thông | A (bạn) | 35 s | 4:12 |
 | 9 | Học sâu trên CSI kém khi sang môi trường mới | A (bạn) | 40 s | 4:54 |
-| 10 | Chỉ học lúc trống, vẫn nhận ra người ở nơi mới | A (bạn) | 47 s | 5:43 |
-| 11 | AI giảm mạnh các lỗi nguy hiểm | A (bạn) | 20 s | 6:05 |
-| 12 | Người bước vào → Bị chặn, đi ra → An toàn | A (bạn) | 35 s | 6:42 |
-| 13 | Đông thì đắt, D* Lite tự né trong 1,7 ms | B (bạn điều hướng) | 40 s | 7:24 |
-| 14 | Nhìn trước 15 giây, chia tải, chỉ dẫn tại chỗ | B (bạn điều hướng) | 35 s | 8:01 |
-| 15 | WiEvac trả lời đủ 4 câu hỏi | A (bạn) | 25 s | 8:28 |
+| 10 | Chỉ học lúc trống, vẫn nhận ra người ở nơi mới | A (bạn) | 52 s | 5:48 |
+| 11 | AI giảm mạnh các lỗi nguy hiểm | A (bạn) | 25 s | 6:15 |
+| 12 | Người bước vào → Bị chặn, đi ra → An toàn | A (bạn) | 35 s | 6:52 |
+| 13 | Đông thì đắt, D* Lite tự né trong 1,7 ms | B (bạn điều hướng) | 40 s | 7:34 |
+| 14 | Nhìn trước 15 giây, chia tải, chỉ dẫn tại chỗ | B (bạn điều hướng) | 35 s | 8:11 |
+| 15 | WiEvac trả lời đủ 4 câu hỏi | A (bạn) | 30 s | 8:43 |
 
 **Mốc kiểm tra khi tập:**
 - Hết slide 5: **2:31**.
-- Hết slide 12, bàn giao cho B: **6:42**.
-- Hết slide 15: **8:28**.
+- Hết slide 12, bàn giao cho B: **6:52**.
+- Hết slide 15: **8:43**.
 
 Chậm quá 20 giây ở một mốc thì áp dụng ngay mục "Nếu bị chậm".
 
@@ -137,11 +137,11 @@ Chậm quá 20 giây ở một mốc thì áp dụng ngay mục "Nếu bị ch�
 
 ### Slide 10 · Chỉ học lúc trống, vẫn nhận ra người ở nơi mới
 
-*A (bạn) · 47 giây*
+*A (bạn) · 52 giây*
 
 **Thao tác:** Chỉ cột xanh (trống) bên trái ngưỡng, rồi cột cam (có người) bên phải.
 
-> Tiny AI chỉ học hành lang lúc trống, rồi đo xem hiện tại khác lúc trống bao nhiêu; không cần dữ liệu đám đông, không cần gán nhãn. Khi môi trường sóng thay đổi, mỗi link tự học lại nền, nhưng chỉ khi AI xác nhận trống suốt 30 giây, nên không bao giờ học nhầm người vào nền và không cần hiệu chuẩn lại bằng tay. AI chỉ được hạ điểm, không bao giờ nâng lên an toàn. Thử ở một phòng chưa từng thấy, một người đi lại: 1.154 giây có người, AI bắt được hết; 910 giây trống, chỉ 17 giây báo nhầm.
+> Tiny AI chỉ học hành lang lúc trống, rồi đo xem hiện tại khác lúc trống bao nhiêu; không cần dữ liệu đám đông, không cần gán nhãn. Khi môi trường sóng thay đổi, mỗi link tự học lại nền, nhưng chỉ khi AI xác nhận trống suốt 30 giây, nên không bao giờ học nhầm người vào nền. Nhờ vậy, lắp ở hành lang mới, hệ thống tự thích nghi, không cần thu dữ liệu hay hiệu chuẩn lại bằng tay, đúng chỗ học sâu làm không được. AI chỉ được hạ điểm, không bao giờ nâng lên an toàn. Thử ở một phòng chưa từng thấy, một người đi lại: 1.154 giây có người, AI bắt được hết; 910 giây trống, chỉ 17 giây báo nhầm.
 
 **Câu nối sang slide 11** (nói trong lúc bấm chuyển):
 
@@ -149,9 +149,9 @@ Chậm quá 20 giây ở một mốc thì áp dụng ngay mục "Nếu bị ch�
 
 ### Slide 11 · AI giảm mạnh các lỗi nguy hiểm
 
-*A (bạn) · 20 giây*
+*A (bạn) · 25 giây*
 
-> So với chỉ dùng công thức, trên cùng dữ liệu thật: báo nhầm an toàn khi có người giảm 89%, học nhầm người thành nền giảm 75%, nhảy trạng thái giảm 31%.
+> So với chỉ dùng công thức, trên cùng dữ liệu thật: báo nhầm an toàn khi có người giảm 89%, học nhầm người thành nền giảm 75%, nhờ AI gác cổng việc học lại nền, và nhảy trạng thái giảm 31%.
 
 **Câu nối sang slide 12** (nói trong lúc bấm chuyển):
 
@@ -191,9 +191,9 @@ Chậm quá 20 giây ở một mốc thì áp dụng ngay mục "Nếu bị ch�
 
 ### Slide 15 · WiEvac trả lời đủ 4 câu hỏi
 
-*A (bạn) · 25 giây*
+*A (bạn) · 30 giây*
 
-> Cảm ơn bạn. Tóm lại, WiEvac trả lời đủ 4 câu hỏi: bản đồ AR, định vị BLE, biết chỗ đông bằng sóng Wi-Fi với Tiny AI 1,5 KB trên chip, giảm 89% báo nhầm an toàn, và chỉ đường bằng D* Lite. Bước tiếp theo là thử với đám đông và nhiều tầng. Nhóm em xin cảm ơn Hội đồng và xin lắng nghe câu hỏi.
+> Cảm ơn bạn. Tóm lại, WiEvac trả lời đủ 4 câu hỏi: bản đồ AR, định vị BLE, biết chỗ đông bằng sóng Wi-Fi với Tiny AI 1,5 KB trên chip, tự học lại nền ở môi trường mới, giảm 89% báo nhầm an toàn, và chỉ đường bằng D* Lite. Bước tiếp theo là thử với đám đông và nhiều tầng. Nhóm em xin cảm ơn Hội đồng và xin lắng nghe câu hỏi.
 
 ## Nếu bị chậm (cắt theo thứ tự)
 
