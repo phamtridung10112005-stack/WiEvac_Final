@@ -1,281 +1,295 @@
-# Kịch bản thuyết trình WiEvac (10 phút, kể cả demo)
+# Kịch bản thuyết trình WiEvac (12 phút, một người nói)
 
-Deck: https://claude.ai/artifact/JeStEMJ2y2zoN6uug1sBYB (16 slide). Lời nói và câu nối dưới đây **trùng từng chữ** với ghi chú trong deck.
+Theo đúng file **WiEvac — Thuyết trình đề tài.pptx** (16 slide, 3 clip).
 
-**Tổng thời gian dự kiến: 9:10**, đã tính cả 3 clip và thời gian bấm chuyển slide. Còn khoảng 0:50 dự phòng. **Không nói thêm câu nào ngoài kịch bản.**
+**Tổng dự kiến: khoảng 11:00**, đã tính 3 clip và thời gian bấm chuyển slide. Còn khoảng 1 phút dự phòng cho lúc hồi hộp hoặc clip chậm.
 
-**Quy tắc câu nối:** câu nối được nói **trong lúc bấm sang slide sau**. Nói xong câu nối thì slide mới vừa hiện, nên không mất thêm thời gian.
+**Cách dùng file này:**
+- Mỗi slide có một dòng **Ý chính**. Nếu quên lời, chỉ cần nói được ý chính là đủ.
+- **Lời nói** là gợi ý để kể, không phải để đọc thuộc từng chữ. Nói tự nhiên theo ý mình cũng được, miễn giữ đúng con số.
+- **Câu nối** nói trong lúc bấm sang slide sau, để bài liền mạch.
+- Đừng đọc lại chữ trên slide. Slide để Hội đồng nhìn, còn mình kể **vì sao nó hay**.
 
 ## Bảng thời gian
 
-| # | Slide | Người nói | Thời gian | Mốc cộng dồn |
-|---|---|---|---|---|
-| 1 | WiEvac | A (bạn) | 16 s | 0:18 |
-| 2 | Khi cháy, mọi người dồn về một lối | A (bạn) | 30 s | 0:50 |
-| 3 | WiEvac khi tòa nhà có cháy | A (bạn) | 52 s | 1:44 |
-| 4 | Hệ thống trả lời 4 câu hỏi | A (bạn) | 25 s | 2:11 |
-| 5 | Linh kiện phổ thông, xử lý ngay trên chip | A (bạn) | 25 s | 2:38 |
-| 6 | Quét phòng → sơ đồ 2D → mô hình 3D | A (bạn) | 30 s | 3:10 |
-| 7 | Bắt node gần nhất, tự chuyển node khi di chuyển | A (bạn) | 30 s | 3:42 |
-| 8 | Công thức ITU: tính % lưu thông, tự học lại nền | A (bạn) | 40 s | 4:24 |
-| 9 | Chỉ có công thức thì chưa đủ | A (bạn) | 30 s | 4:56 |
-| 10 | Học sâu trên CSI kém khi sang môi trường mới | A (bạn) | 35 s | 5:33 |
-| 11 | Huấn luyện một lần, phòng mới không cần học lại | A (bạn) | 40 s | 6:15 |
-| 12 | Tiny AI vá cả 3 lỗi của công thức | A (bạn) | 25 s | 6:42 |
-| 13 | Người bước vào → Bị chặn, đi ra → An toàn | A (bạn) | 35 s | 7:19 |
-| 14 | Đông thì đắt, D* Lite tự né trong 1,7 ms | B (bạn điều hướng) | 40 s | 8:01 |
-| 15 | Nhìn trước 15 giây, chia tải, chỉ dẫn tại chỗ | B (bạn điều hướng) | 35 s | 8:38 |
-| 16 | WiEvac trả lời đủ 4 câu hỏi | A (bạn) | 30 s | 9:10 |
+| # | Slide | Nói | Mốc cộng dồn |
+|---|---|---|---|
+| 1 | WiEvac | 15 s | 0:17 |
+| 2 | Khi cháy, mọi người dồn về một lối | 40 s | 0:59 |
+| 3 | Demo: WiEvac khi tòa nhà có cháy (clip 51 s) | 55 s | 1:56 |
+| 4 | Hệ thống trả lời 4 câu hỏi | 30 s | 2:28 |
+| 5 | Linh kiện phổ thông, xử lý ngay trên chip | 30 s | 3:00 |
+| 6 | Quét phòng → sơ đồ 2D → mô hình 3D | 35 s | 3:37 |
+| 7 | Định vị BLE (clip 25 s) | 30 s | 4:09 |
+| 8 | Công thức ITU: tính % lưu thông, tự học lại nền | 55 s | 5:06 |
+| 9 | Chỉ có công thức thì chưa đủ | 40 s | 5:48 |
+| 10 | Vì sao không dùng học sâu? | 40 s | 6:30 |
+| 11 | Tiny AI: cách hoạt động | 60 s | 7:32 |
+| 12 | Tiny AI vá cả 3 lỗi của công thức | 25 s | 7:59 |
+| 13 | Dữ liệu thật (clip 22 s) | 35 s | 8:36 |
+| 14 | Đông thì đắt, D* Lite tự né trong 1,7 ms | 50 s | 9:28 |
+| 15 | Dự đoán trước 15 giây, chia tải, chỉ dẫn tại chỗ | 45 s | 10:15 |
+| 16 | Kết luận | 45 s | 11:02 |
+
+Mỗi lần bấm chuyển slide tính thêm 2 giây. Cộng các chỗ ngập ngừng, tổng thực tế thường khoảng 11:15 đến 11:30.
 
 **Mốc kiểm tra khi tập:**
-- Hết slide 5: **2:38**.
-- Hết slide 13, bàn giao cho B: **7:19**.
-- Hết slide 16: **9:10**.
+- Hết slide 5: khoảng **3:00**.
+- Hết slide 10: khoảng **6:30**.
+- Hết slide 13: khoảng **8:35**.
 
-Chậm quá 20 giây ở một mốc thì áp dụng ngay mục "Nếu bị chậm".
+Chậm quá 20 giây ở một mốc thì dùng ngay mục "Nếu bị chậm" ở cuối file.
 
-## Lời nói từng slide
+---
 
-### Slide 1 · WiEvac
+## Mở đầu
 
-*A (bạn) · 16 giây*
+### Slide 1 · WiEvac (15 giây)
 
-> Kính thưa Hội đồng, nhóm WiEvac, Trường Đại học Công nghệ Kỹ thuật Hưng Yên, xin trình bày hệ thống hỗ trợ sơ tán thông minh bằng sóng Wi-Fi và AI chạy ngay trên chip.
+**Ý chính:** chào và nói tên đề tài trong một câu.
 
-**Câu nối sang slide 2** (nói trong lúc bấm chuyển):
+> Kính thưa Hội đồng, em là [tên], nhóm WiEvac, Trường Đại học Công nghệ Kỹ thuật Hưng Yên. Nhóm dùng chính sóng Wi-Fi trong tòa nhà để biết chỗ nào đông, rồi chỉ đường cho mọi người né chỗ đông.
 
-> *Trước hết, vấn đề mà nhóm muốn giải quyết.*
+**Câu nối:** *Vì sao lại cần biết chỗ đông?*
 
-### Slide 2 · Khi cháy, mọi người dồn về một lối
+### Slide 2 · Khi cháy, mọi người dồn về một lối (40 giây)
 
-*A (bạn) · 30 giây*
+**Ý chính:** biển báo không biết chỗ đông, camera thì không dùng được lúc cháy. Cần một cách khác.
 
-**Thao tác:** Chỉ cụm chấm đỏ ở lối gần, rồi sang lối xa đang trống.
+**Thao tác:** chỉ cụm chấm đỏ ở lối gần, rồi lối xa đang trống.
 
-> Khi có cháy, biển báo thoát hiểm cố định luôn chỉ về lối gần nhất, nên mọi người dồn về một lối, trong khi lối xa lại bỏ trống. Camera thấy được đám đông nhưng xâm phạm riêng tư, cần ánh sáng và bị khói che. Cái cần là: không cần camera mà vẫn biết mỗi hành lang còn đi được bao nhiêu, để chỉ đường né chỗ đông.
+> Khi có cháy, biển thoát hiểm chỉ một hướng cố định, luôn là lối gần nhất. Kết quả là mọi người dồn về một cửa, chen lấn, có thể giẫm đạp, trong khi cửa xa hơn lại trống. Muốn chỉ đường thông minh thì phải biết hành lang nào đang đông. Camera làm được, nhưng xâm phạm riêng tư, và đúng lúc cháy thì khói che, mất điện thì tối. Nên nhóm đặt bài toán: không dùng camera, mà vẫn biết mỗi hành lang còn đi được bao nhiêu phần trăm.
 
-**Câu nối sang slide 3** (nói trong lúc bấm chuyển):
+**Câu nối:** *Trước khi nói cách làm, mời Hội đồng xem hệ thống chạy thế nào.*
 
-> *WiEvac làm được điều đó. Mời Hội đồng xem kết quả trước.*
+### Slide 3 · Demo hai điện thoại (55 giây, clip 51 giây)
 
-### Slide 3 · WiEvac khi tòa nhà có cháy
+**Ý chính:** cửa 1 gần hơn nhưng đang đông, ứng dụng tự đổi sang cửa 2.
 
-*A (bạn) · 52 giây*
+**Thao tác:** bấm phát clip ngay khi sang slide, nói theo diễn biến. Đợi clip hết mới nói câu nối.
 
-**Thao tác:** Bấm phát clip (51 giây). Câu 1 lúc cảnh báo hiện; câu 2 khi bên trái chỉ về cửa thoát 1; câu 3 khi hiện “Cửa thoát 1 đang đông người”; câu 4 khi bên phải ra ngoài. Đợi clip chạy hết rồi mới nói câu nối.
+> *(Lúc màn hình đỏ hiện)* Khi phát hiện cháy, mọi điện thoại cài ứng dụng cùng nhận cảnh báo, không cần mạng Internet.
+>
+> *(Lúc bên trái chỉ về cửa thoát 1)* Bên trái là một người ở tầng 2. Lúc đầu ứng dụng chỉ về cửa thoát 1, vì đó là cửa gần nhất.
+>
+> *(Lúc hiện "Cửa thoát 1 đang đông người")* Nhưng hệ thống đo được cửa 1 đang đông, nên ứng dụng đổi ngay sang cửa thoát 2. Đây là điều biển báo thường không làm được: cửa gần chưa chắc là cửa nhanh nhất.
+>
+> *(Lúc xuống cầu thang và ra ngoài)* Người này được dẫn xuống cầu thang và ra ngoài an toàn. Bên phải, người ở tầng 1 được chỉ ra ngoài ngay.
 
-> Khi có cháy, mọi điện thoại cài ứng dụng cùng nhận cảnh báo. Bên trái, người ở tầng 2 lúc đầu được chỉ về cửa thoát 1, cửa gần hơn. Nhưng cửa thoát 1 đang đông, nên ứng dụng chuyển sang cửa thoát 2: xuống cầu thang rồi ra ngoài. Bên phải, người ở tầng 1 được chỉ ra ngoài ngay.
+**Câu nối:** *Vậy hệ thống biết cửa 1 đông bằng cách nào?*
 
-**Câu nối sang slide 4** (nói trong lúc bấm chuyển):
+### Slide 4 · Hệ thống trả lời 4 câu hỏi (30 giây)
 
-> *Vậy hệ thống làm được điều đó bằng cách nào?*
+**Ý chính:** chia đề tài thành 4 câu hỏi, câu 3 và 4 là trọng tâm.
 
-### Slide 4 · Hệ thống trả lời 4 câu hỏi
+**Thao tác:** chỉ lần lượt 4 ô từ trái sang phải.
 
-*A (bạn) · 25 giây*
+> Để chỉ đường được như vậy, hệ thống phải trả lời 4 câu hỏi. Một: tòa nhà trông thế nào. Hai: tôi đang ở đâu. Hai câu này điện thoại lo. Ba: chỗ nào đang đông. Bốn: vậy nên đi đường nào. Hai câu sau là trọng tâm và cũng là cái mới nhất của đề tài, vì nó cần biết được đám đông mà không dùng camera.
 
-**Thao tác:** Chỉ lần lượt 4 ô từ trái sang phải.
+**Câu nối:** *Và tất cả chạy trên phần cứng rất rẻ.*
 
-> Hệ thống trả lời 4 câu hỏi. Trên điện thoại: tòa nhà trông thế nào, và tôi đang ở đâu. Ở hạ tầng tòa nhà, cũng là trọng tâm của đề tài: chỗ nào đông, và đi đường nào.
+### Slide 5 · Phần cứng và phần mềm (30 giây)
 
-**Câu nối sang slide 5** (nói trong lúc bấm chuyển):
+**Ý chính:** linh kiện phổ thông, một con chip làm nhiều việc, cả hệ thống chạy offline.
 
-> *Cả 4 phần chạy trên phần cứng rất phổ thông.*
+> Điểm em muốn nhấn mạnh là toàn linh kiện phổ thông. Một con chip ESP32-S3 làm được ba việc: phát sóng, thu sóng, và phát tín hiệu Bluetooth để định vị. Mọi tính toán, kể cả AI, chạy ngay trên con chip đó. Raspberry Pi 5 làm trung tâm tìm đường. Bảng LED và loa chỉ dẫn tại chỗ. Cả hệ thống chạy offline, mất Internet vẫn hoạt động, đúng lúc sự cố là lúc cần nhất.
 
-### Slide 5 · Linh kiện phổ thông, xử lý ngay trên chip
+**Câu nối:** *Giờ em đi lần lượt từng câu hỏi.*
 
-*A (bạn) · 25 giây*
+---
 
-> ESP32-S3 vừa làm cặp phát thu sóng Wi-Fi, vừa phát beacon Bluetooth; firmware C lọc nhiễu, tính công thức và chạy Tiny AI ngay trên chip. Raspberry Pi 5 là trung tâm, chạy offline. Bảng LED và loa nhận lệnh qua ESP-NOW. Ứng dụng Android dùng ARCore.
+## ① Bản đồ và ② Định vị
 
-**Câu nối sang slide 6** (nói trong lúc bấm chuyển):
+### Slide 6 · Quét phòng bằng camera AR (35 giây)
 
-> *Bây giờ, lần lượt từng câu hỏi.*
+**Ý chính:** không cần bản vẽ, cầm điện thoại quét là có bản đồ.
 
-### Slide 6 · Quét phòng → sơ đồ 2D → mô hình 3D
+> Câu thứ nhất: tòa nhà trông thế nào. Nhiều tòa nhà cũ không còn bản vẽ. Với WiEvac, chỉ cần cầm điện thoại ngắm vào 4 góc chân tường, ứng dụng dùng ARCore lấy tọa độ và vẽ ra sơ đồ, tính luôn diện tích. Tay người run thì cạnh hơi lệch, nên ứng dụng tự nắn cho thẳng, cho vuông. Nhập thêm chiều cao trần và ngắm khung cửa là có mô hình 3D, dùng luôn làm bản đồ sơ tán.
 
-*A (bạn) · 30 giây*
+**Câu nối:** *Có bản đồ rồi, câu thứ hai: người đang ở đâu trên bản đồ đó.*
 
-> Câu thứ nhất: tòa nhà trông thế nào. Người dùng ngắm camera vào 4 góc chân tường, ARCore lấy tọa độ, khép vùng là ra sơ đồ 2D và diện tích; ứng dụng tự căn thẳng, căn vuông. Thêm chiều cao trần và cửa, ta có mô hình 3D, xuất file GLB làm bản đồ sơ tán.
+### Slide 7 · Định vị BLE (30 giây, clip 25 giây)
 
-**Câu nối sang slide 7** (nói trong lúc bấm chuyển):
+**Ý chính:** dùng lại chính các node ESP32, điện thoại tự biết mình ở đâu, không cần GPS.
 
-> *Có bản đồ rồi, câu thứ hai: người đang ở đâu trên bản đồ đó.*
+**Thao tác:** bấm phát clip, nói trong lúc clip chạy.
 
-### Slide 7 · Bắt node gần nhất, tự chuyển node khi di chuyển
+> Trong nhà thì GPS không dùng được. Nhóm tận dụng luôn các node ESP32: mỗi node phát tín hiệu Bluetooth liên tục, giống như một ngọn hải đăng nhỏ. Điện thoại nghe tất cả, node nào mạnh nhất thì người đang ở gần node đó. Người đi tới đâu, điện thoại tự chuyển sang node mạnh hơn, vị trí trên bản đồ cập nhật theo. Không cần thêm thiết bị, không cần mạng.
 
-*A (bạn) · 30 giây*
+**Câu nối:** *Biết người ở đâu rồi. Giờ đến phần trọng tâm: chỗ nào đang đông.*
 
-**Thao tác:** Bấm phát clip, nói trong lúc clip chạy.
+---
 
-> Mỗi node ESP32 phát beacon Bluetooth liên tục. Điện thoại chỉ nghe và đo cường độ sóng của từng node; node nào mạnh nhất thì người đang ở đó. Khi di chuyển, điện thoại tự chuyển sang node mạnh hơn. Toàn bộ chạy offline.
+## ③ Đo độ đông: phần trọng tâm
 
-**Câu nối sang slide 8** (nói trong lúc bấm chuyển):
+### Slide 8 · Công thức ITU (55 giây)
 
-> *Biết người ở đâu rồi, nhưng chỗ nào đang đông? Đây là phần trọng tâm.*
+**Ý chính:** người chắn sóng Wi-Fi làm sóng yếu đi. Nhóm dùng công thức chuẩn quốc tế để đổi độ yếu đó ra % lưu thông, và hệ thống tự thích nghi khi môi trường thay đổi.
 
-### Slide 8 · Công thức ITU: tính % lưu thông, tự học lại nền
+**Thao tác:** chỉ công thức, rồi ô ①, rồi ô ②.
 
-*A (bạn) · 40 giây*
+> Đây là cái lạ nhất của đề tài: dùng chính sóng Wi-Fi làm cảm biến. Mỗi gói Wi-Fi mang theo thông tin sóng đã đi qua không gian thế nào, gọi là CSI, đo trên 52 dải sóng nhỏ, 100 lần mỗi giây. Khi có người đứng chắn giữa hai node, sóng bị yếu đi, giống như ánh sáng bị che bớt.
+>
+> Yếu đi bao nhiêu thì nhóm không tự đoán, mà dùng công thức nhiễu xạ ITU-R P.526 của Liên minh Viễn thông Quốc tế, cho hai việc. Một: so với lúc hành lang trống, chip tính ngược ra phần trăm còn đi được. Hai: dời node hay kê lại bàn ghế thì hệ thống tự học lại "lúc trống" mới, không cần hiệu chuẩn bằng tay.
 
-**Thao tác:** Nhấn giọng: “ITU-R P.526”. Chỉ ô ① rồi ô ②.
+**Câu nối:** *Nhưng khi chạy thử trên dữ liệu thật, nhóm thấy chỉ có công thức thì chưa đủ.*
 
-> Mỗi cặp ESP32-S3 đo sóng Wi-Fi CSI trên 52 sóng mang, 100 lần mỗi giây. Người chắn đường truyền làm sóng suy hao. Nhóm dùng công thức nhiễu xạ trong khuyến nghị ITU-R P.526 của Liên minh Viễn thông Quốc tế cho hai việc. Một: so suy hao với lúc trống, chip giải ngược công thức ra phần trăm lưu thông. Hai: khi dời node hay kê lại đồ, sóng lúc trống thay đổi, hệ thống tự học lại nền, không cần hiệu chuẩn tay.
+### Slide 9 · Chỉ có công thức thì chưa đủ (40 giây)
 
-**Câu nối sang slide 9** (nói trong lúc bấm chuyển):
+**Ý chính:** nhóm tự chỉ ra 3 lỗi của công thức. Gốc rễ là công thức không phân biệt được "có người" với "môi trường đổi".
 
-> *Nhưng chỉ có công thức thì chưa đủ.*
+**Thao tác:** chỉ lần lượt 3 con số từ trái sang phải.
 
-### Slide 9 · Chỉ có công thức thì chưa đủ
+> Nhóm chạy lại dữ liệu thật chỉ với công thức và tìm ra 3 lỗi. 155 giây hệ thống báo an toàn trong khi có người, lỗi nguy hiểm nhất khi sơ tán. 12 lần học nhầm người vào nền: người đứng yên lâu thì sóng ổn định, công thức tưởng là trống. Và kết quả nhảy qua lại hơn 5 lần mỗi phút. Gốc rễ chỉ có một: công thức không phân biệt được sóng thay đổi vì có người, hay vì môi trường thay đổi. Cần thêm một bộ não.
 
-*A (bạn) · 30 giây*
+**Câu nối:** *Nhưng dùng AI loại nào?*
 
-**Thao tác:** Chỉ lần lượt 3 con số từ trái sang phải.
+### Slide 10 · Vì sao không dùng học sâu? (40 giây)
 
-> Chạy lại dữ liệu thật chỉ với công thức: 155 giây báo an toàn khi có người; 12 lần học nhầm người vào nền, vì người đứng yên thì sóng ổn định, công thức tưởng là trống; và trạng thái nhảy hơn 5 lần mỗi phút. Gốc rễ là công thức không phân biệt được sóng đổi vì có người hay vì môi trường đổi. Nên cần thêm AI.
+**Ý chính:** học sâu phải thu dữ liệu và gán nhãn lại mỗi khi sang nơi mới, nên khó mang ra thực tế.
 
-**Câu nối sang slide 10** (nói trong lúc bấm chuyển):
+> Cách phổ biến là học sâu. Nhưng các nghiên cứu hàng đầu cho thấy học sâu trên sóng Wi-Fi rất kém khi sang môi trường mới. CrossSense, hội nghị MobiCom 2018: phương pháp có sẵn chỉ còn khoảng 20% độ chính xác ở nơi mới. EI, cùng hội nghị, có chống nhiễu môi trường vẫn chỉ khoảng 75%. Widar3.0 giữ được trên 80% nhưng phải thu tới 258 nghìn mẫu. Tức là mỗi tòa nhà mới lại phải thu dữ liệu, gán nhãn lại từ đầu. Với một hệ thống sơ tán lắp ở nhiều nơi, làm vậy là không khả thi.
 
-> *Nhưng AI loại nào?*
+**Câu nối:** *Nên nhóm chọn một hướng khác hẳn.*
 
-### Slide 10 · Học sâu trên CSI kém khi sang môi trường mới
+### Slide 11 · Tiny AI: cách hoạt động (60 giây)
 
-*A (bạn) · 35 giây*
+**Ý chính:** AI chỉ học một thứ: hành lang lúc trống. Cái gì khác thường thì là có người. Mô hình nhỏ 1,5 KB, chạy ngay trên chip, sang phòng mới không cần học lại.
 
-> Học sâu trên CSI kém khi đổi môi trường: CrossSense tại MobiCom 2018 chỉ còn khoảng 20% độ chính xác ở nơi mới; EI vẫn chỉ khoảng 75% dù có nhãn từ 22 cặp người và phòng; Widar3.0 phải thu 258 nghìn mẫu. Tức là mỗi lần đổi môi trường lại phải thu và gán nhãn từ đầu, trong khi hệ thống của nhóm phải tự học lại nền.
+**Thao tác:** chỉ cột trái (huấn luyện), rồi cột phải (trên chip) từ trên xuống, kết bằng dòng cuối slide.
 
-**Câu nối sang slide 11** (nói trong lúc bấm chuyển):
+> Ý tưởng rất đơn giản. Thay vì dạy AI người trông thế nào, nhóm chỉ cho AI học một thứ: hành lang lúc trống trông thế nào. Giống như một người bảo vệ thuộc lòng hành lang lúc vắng: có gì khác thường là biết ngay có người, không cần ai chỉ trước.
+>
+> Huấn luyện một lần, không gán nhãn, ra mô hình hỗn hợp Gauss chỉ 1,5 KB, nạp thẳng vào chip ESP32-S3.
+>
+> Mỗi giây, chip tính 42 đặc trưng về cách sóng rung, đo xem khác thường bao nhiêu. Vượt ngưỡng là có người, AI hạ điểm. Trống suốt 30 giây mà nền có đổi, AI mới cho học lại nền, nên không học nhầm người vào nền.
+>
+> Và vì AI nhìn cách sóng rung chứ không nhìn sóng mạnh hay yếu, vốn mỗi phòng một khác, nên sang phòng mới không cần huấn luyện lại.
 
-> *Vì thế nhóm chọn hướng khác: một Tiny AI chỉ cần học lúc trống, chạy ngay trên chip.*
+**Câu nối:** *Và kết quả trên dữ liệu thật như sau.*
 
-### Slide 11 · Huấn luyện một lần, phòng mới không cần học lại
+### Slide 12 · Tiny AI vá cả 3 lỗi (25 giây)
 
-*A (bạn) · 40 giây*
+**Ý chính:** cùng dữ liệu, có AI thì giảm 89%, 75%, 31% đúng 3 lỗi ở slide 9.
 
-**Thao tác:** Chỉ cột trái (huấn luyện) rồi cột phải (trên chip), từ trên xuống; kết bằng dòng cuối slide.
+**Thao tác:** chỉ lần lượt 3 cặp cột, từ trái sang phải.
 
-> Nhóm huấn luyện Tiny AI một lần, chỉ bằng sóng của 2 hành lang lúc trống, không gán nhãn, ra một mô hình hỗn hợp Gauss chỉ 1,5 KB rồi nạp vào chip. Trên ESP32-S3, mỗi giây chip lấy 52 sóng mang, tính 42 đặc trưng về cách sóng dao động, không dùng mức sóng tĩnh nên không phụ thuộc phòng, rồi đo độ lạ so với lúc trống. Vượt ngưỡng là có người, AI hạ điểm; trống suốt 30 giây, AI cho học lại nền. Sang phòng mới không cần huấn luyện lại.
+> Cùng dữ liệu thật, cùng 3 lỗi vừa rồi. Báo nhầm an toàn khi có người: từ 155 giây xuống 17 giây, giảm 89%. Học nhầm người vào nền: từ 12 lần xuống 3, giảm 75%. Nhảy trạng thái giảm 31%. Tất cả nhờ một mô hình 1,5 KB, chưa từng thấy căn phòng này lúc huấn luyện.
 
-**Câu nối sang slide 12** (nói trong lúc bấm chuyển):
+**Câu nối:** *Và đây là toàn bộ hệ thống chạy trên dữ liệu thật.*
 
-> *Kết quả trên cùng dữ liệu thật như sau.*
+### Slide 13 · Dữ liệu thật (35 giây, clip 22 giây)
 
-### Slide 12 · Tiny AI vá cả 3 lỗi của công thức
+**Ý chính:** dữ liệu sóng thật, chạy qua đúng firmware trên chip: người vào thì báo bị chặn, người ra thì báo an toàn.
 
-*A (bạn) · 25 giây*
+**Thao tác:** nói một câu giới thiệu rồi bấm phát clip, nói theo diễn biến.
 
-**Thao tác:** Chỉ lần lượt 3 cặp cột, từ trái sang phải.
+> Đây là sóng Wi-Fi thật thu tối 17 tháng 10, chạy qua đúng chương trình đang nạp trên chip. Phía trên là sóng của 52 dải, phía dưới là phần trăm lưu thông.
+>
+> *(Clip chạy)* Phòng trống: sóng phẳng, hệ thống báo an toàn. Người bước vào: sóng xao động mạnh, hệ thống chuyển ngay sang bị chặn. Người đi ra: sóng lặng lại, hệ thống hồi về an toàn. Màu nền là nhãn nhóm bấm tay lúc thu, khớp với kết quả của hệ thống.
 
-> Đúng 3 lỗi của công thức: báo nhầm an toàn khi có người giảm 89%, học nhầm người vào nền giảm 75%, nhảy trạng thái giảm 31%. Và vì chỉ cần học lúc trống, sang hành lang mới hệ thống vẫn dùng được.
+**Câu nối:** *Biết chỗ nào đông rồi, câu hỏi cuối cùng là: đi đường nào.*
 
-**Câu nối sang slide 13** (nói trong lúc bấm chuyển):
+---
 
-> *Và đây là toàn bộ hệ thống chạy trên dữ liệu thật.*
+## ④ Điều hướng
 
-### Slide 13 · Người bước vào → Bị chặn, đi ra → An toàn
+### Slide 14 · Đông thì đắt, D* Lite tự né (50 giây)
 
-*A (bạn) · 35 giây*
+**Ý chính:** mỗi hành lang có một "giá", càng đông càng đắt. Hệ thống tìm đường rẻ nhất và cập nhật cực nhanh mỗi giây.
 
-**Thao tác:** Bấm phát clip (22 giây), nói theo diễn biến trong clip.
+**Thao tác:** chỉ đường cong (càng đông càng dốc), rồi công thức, rồi dòng 1,7 ms.
 
-> Dữ liệu thu tối 17/10, chạy qua đúng firmware đang nạp trên chip. Phòng trống: an toàn. Người bước vào: sóng dao động mạnh, chuyển ngay sang bị chặn. Người đi ra: hồi lại an toàn.
+> Nhóm gán cho mỗi hành lang một cái giá, giống phí đi đường. Hành lang càng đông thì giá càng đắt, và đắt theo bình phương, tức là đông gấp đôi thì đắt gấp bốn. Có khói thì cộng thêm phạt. Đầy hoặc có cháy thì cấm đi. Công thức này dựa trên hàm BPR mà ngành giao thông dùng để tính kẹt xe.
+>
+> Số đo đông thay đổi mỗi giây, nên đường cũng phải tính lại mỗi giây. Nhóm dùng thuật toán D* Lite: không tính lại từ đầu, mà chỉ sửa đúng phần vừa thay đổi. Trên bản đồ 3 tầng, 41 hành lang, mỗi lần chỉ mất 1,7 mili giây, nhanh hơn 63% so với tính lại từ đầu.
 
-**Câu nối sang slide 14** (nói trong lúc bấm chuyển):
+**Câu nối:** *Nhưng chọn đúng đường lúc này thôi chưa đủ. Hệ thống còn phải nhìn trước.*
 
-> *Biết chỗ nào đông rồi, câu cuối cùng là đi đường nào. Xin mời bạn [tên].*
+### Slide 15 · Dự đoán trước 15 giây (45 giây)
 
-### Slide 14 · Đông thì đắt, D* Lite tự né trong 1,7 ms
+**Ý chính:** không đợi nghẽn mới đổi đường; dự đoán trước 15 giây, chia người ra hai đường, và chỉ dẫn bằng LED, loa ngay tại chỗ.
 
-*B (bạn điều hướng) · 40 giây*
+**Thao tác:** chỉ đồ thị (đường cam vượt ngưỡng trước), rồi lần lượt 3 ô bên phải.
 
-> Cảm ơn bạn. Độ đông đo bằng CSI đi thẳng vào hàm chi phí BPR cải tiến: hành lang càng đông, chi phí đi qua càng đắt, theo bình phương; có khói thì cộng phạt; đầy hoặc có cháy thì không đi qua. Đường đi tìm bằng D* Lite: mỗi giây số đo thay đổi, thuật toán chỉ sửa phần thay đổi. Đo trên bản đồ thật 3 tầng, 41 hành lang: 1,7 mili giây mỗi lần, giảm 63% thời gian tính.
+> Đợi nghẽn rồi mới đổi đường thì đã muộn. Hệ thống mô phỏng 20 tình huống sắp tới, lấy trường hợp xấu mức P90, nhìn trước 15 giây. Thấy sắp nghẽn là bẻ luồng ngay.
+>
+> Ở ngã rẽ, hệ thống không đẩy tất cả sang một đường mới, vì như vậy lại dồn ứ ở đường mới. Nó chia người ra tối đa hai tuyến, theo độ rộng còn lại của mỗi tuyến.
+>
+> Lệnh chỉ dẫn đi qua ESP-NOW, sóng trực tiếp giữa các chip, không cần router hay Internet, tới bảng LED và loa nói tiếng Việt ngay tại hành lang, để cả người không cầm điện thoại cũng biết đi đường nào.
 
-**Câu nối sang slide 15** (nói trong lúc bấm chuyển):
+**Câu nối:** *Em xin tóm lại.*
 
-> *Nhưng chọn đúng đường thôi chưa đủ, còn phải nhìn trước và chỉ dẫn tận nơi.*
+### Slide 16 · Kết luận (45 giây)
 
-### Slide 15 · Nhìn trước 15 giây, chia tải, chỉ dẫn tại chỗ
+**Ý chính:** nhắc lại 4 câu hỏi và cái hay nhất của mỗi câu.
 
-*B (bạn điều hướng) · 35 giây*
+> Tóm lại, WiEvac trả lời đủ 4 câu hỏi. Tòa nhà trông thế nào: cầm điện thoại quét là có bản đồ, không cần bản vẽ. Tôi đang ở đâu: định vị bằng Bluetooth, chạy offline. Chỗ nào đông: dùng chính sóng Wi-Fi, không camera, với công thức chuẩn ITU và một Tiny AI 1,5 KB chạy ngay trên chip, giảm 89% số lần báo nhầm an toàn. Đi đường nào: D* Lite tính lại trong 1,7 mili giây, nhìn trước 15 giây, chỉ dẫn tận nơi bằng LED và loa.
+>
+> Em xin cảm ơn Hội đồng, và rất mong nhận được câu hỏi.
 
-> Hệ thống không chờ nghẽn rồi mới đổi đường: nó mô phỏng 20 kịch bản tương lai, lấy biên thận trọng P90, nhìn trước 15 giây để bẻ luồng sớm. Tại ngã rẽ, tải được chia tối đa hai tuyến theo độ rộng còn lại. Lệnh đi qua ESP-NOW tới bảng LED và loa tiếng Việt.
-
-**Câu nối sang slide 16** (nói trong lúc bấm chuyển):
-
-> *Em xin trả lời lại cho bạn để kết luận.*
-
-### Slide 16 · WiEvac trả lời đủ 4 câu hỏi
-
-*A (bạn) · 30 giây*
-
-> Cảm ơn bạn. Tóm lại, WiEvac trả lời đủ 4 câu hỏi: bản đồ AR, định vị BLE, biết chỗ đông bằng sóng Wi-Fi với Tiny AI 1,5 KB trên chip, tự học lại nền ở môi trường mới, giảm 89% báo nhầm an toàn, và chỉ đường bằng D* Lite. Bước tiếp theo là thử với đám đông và nhiều tầng. Nhóm em xin cảm ơn Hội đồng và xin lắng nghe câu hỏi.
+---
 
 ## Nếu bị chậm (cắt theo thứ tự)
 
-1. **Slide 5:** bỏ câu "Bảng LED và loa nhận lệnh qua ESP-NOW. Ứng dụng Android dùng ARCore." Tiết kiệm khoảng 5 giây.
-2. **Slide 10:** bỏ câu Widar3.0. Tiết kiệm khoảng 5 giây.
-3. **Slide 6:** bỏ "ứng dụng tự căn thẳng, căn vuông". Tiết kiệm khoảng 3 giây.
-4. **Slide 15:** bỏ câu "Tại ngã rẽ…". Tiết kiệm khoảng 5 giây.
+1. **Slide 6:** bỏ câu "Tay người run thì cạnh hơi lệch…". Tiết kiệm khoảng 5 giây.
+2. **Slide 10:** bỏ câu Widar3.0. Tiết kiệm khoảng 6 giây.
+3. **Slide 5:** bỏ câu "Bảng LED và loa chỉ dẫn tại chỗ". Tiết kiệm khoảng 3 giây.
+4. **Slide 15:** rút đoạn chia tải còn "Ở ngã rẽ, người được chia ra tối đa hai tuyến." Tiết kiệm khoảng 7 giây.
+5. **Slide 14:** bỏ câu "Công thức này dựa trên hàm BPR…". Tiết kiệm khoảng 5 giây.
 
-Không bao giờ bỏ câu nối: câu nối giữ cho bài liền mạch.
+**Không bao giờ cắt:** slide 3 (demo), slide 11 (Tiny AI), slide 12 (kết quả). Đó là ba chỗ ghi điểm nhất.
 
-## Đối chiếu barem
+## 5 điểm "hay, mới, lạ" phải nói bằng được
 
-Thể lệ VEDC 2026 không công bố tỷ trọng điểm vòng bán kết. Bảng dưới dùng barem bán kết 2025, cộng thêm các nội dung thể lệ 2026 yêu cầu.
-
-| Tiêu chí | Trọng số 2025 | Slide đáp ứng |
-|---|---|---|
-| Mô hình hệ thống kỹ thuật | 20% | 4 (4 câu hỏi), 5 (phần cứng) |
-| Phần cứng & phần mềm | 25% | 5, 8 (công thức trên chip), 11 (Tiny AI trên chip) |
-| Demo & prototype hoạt động | 20% | 3 (app 2 điện thoại), 7 (định vị), 13 (CSI dữ liệu thật) |
-| Tính ứng dụng & mở rộng | 20% | 2, 10, 16 |
-| Trình bày & phản biện | 15% | Kịch bản này + phần câu hỏi |
-
-**Nội dung thể lệ 2026 yêu cầu:**
-- mô hình hệ thống: slide 4;
-- nguyên lý hoạt động: slide 7, 8, 9, 11;
-- thuật toán: slide 11, 14, 15;
-- kế hoạch hoàn thiện: slide 16;
-- **bản vẽ mạch: còn thiếu**, cần ảnh hoặc sơ đồ mạch thật để chèn vào slide 5.
+1. **Không camera:** dùng chính sóng Wi-Fi làm cảm biến, không xâm phạm riêng tư, khói và bóng tối không ảnh hưởng.
+2. **Cửa gần chưa chắc là cửa nhanh:** hệ thống đổi sang cửa xa khi cửa gần đông (demo slide 3).
+3. **Có cơ sở khoa học:** công thức chuẩn ITU, không tự đoán; nhóm tự chỉ ra giới hạn của công thức.
+4. **Tiny AI chỉ học lúc trống:** không gán nhãn, 1,5 KB, chạy trên chip, sang phòng mới không cần học lại. Đây là chỗ học sâu chưa làm được.
+5. **Nhìn trước và chỉ dẫn tận nơi:** dự đoán 15 giây, chia tải hai tuyến, LED và loa chạy offline.
 
 ## Câu hỏi Hội đồng hay hỏi (trả lời dưới 30 giây)
 
+**CSI là gì, khác gì đo cường độ Wi-Fi bình thường?**
+Cường độ Wi-Fi chỉ là một con số. CSI cho biết sóng đi qua không gian thế nào trên từng dải trong 52 dải nhỏ, nên nhạy hơn rất nhiều với người đứng chắn.
+
 **Một người mà % lưu thông xuống thấp vậy?**
-Người đứng chắn đúng đường truyền giữa hai node, và AI chắc chắn có người nên trừ thêm điểm. Trong sơ tán, báo mạnh tay an toàn hơn báo nhầm là an toàn.
+Người đứng chắn đúng đường truyền giữa hai node, và AI chắc chắn có người nên hạ điểm thêm. Trong sơ tán, báo thận trọng an toàn hơn báo nhầm là an toàn.
 
 **Clip slide 13 có phải chạy thật không?**
-Đó là bản thu CSI thô thật tối 17/10, 100 gói mỗi giây; file gốc và mã SHA-256 có trong kho mã của nhóm. Dữ liệu chạy qua chính mã nguồn firmware đang nạp trên chip. Nhãn có người/trống bấm tay lúc thu, độc lập với thuật toán. Đoạn giữa lúc người đứng chắn (67 giây, hệ thống vẫn báo Bị chặn) được lược cho clip ngắn; số giây trên trục vẫn là giờ thật.
+Đó là bản thu CSI thô thật tối 17/10, 100 gói mỗi giây, chạy qua đúng mã nguồn firmware đang nạp trên chip. Nhãn có người, trống do nhóm bấm tay lúc thu, độc lập với thuật toán. Đoạn giữa lúc người đứng chắn được lược bớt cho clip ngắn; số giây trên trục vẫn là giờ thật.
 
 **Dùng mô hình AI gì?**
-Mô hình hỗn hợp Gauss 4 thành phần. Nó học vùng dữ liệu lúc hành lang trống; giây nào nằm xa vùng đó là bất thường, tức là có người. Mô hình chỉ 1,5 KB, chạy ngay trên ESP32-S3.
+Mô hình hỗn hợp Gauss 4 thành phần. Nó học vùng dữ liệu lúc hành lang trống; giây nào nằm xa vùng đó là khác thường, tức là có người. Mô hình chỉ 1,5 KB, chạy ngay trên ESP32-S3.
 
 **AI chính xác bao nhiêu?**
-Ở phòng chưa từng thấy: bắt 1.154 trên 1.154 giây có người, báo nhầm 17 trên 910 giây trống. Nếu được hỏi chỉ số chuẩn: AUROC 0,9994, với điều kiện một phòng, một người đi lại.
+Ở phòng chưa từng thấy: bắt được 1.154 trên 1.154 giây có người, báo nhầm 17 trên 910 giây trống. Nếu được hỏi chỉ số chuẩn: AUROC 0,9994, với điều kiện một phòng, một người đi lại.
 
 **Sao sang phòng mới không cần huấn luyện lại?**
-Tiny AI không nhìn mức sóng tĩnh, vốn khác nhau ở mỗi phòng, mà nhìn cách sóng dao động: phương sai, độ gồ ghề, tự tương quan trên 8 dải sóng mang. Mỗi link còn tự lấy mức nhiễu của chính nó làm chuẩn khi khởi động. Mô hình train ở 2 hành lang, chạy thẳng ở phòng C chưa từng thấy.
+AI không nhìn mức sóng mạnh hay yếu, vốn khác nhau ở mỗi phòng, mà nhìn cách sóng rung: độ dao động, độ gồ ghề, độ lặp lại trên 8 nhóm dải sóng. Mỗi link còn tự lấy mức nhiễu của chính nó làm chuẩn khi khởi động. Mô hình huấn luyện ở 2 hành lang, chạy thẳng ở phòng C chưa từng thấy.
 
-**Sao không dùng học sâu?**
-Như slide 10: học sâu trên CSI giảm mạnh khi đổi môi trường và phải thu, gán nhãn lại. Tiny AI chỉ cần hành lang trống, chạy được ngay trên ESP32-S3.
-
-**Môi trường thay đổi thì sao (dịch node, nhiễu, đổi phòng)?**
-Mỗi link tự phát hiện môi trường sóng đã đổi, giữ cảnh báo ở mức thận trọng, rồi tự học lại nền. Hệ thống chỉ học lại khi AI xác nhận phòng trống và ổn định suốt 30 giây, nên không học nhầm người vào nền. Vật cản tĩnh đã ghi nhận cũng không bị học thành nền. Không cần hiệu chuẩn lại bằng tay.
+**Môi trường thay đổi thì sao (dời node, kê đồ)?**
+Hệ thống tự phát hiện sóng nền đã đổi, giữ cảnh báo ở mức thận trọng, rồi tự học lại nền. Chỉ học lại khi AI xác nhận phòng trống suốt 30 giây, nên không học nhầm người vào nền. Không cần hiệu chuẩn bằng tay.
 
 **Thử ở bao nhiêu nơi?**
-Train ở 2 hành lang, kiểm tra ở một phòng chưa từng thấy, cộng thực địa 1 TX và 2 RX ngày 17–18/10. Đám đông và nhiều tầng là bước tiếp theo.
+Huấn luyện ở 2 hành lang, kiểm tra ở một phòng chưa từng thấy, cộng thử thực địa 1 bộ phát và 2 bộ thu ngày 17–18/10. Đám đông và nhiều tầng là bước tiếp theo.
 
 **Mất sóng, mất điện thì sao?**
-Mất dữ liệu thì hệ thống báo "chưa rõ", không báo an toàn. Điều hướng coi hành lang mất sóng như đã đầy nên không dẫn người vào.
+Mất dữ liệu thì hệ thống báo "chưa rõ", không bao giờ báo an toàn. Điều hướng coi hành lang mất sóng như đã đầy, nên không dẫn người vào.
+
+**Đo 1,7 ms trên máy nào?**
+Trên máy tính phát triển, bản đồ thật 3 tầng, 41 hành lang. So với tính lại từ đầu là 4,6 ms, giảm 63%.
 
 **Độ rộng hành lang lấy ở đâu?**
 Nhập một lần trên dashboard khi lắp đặt, rồi tự đồng bộ sang bản đồ điều hướng.
 
 **Chi phí?**
-Toàn linh kiện phổ thông; một bộ phát phục vụ tới 10 bộ thu. *(Giá cụ thể: nhóm điền theo hóa đơn thật, không đoán.)*
+Toàn linh kiện phổ thông: ESP32-S3, Raspberry Pi 5, bảng LED, loa. *(Giá cụ thể: điền theo hóa đơn thật của nhóm, không đoán.)*
 
-## Cách tập
+## Cách tập (tối nay)
 
-1. **Lần 1:** đọc to theo file này, bấm giờ, so với cột "Mốc cộng dồn".
-2. **Lần 2:** chỉ nhìn slide. Thuộc câu nối trước, vì câu nối là chỗ hay bị quên nhất.
-3. **Lần 3:** hai người tập cùng, có bàn giao ở slide 13 và trả lời lại ở slide 15, bấm đủ 3 clip.
-4. **Lần cuối:** tập trên đúng máy thi, kiểm tra 3 clip chạy được (nếu dùng PPTX thì nhúng clip bằng `slide_media/embed_clips.py`).
+1. **Lần 1:** đọc to cả file, bấm giờ từng slide. Đánh dấu chỗ nào vấp.
+2. **Lần 2:** chỉ nhìn dòng **Ý chính** của mỗi slide và tự kể bằng lời của mình. Đây là lần quan trọng nhất: kể được là không cần học thuộc.
+3. **Lần 3:** chạy trên đúng file PPTX, bấm đủ 3 clip, bấm giờ cả bài. Mục tiêu khoảng 11 phút.
+4. **Học thuộc 3 thứ:** các câu nối, các con số (155, 12, 5,16; 89%, 75%, 31%; 1,5 KB; 1,7 ms; 15 giây), và câu mở đầu.
+5. **Trước giờ thi:** mở file trên máy thi, bấm thử 3 clip xem có chạy và có tiếng không (các clip không có tiếng, chỉ có hình).
