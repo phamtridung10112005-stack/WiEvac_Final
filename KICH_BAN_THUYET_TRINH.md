@@ -2,7 +2,7 @@
 
 Deck: https://claude.ai/artifact/JeStEMJ2y2zoN6uug1sBYB (15 slide). Lời nói và câu nối dưới đây **trùng từng chữ** với ghi chú trong deck.
 
-**Tổng thời gian dự kiến: 8:46**, đã tính cả 3 clip và thời gian bấm chuyển slide. Còn khoảng 1:14 dự phòng. **Không nói thêm câu nào ngoài kịch bản.**
+**Tổng thời gian dự kiến: 8:36**, đã tính cả 3 clip và thời gian bấm chuyển slide. Còn khoảng 1:24 dự phòng. **Không nói thêm câu nào ngoài kịch bản.**
 
 **Quy tắc câu nối:** câu nối được nói **trong lúc bấm sang slide sau**. Nói xong câu nối thì slide mới vừa hiện, nên không mất thêm thời gian.
 
@@ -19,17 +19,17 @@ Deck: https://claude.ai/artifact/JeStEMJ2y2zoN6uug1sBYB (15 slide). Lời nói v
 | 7 | Bắt node gần nhất, tự chuyển node khi di chuyển | A (bạn) | 30 s | 3:35 |
 | 8 | Suy hao do người chắn → % lưu thông | A (bạn) | 35 s | 4:12 |
 | 9 | Học sâu trên CSI kém khi sang môi trường mới | A (bạn) | 40 s | 4:54 |
-| 10 | Chỉ học lúc trống, vẫn nhận ra người ở nơi mới | A (bạn) | 55 s | 5:51 |
-| 11 | AI giảm mạnh các lỗi nguy hiểm | A (bạn) | 25 s | 6:18 |
-| 12 | Người bước vào → Bị chặn, đi ra → An toàn | A (bạn) | 35 s | 6:55 |
-| 13 | Đông thì đắt, D* Lite tự né trong 1,7 ms | B (bạn điều hướng) | 40 s | 7:37 |
-| 14 | Nhìn trước 15 giây, chia tải, chỉ dẫn tại chỗ | B (bạn điều hướng) | 35 s | 8:14 |
-| 15 | WiEvac trả lời đủ 4 câu hỏi | A (bạn) | 30 s | 8:46 |
+| 10 | AI đứng gác bên cạnh công thức, làm 2 việc | A (bạn) | 45 s | 5:41 |
+| 11 | AI giảm mạnh các lỗi nguy hiểm | A (bạn) | 25 s | 6:08 |
+| 12 | Người bước vào → Bị chặn, đi ra → An toàn | A (bạn) | 35 s | 6:45 |
+| 13 | Đông thì đắt, D* Lite tự né trong 1,7 ms | B (bạn điều hướng) | 40 s | 7:27 |
+| 14 | Nhìn trước 15 giây, chia tải, chỉ dẫn tại chỗ | B (bạn điều hướng) | 35 s | 8:04 |
+| 15 | WiEvac trả lời đủ 4 câu hỏi | A (bạn) | 30 s | 8:36 |
 
 **Mốc kiểm tra khi tập:**
 - Hết slide 5: **2:31**.
-- Hết slide 12, bàn giao cho B: **6:55**.
-- Hết slide 15: **8:46**.
+- Hết slide 12, bàn giao cho B: **6:45**.
+- Hết slide 15: **8:36**.
 
 Chậm quá 20 giây ở một mốc thì áp dụng ngay mục "Nếu bị chậm".
 
@@ -135,23 +135,23 @@ Chậm quá 20 giây ở một mốc thì áp dụng ngay mục "Nếu bị ch�
 
 > *Vì thế nhóm chọn hướng khác: một Tiny AI tự học lại nền ở môi trường mới, chạy ngay trên chip.*
 
-### Slide 10 · Chỉ học lúc trống, vẫn nhận ra người ở nơi mới
+### Slide 10 · AI đứng gác bên cạnh công thức, làm 2 việc
 
-*A (bạn) · 55 giây*
+*A (bạn) · 45 giây*
 
-**Thao tác:** Chỉ lần lượt 3 ô bên trái; ở bước 2 chỉ sang hình: cụm xanh (lúc trống) rồi cụm cam (có người).
+**Thao tác:** Lướt dãy ô trên cùng (đường của công thức), rồi chỉ lần lượt ô 1 và ô 2.
 
-> Tiny AI làm 3 bước. Một: học hành lang lúc trống trông thế nào, không cần dữ liệu đám đông, không cần gán nhãn. Hai: mỗi giây so với lúc trống; khác xa là có người. Hình bên phải là dữ liệu thật, mỗi chấm một giây: giây trống tụm trong vùng xanh, giây có người nằm hẳn ra ngoài. Ba: khi môi trường sóng thay đổi, mỗi link tự học lại nền, nhưng chỉ khi AI xác nhận trống suốt 30 giây, nên không học nhầm người vào nền. Nhờ vậy, sang hành lang mới hệ thống tự thích nghi, đúng chỗ học sâu làm không được. Thử ở một phòng chưa từng thấy, một người đi lại: 1.154 giây có người, AI bắt được hết; 910 giây trống, chỉ 17 giây báo nhầm.
+> Tiny AI không thay công thức mà đứng gác bên cạnh, chạy ngay trên chip. Nó học hành lang lúc trống trông thế nào; giây nào khác xa là có người. AI làm hai việc. Một, chặn báo nhầm: công thức nói an toàn nhưng AI thấy có người thì hạ điểm, đúng lỗi 155 giây vừa rồi. Hai, gác việc học lại nền: môi trường sóng đổi thì link tự học lại nền, nhưng chỉ khi AI xác nhận trống suốt 30 giây, nên không học nhầm người vào nền. Vì chỉ cần học lúc trống, không gán nhãn, sang hành lang mới vẫn dùng được, đúng chỗ học sâu làm không được.
 
 **Câu nối sang slide 11** (nói trong lúc bấm chuyển):
 
-> *Khi gắn AI vào cả hệ thống, kết quả thế nào?*
+> *Hai việc đó giúp được bao nhiêu? So trên cùng dữ liệu thật.*
 
 ### Slide 11 · AI giảm mạnh các lỗi nguy hiểm
 
 *A (bạn) · 25 giây*
 
-> So với chỉ dùng công thức, trên cùng dữ liệu thật: báo nhầm an toàn khi có người giảm 89%, học nhầm người thành nền giảm 75%, nhờ AI gác cổng việc học lại nền, và nhảy trạng thái giảm 31%.
+> So với chỉ dùng công thức, trên cùng dữ liệu thật: báo nhầm an toàn khi có người giảm 89%, nhờ việc thứ nhất; học nhầm người thành nền giảm 75%, nhờ việc thứ hai; và nhảy trạng thái giảm 31%.
 
 **Câu nối sang slide 12** (nói trong lúc bấm chuyển):
 
