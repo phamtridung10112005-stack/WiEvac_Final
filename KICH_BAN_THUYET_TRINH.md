@@ -244,7 +244,7 @@ Thể lệ VEDC 2026 không công bố tỷ trọng điểm vòng bán kết. B�
 Người đứng chắn đúng đường truyền giữa hai node, và AI chắc chắn có người nên trừ thêm điểm. Trong sơ tán, báo mạnh tay an toàn hơn báo nhầm là an toàn.
 
 **Clip slide 13 có phải chạy thật không?**
-Đó là bản thu CSI thô thật tối 17/10, 100 gói mỗi giây, mã SHA-256 của file hiện ngay trên clip. Dữ liệu chạy qua chính mã nguồn firmware đang nạp trên chip. Nhãn có người/trống bấm tay lúc thu, độc lập với thuật toán.
+Đó là bản thu CSI thô thật tối 17/10, 100 gói mỗi giây; file gốc và mã SHA-256 có trong kho mã của nhóm. Dữ liệu chạy qua chính mã nguồn firmware đang nạp trên chip. Nhãn có người/trống bấm tay lúc thu, độc lập với thuật toán.
 
 **Dùng mô hình AI gì?**
 Mô hình hỗn hợp Gauss 4 thành phần. Nó học vùng dữ liệu lúc hành lang trống; giây nào nằm xa vùng đó là bất thường, tức là có người. Mô hình chỉ 1,5 KB, chạy ngay trên ESP32-S3.
