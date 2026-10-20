@@ -20,7 +20,7 @@ Deck: https://claude.ai/artifact/JeStEMJ2y2zoN6uug1sBYB (16 slide). Lời nói v
 | 8 | Công thức ITU: tính % lưu thông, tự học lại nền | A (bạn) | 40 s | 4:17 |
 | 9 | Chỉ có công thức thì chưa đủ | A (bạn) | 30 s | 4:49 |
 | 10 | Học sâu trên CSI kém khi sang môi trường mới | A (bạn) | 35 s | 5:26 |
-| 11 | Học lúc trống một lần, chạy mỗi giây trên chip | A (bạn) | 40 s | 6:08 |
+| 11 | Huấn luyện một lần, phòng mới không cần học lại | A (bạn) | 40 s | 6:08 |
 | 12 | Tiny AI vá cả 3 lỗi của công thức | A (bạn) | 25 s | 6:35 |
 | 13 | Người bước vào → Bị chặn, đi ra → An toàn | A (bạn) | 35 s | 7:12 |
 | 14 | Đông thì đắt, D* Lite tự né trong 1,7 ms | B (bạn điều hướng) | 40 s | 7:54 |
@@ -148,13 +148,13 @@ Chậm quá 20 giây ở một mốc thì áp dụng ngay mục "Nếu bị ch�
 
 > *Vì thế nhóm chọn hướng khác: một Tiny AI chỉ cần học lúc trống, chạy ngay trên chip.*
 
-### Slide 11 · Học lúc trống một lần, chạy mỗi giây trên chip
+### Slide 11 · Huấn luyện một lần, phòng mới không cần học lại
 
 *A (bạn) · 40 giây*
 
-**Thao tác:** Chỉ hàng trên (học) từ trái sang phải, rồi hàng dưới (chạy); ở hình các cụm, chỉ chấm cam nằm xa.
+**Thao tác:** Chỉ khung trái (huấn luyện) từ trên xuống, mũi tên nạp, rồi khung chip từ trái sang phải và hai kết quả bên dưới.
 
-> Tiny AI làm qua hai giai đoạn. Học, chỉ một lần khi lắp đặt: thu sóng của hành lang lúc trống, huấn luyện một mô hình hỗn hợp Gauss gồm 4 cụm mô tả sóng lúc trống trông thế nào, rồi nạp 1,5 KB xuống chip. Chạy, mỗi giây trên ESP32-S3: từ 52 sóng mang, chip tính 42 đặc trưng, rồi đo xem giây này cách các cụm lúc trống bao xa. Xa quá ngưỡng là có người, AI hạ điểm; trống suốt 30 giây, AI cho học lại nền.
+> Nhóm huấn luyện Tiny AI một lần, chỉ bằng sóng của 2 hành lang lúc trống, không gán nhãn, ra một mô hình hỗn hợp Gauss chỉ 1,5 KB rồi nạp vào chip. Trên ESP32-S3, mỗi giây chip lấy 52 sóng mang, tính 42 đặc trưng về cách sóng dao động, không dùng mức sóng tĩnh nên không phụ thuộc phòng, rồi đo độ lạ so với lúc trống. Vượt ngưỡng là có người, AI hạ điểm; trống suốt 30 giây, AI cho học lại nền. Sang phòng mới không cần huấn luyện lại.
 
 **Câu nối sang slide 12** (nói trong lúc bấm chuyển):
 
