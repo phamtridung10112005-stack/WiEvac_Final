@@ -2,7 +2,7 @@
 
 Deck: https://claude.ai/artifact/JeStEMJ2y2zoN6uug1sBYB (15 slide). Lời nói và câu nối dưới đây **trùng từng chữ** với ghi chú trong deck.
 
-**Tổng thời gian dự kiến: 8:43**, đã tính cả 3 clip và thời gian bấm chuyển slide. Còn khoảng 1:17 dự phòng. **Không nói thêm câu nào ngoài kịch bản.**
+**Tổng thời gian dự kiến: 8:46**, đã tính cả 3 clip và thời gian bấm chuyển slide. Còn khoảng 1:14 dự phòng. **Không nói thêm câu nào ngoài kịch bản.**
 
 **Quy tắc câu nối:** câu nối được nói **trong lúc bấm sang slide sau**. Nói xong câu nối thì slide mới vừa hiện, nên không mất thêm thời gian.
 
@@ -19,17 +19,17 @@ Deck: https://claude.ai/artifact/JeStEMJ2y2zoN6uug1sBYB (15 slide). Lời nói v
 | 7 | Bắt node gần nhất, tự chuyển node khi di chuyển | A (bạn) | 30 s | 3:35 |
 | 8 | Suy hao do người chắn → % lưu thông | A (bạn) | 35 s | 4:12 |
 | 9 | Học sâu trên CSI kém khi sang môi trường mới | A (bạn) | 40 s | 4:54 |
-| 10 | Chỉ học lúc trống, vẫn nhận ra người ở nơi mới | A (bạn) | 52 s | 5:48 |
-| 11 | AI giảm mạnh các lỗi nguy hiểm | A (bạn) | 25 s | 6:15 |
-| 12 | Người bước vào → Bị chặn, đi ra → An toàn | A (bạn) | 35 s | 6:52 |
-| 13 | Đông thì đắt, D* Lite tự né trong 1,7 ms | B (bạn điều hướng) | 40 s | 7:34 |
-| 14 | Nhìn trước 15 giây, chia tải, chỉ dẫn tại chỗ | B (bạn điều hướng) | 35 s | 8:11 |
-| 15 | WiEvac trả lời đủ 4 câu hỏi | A (bạn) | 30 s | 8:43 |
+| 10 | Chỉ học lúc trống, vẫn nhận ra người ở nơi mới | A (bạn) | 55 s | 5:51 |
+| 11 | AI giảm mạnh các lỗi nguy hiểm | A (bạn) | 25 s | 6:18 |
+| 12 | Người bước vào → Bị chặn, đi ra → An toàn | A (bạn) | 35 s | 6:55 |
+| 13 | Đông thì đắt, D* Lite tự né trong 1,7 ms | B (bạn điều hướng) | 40 s | 7:37 |
+| 14 | Nhìn trước 15 giây, chia tải, chỉ dẫn tại chỗ | B (bạn điều hướng) | 35 s | 8:14 |
+| 15 | WiEvac trả lời đủ 4 câu hỏi | A (bạn) | 30 s | 8:46 |
 
 **Mốc kiểm tra khi tập:**
 - Hết slide 5: **2:31**.
-- Hết slide 12, bàn giao cho B: **6:52**.
-- Hết slide 15: **8:43**.
+- Hết slide 12, bàn giao cho B: **6:55**.
+- Hết slide 15: **8:46**.
 
 Chậm quá 20 giây ở một mốc thì áp dụng ngay mục "Nếu bị chậm".
 
@@ -137,11 +137,11 @@ Chậm quá 20 giây ở một mốc thì áp dụng ngay mục "Nếu bị ch�
 
 ### Slide 10 · Chỉ học lúc trống, vẫn nhận ra người ở nơi mới
 
-*A (bạn) · 52 giây*
+*A (bạn) · 55 giây*
 
-**Thao tác:** Chỉ cột xanh (trống) bên trái ngưỡng, rồi cột cam (có người) bên phải.
+**Thao tác:** Chỉ vùng xanh (giây trống), rồi đám chấm cam văng xa (giây có người).
 
-> Tiny AI chỉ học hành lang lúc trống, rồi đo xem hiện tại khác lúc trống bao nhiêu; không cần dữ liệu đám đông, không cần gán nhãn. Khi môi trường sóng thay đổi, mỗi link tự học lại nền, nhưng chỉ khi AI xác nhận trống suốt 30 giây, nên không bao giờ học nhầm người vào nền. Nhờ vậy, lắp ở hành lang mới, hệ thống tự thích nghi, không cần thu dữ liệu hay hiệu chuẩn lại bằng tay, đúng chỗ học sâu làm không được. AI chỉ được hạ điểm, không bao giờ nâng lên an toàn. Thử ở một phòng chưa từng thấy, một người đi lại: 1.154 giây có người, AI bắt được hết; 910 giây trống, chỉ 17 giây báo nhầm.
+> Tiny AI học thuộc hành lang lúc trống trông như thế nào. Hình bên phải là dữ liệu thật, mỗi chấm một giây: giây trống tụm trong vùng xanh, giây có người văng hẳn ra ngoài. Không cần dữ liệu đám đông, không cần gán nhãn. Khi môi trường sóng thay đổi, mỗi link tự học lại nền, nhưng chỉ khi AI xác nhận trống suốt 30 giây, nên không bao giờ học nhầm người vào nền. Nhờ vậy, sang hành lang mới hệ thống tự thích nghi, đúng chỗ học sâu làm không được. Thử ở một phòng chưa từng thấy, một người đi lại: 1.154 giây có người, AI bắt được hết; 910 giây trống, chỉ 17 giây báo nhầm.
 
 **Câu nối sang slide 11** (nói trong lúc bấm chuyển):
 
@@ -230,6 +230,9 @@ Người đứng chắn đúng đường truyền giữa hai node, và AI chắc
 
 **Clip slide 12 có phải chạy thật không?**
 Đó là bản thu CSI thô thật tối 17/10, 100 gói mỗi giây, mã SHA-256 của file hiện ngay trên clip. Dữ liệu chạy qua chính mã nguồn firmware đang nạp trên chip. Nhãn có người/trống bấm tay lúc thu, độc lập với thuật toán.
+
+**Dùng mô hình AI gì?**
+Mô hình hỗn hợp Gauss 4 thành phần. Nó học vùng dữ liệu lúc hành lang trống; giây nào nằm xa vùng đó là bất thường, tức là có người. Mô hình chỉ 1,5 KB, chạy ngay trên ESP32-S3.
 
 **AI chính xác bao nhiêu?**
 Ở phòng chưa từng thấy: bắt 1.154 trên 1.154 giây có người, báo nhầm 17 trên 910 giây trống. Nếu được hỏi chỉ số chuẩn: AUROC 0,9994, với điều kiện một phòng, một người đi lại.
