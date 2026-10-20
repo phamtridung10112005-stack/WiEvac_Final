@@ -152,7 +152,7 @@ Chậm quá 20 giây ở một mốc thì áp dụng ngay mục "Nếu bị ch�
 
 *A (bạn) · 40 giây*
 
-**Thao tác:** Chỉ khung trái (huấn luyện) từ trên xuống, mũi tên nạp, rồi khung chip từ trái sang phải và hai kết quả bên dưới.
+**Thao tác:** Chỉ cột trái (huấn luyện) rồi cột phải (trên chip), từ trên xuống; kết bằng dòng cuối slide.
 
 > Nhóm huấn luyện Tiny AI một lần, chỉ bằng sóng của 2 hành lang lúc trống, không gán nhãn, ra một mô hình hỗn hợp Gauss chỉ 1,5 KB rồi nạp vào chip. Trên ESP32-S3, mỗi giây chip lấy 52 sóng mang, tính 42 đặc trưng về cách sóng dao động, không dùng mức sóng tĩnh nên không phụ thuộc phòng, rồi đo độ lạ so với lúc trống. Vượt ngưỡng là có người, AI hạ điểm; trống suốt 30 giây, AI cho học lại nền. Sang phòng mới không cần huấn luyện lại.
 
@@ -251,6 +251,9 @@ Mô hình hỗn hợp Gauss 4 thành phần. Nó học vùng dữ liệu lúc h�
 
 **AI chính xác bao nhiêu?**
 Ở phòng chưa từng thấy: bắt 1.154 trên 1.154 giây có người, báo nhầm 17 trên 910 giây trống. Nếu được hỏi chỉ số chuẩn: AUROC 0,9994, với điều kiện một phòng, một người đi lại.
+
+**Sao sang phòng mới không cần huấn luyện lại?**
+Tiny AI không nhìn mức sóng tĩnh, vốn khác nhau ở mỗi phòng, mà nhìn cách sóng dao động: phương sai, độ gồ ghề, tự tương quan trên 8 dải sóng mang. Mỗi link còn tự lấy mức nhiễu của chính nó làm chuẩn khi khởi động. Mô hình train ở 2 hành lang, chạy thẳng ở phòng C chưa từng thấy.
 
 **Sao không dùng học sâu?**
 Như slide 10: học sâu trên CSI giảm mạnh khi đổi môi trường và phải thu, gán nhãn lại. Tiny AI chỉ cần hành lang trống, chạy được ngay trên ESP32-S3.
